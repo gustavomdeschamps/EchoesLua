@@ -1,0 +1,28 @@
+package com.orion.echoes.lua.events;
+
+public enum EventType {
+
+    PLAYER_MOVED,
+
+    PLAYER_COLLIDED_OBSTACLE,
+    PLAYER_COLLIDED_WALL,
+
+    OXYGEN_CRITICAL,
+    OXYGEN_DEPLETED,
+
+    ITEM_COLLECTED,
+
+    OXYGEN_COLLECTED,
+    FOOD_COLLECTED,
+    ICE_COLLECTED,
+
+    BASE_ENTERED,
+    BASE_EXITED,
+
+    ICE_PROCESSED,
+
+    GAME_SAVED,
+    GAME_LOADED,
+
+    PLAYER_DIED
+}
