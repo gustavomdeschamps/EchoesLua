@@ -2,6 +2,7 @@ package com.orion.echoes.lua.managers;
 
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
+import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.utils.Disposable;
 
 public class SoundManager implements Disposable {
@@ -31,6 +32,9 @@ public class SoundManager implements Disposable {
     private Sound colisaoRocha;
 
     private Sound hoverUi;
+    private Sound disparoPulso;
+    private Music musicaMenu;
+    private boolean musicaAtiva = true;
 
     private float volumeGeral = 0.75f;
 
@@ -101,6 +105,13 @@ public class SoundManager implements Disposable {
 
         hoverUi =
             carregar("sounds/hover_ui.wav");
+
+        disparoPulso = carregar("sounds/disparo_pulso.wav");
+        if (Gdx.files.internal("sounds/menu_ambiente.wav").exists()) {
+            musicaMenu = Gdx.audio.newMusic(Gdx.files.internal("sounds/menu_ambiente.wav"));
+            musicaMenu.setLooping(true);
+            musicaMenu.setVolume(.32f * volumeGeral);
+        }
 
         carregado = true;
     }
@@ -291,6 +302,25 @@ public class SoundManager implements Disposable {
         );
     }
 
+    public void tocarDisparo() {
+        tocar(disparoPulso, 0.72f);
+    }
+
+    public void tocarMusicaMenu() {
+        if (musicaAtiva && musicaMenu != null && !musicaMenu.isPlaying()) musicaMenu.play();
+    }
+
+    public void pararMusicaMenu() {
+        if (musicaMenu != null) musicaMenu.stop();
+    }
+
+    public void alternarMusica() {
+        musicaAtiva = !musicaAtiva;
+        if (musicaAtiva) tocarMusicaMenu(); else pararMusicaMenu();
+    }
+
+    public boolean isMusicaAtiva() { return musicaAtiva; }
+
     // =========================================
     // VOLUME
     // =========================================
@@ -312,6 +342,7 @@ public class SoundManager implements Disposable {
                     volumeGeral
                 )
             );
+        if (musicaMenu != null) musicaMenu.setVolume(.32f * this.volumeGeral);
     }
 
     @Override
@@ -340,6 +371,11 @@ public class SoundManager implements Disposable {
         disposeSom(colisaoRocha);
 
         disposeSom(hoverUi);
+        disposeSom(disparoPulso);
+        if (musicaMenu != null) {
+            musicaMenu.dispose();
+            musicaMenu = null;
+        }
 
         carregado = false;
     }

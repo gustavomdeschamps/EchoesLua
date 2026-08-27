@@ -2,6 +2,8 @@ package com.orion.echoes.lua.entities;
 
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -27,7 +29,32 @@ public class Astronauta extends Entidade implements Interagivel {
     // VISUAL
     // ==========================================
 
-    private final Sprite sprite;
+    private static final float VISUAL_SIZE = 104f;
+    private static final float FOOTPRINT_WIDTH = 30f;
+    private static final float FOOTPRINT_HEIGHT = 22f;
+    private static final float BODY_CENTER_Y = 17f;
+    private static final float COLLECT_DURATION = .56f;
+    private static final int[] CYCLE = {0, 1, 2, 1};
+    private static final float[] IDLE_CENTER_X = {190.5f};
+    private static final float[] IDLE_BOTTOM_PAD = {28f};
+    private static final float[] WALK_CENTER_X = {186f, 160.5f, 143.5f};
+    private static final float[] WALK_BOTTOM_PAD = {40f, 40f, 41f};
+    private static final float[] COLLECT_CENTER_X = {184.5f, 152f, 133.5f};
+    private static final float[] COLLECT_BOTTOM_PAD = {0f, 0f, 0f};
+    private final TextureRegion idleFrame;
+    private final TextureRegion[] walkFrames;
+    private final TextureRegion[] collectFrames;
+    private final Sprite weaponSprite;
+    private final float frameCellWidth;
+    private final float frameCellHeight;
+    private float animationTime;
+    private float collectTimer;
+    private float recoilTimer;
+    private float damageTimer;
+    private float aimAngle;
+    private boolean weaponEquipped;
+    private boolean sprinting;
+    private boolean movingLastFrame;
 
     // ==========================================
     // BOX2D
@@ -63,6 +90,9 @@ public class Astronauta extends Entidade implements Interagivel {
     private int gelo = 0;
     private int agua = 0;
     private int combustivel = 0;
+    private int oxigenioColetado;
+    private int comidaColetada;
+    private int geloColetado;
 
     // ==========================================
     // BASE
@@ -92,19 +122,26 @@ public class Astronauta extends Entidade implements Interagivel {
         // SPRITE
         // ======================================
 
-        sprite = new Sprite(
-            assets.astronautaTexture
-        );
-
-        sprite.setSize(
-            WIDTH,
-            HEIGHT
-        );
-
-        sprite.setPosition(
-            x,
-            y
-        );
+        int cellWidth = assets.astronautaSheetTexture.getWidth() / 4;
+        int cellHeight = assets.astronautaSheetTexture.getHeight() / 4;
+        // Dois pixels de respiro impedem que a borda da célula vizinha apareça
+        // durante escala/flip, principalmente na pose de coleta que toca o grid.
+        frameCellWidth = cellWidth - 4f;
+        frameCellHeight = cellHeight - 4f;
+        idleFrame = frame(assets, 0, 0, cellWidth, cellHeight);
+        walkFrames = new TextureRegion[] {
+            frame(assets, 0, 1, cellWidth, cellHeight),
+            frame(assets, 1, 1, cellWidth, cellHeight),
+            frame(assets, 2, 1, cellWidth, cellHeight)
+        };
+        collectFrames = new TextureRegion[] {
+            frame(assets, 0, 2, cellWidth, cellHeight),
+            frame(assets, 1, 2, cellWidth, cellHeight),
+            frame(assets, 2, 2, cellWidth, cellHeight)
+        };
+        weaponSprite = new Sprite(assets.pulseRifleTexture);
+        weaponSprite.setSize(62f, 41f);
+        weaponSprite.setOrigin(13f, 20.5f);
 
         // ======================================
         // POSIÇÃO
@@ -115,12 +152,8 @@ public class Astronauta extends Entidade implements Interagivel {
             y
         );
 
-        bounds.set(
-            x,
-            y,
-            WIDTH,
-            HEIGHT
-        );
+        bounds.set(x + (WIDTH - FOOTPRINT_WIDTH) / 2f, y + 6f,
+            FOOTPRINT_WIDTH, FOOTPRINT_HEIGHT);
 
         // ======================================
         // BOX2D
@@ -132,20 +165,19 @@ public class Astronauta extends Entidade implements Interagivel {
          * não ficar preso facilmente.
          */
 
-        float bodyWidth =
-            WIDTH * 0.70f;
-
-        float bodyHeight =
-            HEIGHT * 0.75f;
-
         body =
             physicsWorld.createDynamicBody(
                 x + WIDTH / 2f,
-                y + HEIGHT / 2f,
-                bodyWidth,
-                bodyHeight,
+                y + BODY_CENTER_Y,
+                FOOTPRINT_WIDTH,
+                FOOTPRINT_HEIGHT,
                 this
             );
+    }
+
+    private TextureRegion frame(AssetManager assets, int column, int row, int cellWidth, int cellHeight) {
+        return new TextureRegion(assets.astronautaSheetTexture,
+            column * cellWidth + 2, row * cellHeight + 2, cellWidth - 4, cellHeight - 4);
     }
 
     // ==========================================
@@ -155,6 +187,7 @@ public class Astronauta extends Entidade implements Interagivel {
     public void move(
         float dirX,
         float dirY,
+        boolean wantsToRun,
         float delta
     ) {
 
@@ -171,20 +204,18 @@ public class Astronauta extends Entidade implements Interagivel {
             viradoEsquerda = false;
         }
 
-        sprite.setFlip(
-            viradoEsquerda,
-            false
-        );
-
         // Pixels/s -> metros/s
+        sprinting = wantsToRun && energia > 1f && (dirX != 0f || dirY != 0f);
+        float currentSpeed = velocidade * (sprinting ? GameConfig.PLAYER_RUN_MULTIPLIER : 1f);
+
         float velocidadeX =
             dirX
-                * velocidade
+                * currentSpeed
                 / PhysicsWorld.PPM;
 
         float velocidadeY =
             dirY
-                * velocidade
+                * currentSpeed
                 / PhysicsWorld.PPM;
 
         body.setLinearVelocity(
@@ -201,8 +232,7 @@ public class Astronauta extends Entidade implements Interagivel {
                 || dirY != 0
         ) {
 
-            energia -=
-                1.5f * delta;
+            energia -= (sprinting ? 3.4f : .9f) * delta;
 
             if (energia < 0) {
                 energia = 0;
@@ -223,6 +253,17 @@ public class Astronauta extends Entidade implements Interagivel {
             return;
         }
 
+        boolean movingNow = isMoving();
+        if (movingNow) {
+            animationTime += delta;
+        } else if (movingLastFrame) {
+            animationTime = 0f;
+        }
+        movingLastFrame = movingNow;
+        collectTimer = Math.max(0f, collectTimer - delta);
+        recoilTimer = Math.max(0f, recoilTimer - delta);
+        damageTimer = Math.max(0f, damageTimer - delta);
+
         // Tempo de sobrevivência
         tempoVivo += delta;
 
@@ -240,18 +281,10 @@ public class Astronauta extends Entidade implements Interagivel {
 
             bodyPosition.y
                 * PhysicsWorld.PPM
-                - HEIGHT / 2f
+                - BODY_CENTER_Y
         );
 
-        sprite.setPosition(
-            position.x,
-            position.y
-        );
-
-        bounds.setPosition(
-            position.x,
-            position.y
-        );
+        bounds.setPosition(position.x + (WIDTH - FOOTPRINT_WIDTH) / 2f, position.y + 6f);
 
         // ======================================
         // OXIGÊNIO
@@ -298,10 +331,74 @@ public class Astronauta extends Entidade implements Interagivel {
             return;
         }
 
-        sprite.draw(
-            batch
-        );
+        int frameIndex = 0;
+        TextureRegion frame;
+        float anchorCenterX;
+        float bottomPad;
+
+        if (collectTimer > 0f) {
+            float progress = 1f - collectTimer / COLLECT_DURATION;
+            frameIndex = progress < .24f ? 0 : progress < .55f ? 1 : progress < .82f ? 2 : 1;
+            frame = collectFrames[frameIndex];
+            anchorCenterX = COLLECT_CENTER_X[frameIndex];
+            bottomPad = COLLECT_BOTTOM_PAD[frameIndex];
+        } else if (isMoving()) {
+            float frameDuration = sprinting ? .075f : .115f;
+            frameIndex = CYCLE[((int) (animationTime / frameDuration)) % CYCLE.length];
+            frame = walkFrames[frameIndex];
+            anchorCenterX = WALK_CENTER_X[frameIndex];
+            bottomPad = WALK_BOTTOM_PAD[frameIndex];
+        } else {
+            frame = idleFrame;
+            anchorCenterX = IDLE_CENTER_X[0];
+            bottomPad = IDLE_BOTTOM_PAD[0];
+        }
+        boolean flip = viradoEsquerda;
+        if (weaponEquipped) flip = Math.abs(aimAngle) > 90f;
+        if (frame.isFlipX() != flip) frame.flip(true, false);
+        float effectiveCenter = flip ? frameCellWidth - anchorCenterX : anchorCenterX;
+        float visualX = position.x + WIDTH / 2f - effectiveCenter / frameCellWidth * VISUAL_SIZE;
+        float visualY = position.y - bottomPad / frameCellHeight * VISUAL_SIZE - 5f;
+
+        if (damageTimer > 0f) batch.setColor(1f, .58f, .58f, 1f);
+        batch.draw(frame, visualX, visualY, VISUAL_SIZE, VISUAL_SIZE);
+        batch.setColor(1f, 1f, 1f, 1f);
+        if (weaponEquipped && collectTimer <= 0f) drawWeapon(batch);
     }
+
+    private void drawWeapon(SpriteBatch batch) {
+        float centerX = position.x + WIDTH / 2f;
+        float centerY = position.y + HEIGHT * .44f;
+        float recoil = recoilTimer > 0f ? recoilTimer / .12f * 5f : 0f;
+        float radians = aimAngle * MathUtils.degreesToRadians;
+        weaponSprite.setPosition(centerX - 13f - MathUtils.cos(radians) * recoil,
+            centerY - 20.5f - MathUtils.sin(radians) * recoil);
+        weaponSprite.setRotation(aimAngle);
+        boolean upsideDown = aimAngle > 90f || aimAngle < -90f;
+        weaponSprite.setFlip(false, upsideDown);
+        weaponSprite.draw(batch);
+    }
+
+    public void triggerCollectAnimation() {
+        collectTimer = COLLECT_DURATION;
+        animationTime = 0f;
+    }
+
+    public void triggerShot() {
+        recoilTimer = .12f;
+    }
+
+    public void setWeaponEquipped(boolean weaponEquipped) {
+        this.weaponEquipped = weaponEquipped;
+    }
+
+    public void setAimTarget(float worldX, float worldY) {
+        float centerX = position.x + WIDTH / 2f;
+        float centerY = position.y + HEIGHT * .48f;
+        aimAngle = MathUtils.atan2(worldY - centerY, worldX - centerX) * MathUtils.radiansToDegrees;
+    }
+
+    public float getAimAngle() { return aimAngle; }
 
     // ==========================================
     // OXIGÊNIO
@@ -320,6 +417,18 @@ public class Astronauta extends Entidade implements Interagivel {
 
             oxigenio =
                 GameConfig.MAX_OXYGEN;
+        }
+    }
+
+    public void receberDano(float quantidade) {
+        if (!ativo || protegido || quantidade <= 0f) {
+            return;
+        }
+        oxigenio = Math.max(0f, oxigenio - quantidade);
+        damageTimer = .22f;
+        if (oxigenio == 0f) {
+            ativo = false;
+            body.setLinearVelocity(0f, 0f);
         }
     }
 
@@ -350,6 +459,15 @@ public class Astronauta extends Entidade implements Interagivel {
     public void adicionarGelo() {
 
         gelo++;
+    }
+
+    public void registrarColeta(Item.TipoItem tipo) {
+        switch (tipo) {
+            case OXIGENIO -> oxigenioColetado++;
+            case COMIDA -> comidaColetada++;
+            case GELO -> geloColetado++;
+        }
+        triggerCollectAnimation();
     }
 
     public boolean removerGelo() {
@@ -435,7 +553,7 @@ public class Astronauta extends Entidade implements Interagivel {
         data.combustivel =
             combustivel;
 
-        data.versao = 1;
+        data.versao = 2;
 
         return data;
     }
@@ -461,14 +579,9 @@ public class Astronauta extends Entidade implements Interagivel {
             data.posY
         );
 
-        sprite.setPosition(
-            data.posX,
-            data.posY
-        );
-
         bounds.setPosition(
-            data.posX,
-            data.posY
+            data.posX + (WIDTH - FOOTPRINT_WIDTH) / 2f,
+            data.posY + 6f
         );
 
         body.setTransform(
@@ -480,7 +593,7 @@ public class Astronauta extends Entidade implements Interagivel {
 
             (
                 data.posY
-                    + HEIGHT / 2f
+                    + BODY_CENTER_Y
             )
                 / PhysicsWorld.PPM,
 
@@ -577,6 +690,10 @@ public class Astronauta extends Entidade implements Interagivel {
         return combustivel;
     }
 
+    public int getOxigenioColetado() { return oxigenioColetado; }
+    public int getComidaColetada() { return comidaColetada; }
+    public int getGeloColetado() { return geloColetado; }
+
     public boolean isMoving() {
 
         return body
@@ -592,6 +709,15 @@ public class Astronauta extends Entidade implements Interagivel {
     public float getSpeed() {
 
         return velocidade;
+    }
+
+    public boolean isSprinting() {
+        return sprinting;
+    }
+
+    public void setVitals(float oxygen, float power) {
+        oxigenio = MathUtils.clamp(oxygen, 0f, GameConfig.MAX_OXYGEN);
+        energia = MathUtils.clamp(power, 0f, GameConfig.MAX_ENERGY);
     }
 
     public void setSpeed(

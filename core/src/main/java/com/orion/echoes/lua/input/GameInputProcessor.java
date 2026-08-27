@@ -10,8 +10,12 @@ public class GameInputProcessor implements InputProcessor {
     private boolean down;
     private boolean left;
     private boolean right;
+    private boolean running;
 
     private boolean interactPressed;
+    private boolean attackPressed;
+    private boolean savePressed;
+    private boolean loadPressed;
 
     private final Vector2 direction = new Vector2();
 
@@ -46,6 +50,10 @@ public class GameInputProcessor implements InputProcessor {
         return up || down || left || right;
     }
 
+    public boolean isRunning() {
+        return running && isMoving();
+    }
+
     public boolean consumeInteractPressed() {
 
         if (!interactPressed) {
@@ -54,6 +62,24 @@ public class GameInputProcessor implements InputProcessor {
 
         interactPressed = false;
 
+        return true;
+    }
+
+    public boolean consumeAttackPressed() {
+        if (!attackPressed) return false;
+        attackPressed = false;
+        return true;
+    }
+
+    public boolean consumeSavePressed() {
+        if (!savePressed) return false;
+        savePressed = false;
+        return true;
+    }
+
+    public boolean consumeLoadPressed() {
+        if (!loadPressed) return false;
+        loadPressed = false;
         return true;
     }
 
@@ -82,8 +108,21 @@ public class GameInputProcessor implements InputProcessor {
                 right = true;
                 break;
 
+            case Input.Keys.SHIFT_LEFT:
+            case Input.Keys.SHIFT_RIGHT:
+                running = true;
+                break;
+
             case Input.Keys.E:
                 interactPressed = true;
+                break;
+
+            case Input.Keys.F5:
+                savePressed = true;
+                break;
+
+            case Input.Keys.F9:
+                loadPressed = true;
                 break;
         }
 
@@ -114,6 +153,11 @@ public class GameInputProcessor implements InputProcessor {
             case Input.Keys.RIGHT:
                 right = false;
                 break;
+
+            case Input.Keys.SHIFT_LEFT:
+            case Input.Keys.SHIFT_RIGHT:
+                running = false;
+                break;
         }
 
         return true;
@@ -131,6 +175,10 @@ public class GameInputProcessor implements InputProcessor {
         int pointer,
         int button
     ) {
+        if (button == Input.Buttons.LEFT) {
+            attackPressed = true;
+            return true;
+        }
         return false;
     }
 

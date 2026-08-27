@@ -44,11 +44,25 @@ public class GameSaveData {
 
     public boolean baseDescoberta;
 
+    public int pecaAntena;
+    public int pecaEnergia;
+    public int pecaExtracao;
+    public int pecaEstufa;
+    public int armaParteA;
+    public int armaParteB;
+    public int armaParteC;
+    public boolean comunicacaoReparada;
+    public boolean energiaReparada;
+    public boolean extracaoReparada;
+    public boolean estufaReparada;
+    public boolean armaCraftada;
+    public int inimigosEliminados;
+
     // =====================================================
     // VERSÃO DO SAVE
     // =====================================================
 
-    public int versao = 1;
+    public int versao = 2;
 
     /*
      * Construtor vazio obrigatório

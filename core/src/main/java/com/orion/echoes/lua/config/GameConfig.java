@@ -16,8 +16,8 @@ public final class GameConfig {
     // MUNDO
     // ==========================================
 
-    public static final float WORLD_WIDTH = 2200f;
-    public static final float WORLD_HEIGHT = 1400f;
+    public static final float WORLD_WIDTH = 3000f;
+    public static final float WORLD_HEIGHT = 1900f;
 
     // ==========================================
     // PLAYER
@@ -26,11 +26,11 @@ public final class GameConfig {
     public static final float PLAYER_START_X = 350f;
     public static final float PLAYER_START_Y = 350f;
 
-    // Astronauta maior que os itens
-    public static final float PLAYER_WIDTH = 72f;
-    public static final float PLAYER_HEIGHT = 96f;
+    public static final float PLAYER_WIDTH = 54f;
+    public static final float PLAYER_HEIGHT = 76f;
 
     public static final float PLAYER_SPEED = 180f;
+    public static final float PLAYER_RUN_MULTIPLIER = 1.28f;
 
     // ==========================================
     // SOBREVIVÊNCIA

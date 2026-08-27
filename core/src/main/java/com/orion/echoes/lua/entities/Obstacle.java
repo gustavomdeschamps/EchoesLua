@@ -13,6 +13,7 @@ public class Obstacle {
 
     private final Vector2 position;
     private final Sprite sprite;
+    private final Sprite shadow;
     private final Rectangle bounds;
     private final Body body;
 
@@ -34,13 +35,18 @@ public class Obstacle {
         sprite = new Sprite(texture);
         sprite.setSize(width, height);
         sprite.setPosition(x, y);
+        sprite.setColor(.9f, .92f, .96f, 1f);
+        shadow = new Sprite(texture);
+        shadow.setSize(width + 12f, height + 10f);
+        shadow.setPosition(x - 6f, y - 8f);
+        shadow.setColor(.02f, .025f, .035f, .72f);
 
-        // hitbox menor que a arte
-        float hitboxWidth = width * 0.70f;
-        float hitboxHeight = height * 0.70f;
+        // Em perspectiva superior, a colisao pertence a base da rocha, nao ao topo da arte.
+        float hitboxWidth = width * 0.72f;
+        float hitboxHeight = height * 0.31f;
 
         float hitboxX = x + (width - hitboxWidth) / 2f;
-        float hitboxY = y + (height - hitboxHeight) / 2f;
+        float hitboxY = y + height * 0.07f;
 
         bounds = new Rectangle(
             hitboxX,
@@ -68,6 +74,7 @@ public class Obstacle {
     }
 
     public void render(SpriteBatch batch) {
+        shadow.draw(batch);
         sprite.draw(batch);
     }
 

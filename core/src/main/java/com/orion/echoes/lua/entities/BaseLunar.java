@@ -29,7 +29,8 @@ public class BaseLunar extends Entidade implements Interagivel {
         sprite.setSize(width, height);
         sprite.setPosition(x, y);
 
-        bounds.set(x, y, width, height);
+        // Área útil no solo: antenas e teto não devem funcionar como zona pressurizada.
+        bounds.set(x + width * .09f, y + height * .06f, width * .82f, height * .5f);
     }
 
     @Override

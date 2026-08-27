@@ -5,7 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.SoundManager;
-import com.orion.echoes.lua.screens.MenuScreen;
+import com.orion.echoes.lua.screens.IntroScreen;
 
 public class EchoesLua extends Game {
 
@@ -32,7 +32,7 @@ public class EchoesLua extends Game {
         sounds.load();
 
         setScreen(
-            new MenuScreen(this)
+            new IntroScreen(this)
         );
     }
 
