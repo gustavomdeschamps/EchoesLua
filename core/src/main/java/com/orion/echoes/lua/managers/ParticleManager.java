@@ -1,6 +1,7 @@
 package com.orion.echoes.lua.managers;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.ParticleEffect;
 import com.badlogic.gdx.graphics.g2d.ParticleEffectPool;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -18,7 +19,8 @@ public class ParticleManager implements Disposable {
     private final ObjectMap<String, ParticleEffectPool> pools;
     private final ObjectMap<String, ParticleEffect> templates;
     private final Array<VisualFx> visualEffects = new Array<>();
-    private final TextureRegion[] fxRegions = new TextureRegion[4];
+    private final TextureRegion[][] actionFrames = new TextureRegion[4][6];
+    private final TextureRegion[][] energyFrames = new TextureRegion[4][6];
     private final Pool<VisualFx> visualPool = new Pool<>(24, 96) {
         @Override protected VisualFx newObject() { return new VisualFx(); }
     };
@@ -30,7 +32,10 @@ public class ParticleManager implements Disposable {
 
         pools = new ObjectMap<>();
         templates = new ObjectMap<>();
-        for (int i = 0; i < fxRegions.length; i++) fxRegions[i] = assets.fxRegion(i);
+        for (int row = 0; row < 4; row++) for (int column = 0; column < 6; column++) {
+            actionFrames[row][column] = assets.actionFxFrame(column, row);
+            energyFrames[row][column] = assets.energyFxFrame(column, row);
+        }
     }
 
     // ==========================================
@@ -42,30 +47,20 @@ public class ParticleManager implements Disposable {
         float y
     ) {
 
-        criarEfeito(
-            "particles/poeira.p",
-            x,
-            y
-        );
+        spawnAnimated(actionFrames[0], x - 36f, y - 22f, 72f, 54f, .34f,
+            MathUtils.random(-5f, 5f), .82f, 1.08f, false, 1f, 1f, 1f);
     }
 
     public void criarPoeiraLunar(float x, float y, boolean running, float dirX, float dirY) {
-        float angle = MathUtils.atan2(dirY, dirX) * MathUtils.radiansToDegrees + 180f;
-        if (running) {
-            spawnVisual(1, x - 44f, y - 22f, 88f, 54f, .34f, angle,
-                -dirX * 22f, -dirY * 22f, .74f, 1.08f);
-        } else {
-            spawnVisual(0, x - 24f, y - 18f, 48f, 40f, .3f, 0f,
-                -dirX * 7f, -dirY * 7f, .62f, 1f);
-        }
+        spawnAnimated(actionFrames[running ? 1 : 0], x - dirX * 22f - 44f, y - 26f,
+            running ? 92f : 76f, running ? 66f : 54f, running ? .38f : .32f,
+            -dirX * 4f, .78f, 1.12f, false, 1f, 1f, 1f);
     }
 
     public void criarPoeiraMarte(float x, float y, boolean running, float dirX, float dirY) {
-        float angle = MathUtils.atan2(dirY, dirX) * MathUtils.radiansToDegrees + 180f;
-        spawnVisual(running ? 1 : 0, x - (running ? 44f : 24f), y - 18f,
-            running ? 88f : 48f, running ? 54f : 40f, running ? .36f : .31f,
-            running ? angle : 0f, -dirX * (running ? 24f : 8f), -dirY * (running ? 24f : 8f),
-            running ? .72f : .6f, running ? 1.1f : 1f, .82f, .42f, .25f);
+        spawnAnimated(actionFrames[running ? 1 : 0], x - dirX * 24f - 46f, y - 28f,
+            running ? 96f : 78f, running ? 68f : 56f, running ? .4f : .34f,
+            -dirX * 5f, .8f, 1.16f, false, 1f, .55f, .35f);
     }
 
     // ==========================================
@@ -82,28 +77,22 @@ public class ParticleManager implements Disposable {
             x,
             y
         );
-        // O brilho acompanha o objeto recolhido sem esconder a animação das mãos.
-        spawnVisual(2, x - 25f, y - 10f, 50f, 58f, .46f, 0f,
-            0f, 16f, .48f, .88f);
+        criarEfeito("particles/faisca.p", x, y + 3f);
+        spawnAnimated(actionFrames[2], x - 58f, y - 48f, 116f, 116f, .48f,
+            0f, .72f, 1.08f, true, 1f, 1f, 1f);
     }
 
     public void criarImpactoTraje(float x, float y) {
-        spawnVisual(3, x - 46f, y - 40f, 92f, 92f, .32f,
-            MathUtils.random(-12f, 12f), 0f, 3f, .58f, 1.04f);
+        spawnAnimated(energyFrames[3], x - 52f, y - 52f, 104f, 104f, .34f,
+            MathUtils.random(-7f, 7f), .72f, 1.05f, true, 1f, 1f, 1f);
+        criarEfeito("particles/faisca.p", x, y);
     }
 
-    private void spawnVisual(int region, float x, float y, float width, float height,
-                             float duration, float rotation, float velocityX, float velocityY,
-                             float startScale, float endScale) {
-        spawnVisual(region, x, y, width, height, duration, rotation, velocityX, velocityY,
-            startScale, endScale, 1f, 1f, 1f);
-    }
-
-    private void spawnVisual(int region, float x, float y, float width, float height,
-                             float duration, float rotation, float velocityX, float velocityY,
-                             float startScale, float endScale, float red, float green, float blue) {
+    private void spawnAnimated(TextureRegion[] frames, float x, float y, float width, float height,
+                               float duration, float rotation, float startScale, float endScale,
+                               boolean additive, float red, float green, float blue) {
         VisualFx fx = visualPool.obtain();
-        fx.region = fxRegions[region];
+        fx.frames = frames;
         fx.x = x;
         fx.y = y;
         fx.width = width;
@@ -111,14 +100,33 @@ public class ParticleManager implements Disposable {
         fx.duration = duration;
         fx.life = duration;
         fx.rotation = rotation;
-        fx.velocityX = velocityX;
-        fx.velocityY = velocityY;
         fx.startScale = startScale;
         fx.endScale = endScale;
+        fx.additive = additive;
         fx.red = red;
         fx.green = green;
         fx.blue = blue;
         visualEffects.add(fx);
+    }
+
+    public void criarImpactoTiro(float x, float y) {
+        spawnAnimated(actionFrames[3], x - 44f, y - 44f, 88f, 88f, .3f,
+            MathUtils.random(0f, 360f), .7f, 1.08f, true, 1f, 1f, 1f);
+    }
+
+    public void criarMorteInimigo(float x, float y) {
+        spawnAnimated(energyFrames[0], x - 68f, y - 68f, 136f, 136f, .52f,
+            0f, .72f, 1.12f, true, 1f, 1f, 1f);
+    }
+
+    public void criarMuzzleFlash(float x, float y, float angle) {
+        spawnAnimated(energyFrames[1], x - 38f, y - 38f, 76f, 76f, .16f,
+            angle, .78f, 1.05f, true, 1f, 1f, 1f);
+    }
+
+    public void criarPortal(float x, float y) {
+        spawnAnimated(energyFrames[2], x - 92f, y - 92f, 184f, 184f, .72f,
+            0f, .72f, 1.12f, true, 1f, 1f, 1f);
     }
 
     // ==========================================
@@ -135,6 +143,8 @@ public class ParticleManager implements Disposable {
             x,
             y
         );
+        spawnAnimated(actionFrames[2], x - 48f, y - 48f, 96f, 96f, .42f,
+            0f, .76f, 1.05f, true, 1f, 1f, 1f);
     }
 
     // ==========================================
@@ -151,6 +161,8 @@ public class ParticleManager implements Disposable {
             x,
             y
         );
+        spawnAnimated(energyFrames[3], x - 54f, y - 54f, 108f, 108f, .46f,
+            0f, .8f, 1.08f, true, 1f, 1f, 1f);
     }
 
     // ==========================================
@@ -257,9 +269,12 @@ public class ParticleManager implements Disposable {
             float progress = 1f - fx.life / fx.duration;
             float alpha = Interpolation.fade.apply(MathUtils.clamp(1f - progress, 0f, 1f));
             float scale = MathUtils.lerp(fx.startScale, fx.endScale, Interpolation.pow2Out.apply(progress));
+            int frameIndex = Math.min(fx.frames.length - 1, (int)(progress * fx.frames.length));
+            if (fx.additive) batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
             batch.setColor(fx.red, fx.green, fx.blue, alpha);
-            batch.draw(fx.region, fx.x, fx.y, fx.width / 2f, fx.height / 2f,
+            batch.draw(fx.frames[frameIndex], fx.x, fx.y, fx.width / 2f, fx.height / 2f,
                 fx.width, fx.height, scale, scale, fx.rotation);
+            if (fx.additive) batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         }
         batch.setColor(1f, 1f, 1f, 1f);
     }
@@ -303,16 +318,18 @@ public class ParticleManager implements Disposable {
     }
 
     private static final class VisualFx implements Pool.Poolable {
-        TextureRegion region;
+        TextureRegion[] frames;
         float x, y, width, height, duration, life, rotation;
         float velocityX, velocityY, startScale, endScale;
         float red = 1f, green = 1f, blue = 1f;
+        boolean additive;
         @Override public void reset() {
-            region = null;
+            frames = null;
             x = y = width = height = duration = life = rotation = 0f;
             velocityX = velocityY = 0f;
             startScale = endScale = 1f;
             red = green = blue = 1f;
+            additive = false;
         }
     }
 }

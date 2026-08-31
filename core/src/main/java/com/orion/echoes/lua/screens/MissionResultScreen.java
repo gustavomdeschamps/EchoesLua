@@ -54,15 +54,17 @@ abstract class MissionResultScreen implements Screen {
 
         float reveal = Interpolation.pow3Out.apply(revealTime / .55f);
         ui.beginShapes();
-        ui.rect(0f, 0f, GameConfig.WINDOW_WIDTH, 250f, new Color(.018f, .026f, .032f, .95f));
-        ui.rect(0f, 248f, GameConfig.WINDOW_WIDTH * reveal, 4f, accent);
+        ui.rect(0f, 0f, GameConfig.WINDOW_WIDTH, 224f, new Color(.018f, .026f, .032f, .94f));
+        ui.rect(0f, 222f, GameConfig.WINDOW_WIDTH * reveal, 3f, accent);
+        ui.rect(900f, 224f, 380f, 496f, new Color(.025f, .035f, .04f, .54f));
+        ui.rect(74f, 514f, 144f, 7f, accent);
         drawButton(retryButton, selected == 0, accent);
         drawButton(menuButton, selected == 1, accent);
         ui.endShapes();
 
         ui.beginText();
-        ui.text(success ? "MARTE" : "SINAL PERDIDO", .82f, accent, 74f, 662f);
-        ui.title(success ? "MISSÃO CONCLUÍDA" : "O OXIGÊNIO ACABOU", 1.8f, UiTheme.TEXT, 70f, 600f);
+        ui.text(success ? "ARQUIVO M-01" : "ARQUIVO L-01", .82f, accent, 74f, 662f);
+        ui.title(success ? "MISSÃO\nCONCLUÍDA" : "SINAL\nPERDIDO", 1.8f, UiTheme.TEXT, 70f, 600f);
         ui.text(success ? "A colônia voltou a transmitir." : "A Lua permanece em silêncio.",
             1.0f, UiTheme.TEXT_MUTED, 74f, 552f);
         ui.text(String.format("Tempo de operação  %.1f s", missionTime), .8f, UiTheme.TEXT_MUTED, 74f, 199f);
@@ -73,11 +75,11 @@ abstract class MissionResultScreen implements Screen {
     }
 
     private void drawButton(Rectangle bounds, boolean active, Color accent) {
-        ui.rect(bounds.x, bounds.y, bounds.width, bounds.height,
-            active ? new Color(.2f, .27f, .3f, .94f) : new Color(.04f, .06f, .075f, .86f));
+        ui.rect(bounds.x, bounds.y, bounds.width, 1f,
+            active ? accent : new Color(.3f, .34f, .37f, .8f));
         if (active) {
-            ui.rect(bounds.x + 18f, bounds.y, 64f, 3f, accent);
-            ui.rect(bounds.x + bounds.width - 18f, bounds.y + bounds.height - 10f, 7f, 7f, accent);
+            ui.rect(bounds.x, bounds.y, 64f, 5f, accent);
+            ui.rect(bounds.x + bounds.width - 9f, bounds.y + 20f, 9f, 9f, accent);
         }
     }
 

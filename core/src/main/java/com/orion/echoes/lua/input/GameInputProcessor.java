@@ -16,6 +16,7 @@ public class GameInputProcessor implements InputProcessor {
     private boolean attackPressed;
     private boolean savePressed;
     private boolean loadPressed;
+    private boolean dashPressed;
 
     private final Vector2 direction = new Vector2();
 
@@ -83,6 +84,12 @@ public class GameInputProcessor implements InputProcessor {
         return true;
     }
 
+    public boolean consumeDashPressed() {
+        if (!dashPressed) return false;
+        dashPressed = false;
+        return true;
+    }
+
     @Override
     public boolean keyDown(int keycode) {
 
@@ -115,6 +122,10 @@ public class GameInputProcessor implements InputProcessor {
 
             case Input.Keys.E:
                 interactPressed = true;
+                break;
+
+            case Input.Keys.SPACE:
+                dashPressed = true;
                 break;
 
             case Input.Keys.F5:

@@ -33,28 +33,23 @@ public class Astronauta extends Entidade implements Interagivel {
     private static final float FOOTPRINT_WIDTH = 30f;
     private static final float FOOTPRINT_HEIGHT = 22f;
     private static final float BODY_CENTER_Y = 17f;
-    private static final float COLLECT_DURATION = .56f;
-    private static final int[] CYCLE = {0, 1, 2, 1};
     private static final float[] IDLE_CENTER_X = {190.5f};
     private static final float[] IDLE_BOTTOM_PAD = {28f};
-    private static final float[] WALK_CENTER_X = {186f, 160.5f, 143.5f};
-    private static final float[] WALK_BOTTOM_PAD = {40f, 40f, 41f};
-    private static final float[] COLLECT_CENTER_X = {184.5f, 152f, 133.5f};
-    private static final float[] COLLECT_BOTTOM_PAD = {0f, 0f, 0f};
     private final TextureRegion idleFrame;
-    private final TextureRegion[] walkFrames;
-    private final TextureRegion[] collectFrames;
     private final Sprite weaponSprite;
     private final float frameCellWidth;
     private final float frameCellHeight;
     private float animationTime;
-    private float collectTimer;
     private float recoilTimer;
     private float damageTimer;
     private float aimAngle;
     private boolean weaponEquipped;
     private boolean sprinting;
     private boolean movingLastFrame;
+    private float invulnerabilityTimer;
+    private float dashTimer;
+    private float dashCooldown;
+    private final Vector2 dashDirection = new Vector2(1f, 0f);
 
     // ==========================================
     // BOX2D
@@ -129,16 +124,6 @@ public class Astronauta extends Entidade implements Interagivel {
         frameCellWidth = cellWidth - 4f;
         frameCellHeight = cellHeight - 4f;
         idleFrame = frame(assets, 0, 0, cellWidth, cellHeight);
-        walkFrames = new TextureRegion[] {
-            frame(assets, 0, 1, cellWidth, cellHeight),
-            frame(assets, 1, 1, cellWidth, cellHeight),
-            frame(assets, 2, 1, cellWidth, cellHeight)
-        };
-        collectFrames = new TextureRegion[] {
-            frame(assets, 0, 2, cellWidth, cellHeight),
-            frame(assets, 1, 2, cellWidth, cellHeight),
-            frame(assets, 2, 2, cellWidth, cellHeight)
-        };
         weaponSprite = new Sprite(assets.pulseRifleTexture);
         weaponSprite.setSize(62f, 41f);
         weaponSprite.setOrigin(13f, 20.5f);
@@ -218,10 +203,15 @@ public class Astronauta extends Entidade implements Interagivel {
                 * currentSpeed
                 / PhysicsWorld.PPM;
 
-        body.setLinearVelocity(
-            velocidadeX,
-            velocidadeY
-        );
+        if (dashTimer > 0f) {
+            body.setLinearVelocity(dashDirection.x * 430f / PhysicsWorld.PPM,
+                dashDirection.y * 430f / PhysicsWorld.PPM);
+        } else {
+            float response = 1f - (float)Math.exp(-delta / ((dirX == 0f && dirY == 0f) ? .085f : .14f));
+            Vector2 velocity = body.getLinearVelocity();
+            body.setLinearVelocity(MathUtils.lerp(velocity.x, velocidadeX, response),
+                MathUtils.lerp(velocity.y, velocidadeY, response));
+        }
 
         // ======================================
         // ENERGIA
@@ -260,9 +250,11 @@ public class Astronauta extends Entidade implements Interagivel {
             animationTime = 0f;
         }
         movingLastFrame = movingNow;
-        collectTimer = Math.max(0f, collectTimer - delta);
         recoilTimer = Math.max(0f, recoilTimer - delta);
         damageTimer = Math.max(0f, damageTimer - delta);
+        invulnerabilityTimer = Math.max(0f, invulnerabilityTimer - delta);
+        dashTimer = Math.max(0f, dashTimer - delta);
+        dashCooldown = Math.max(0f, dashCooldown - delta);
 
         // Tempo de sobrevivência
         tempoVivo += delta;
@@ -331,39 +323,32 @@ public class Astronauta extends Entidade implements Interagivel {
             return;
         }
 
-        int frameIndex = 0;
-        TextureRegion frame;
-        float anchorCenterX;
-        float bottomPad;
-
-        if (collectTimer > 0f) {
-            float progress = 1f - collectTimer / COLLECT_DURATION;
-            frameIndex = progress < .24f ? 0 : progress < .55f ? 1 : progress < .82f ? 2 : 1;
-            frame = collectFrames[frameIndex];
-            anchorCenterX = COLLECT_CENTER_X[frameIndex];
-            bottomPad = COLLECT_BOTTOM_PAD[frameIndex];
-        } else if (isMoving()) {
-            float frameDuration = sprinting ? .075f : .115f;
-            frameIndex = CYCLE[((int) (animationTime / frameDuration)) % CYCLE.length];
-            frame = walkFrames[frameIndex];
-            anchorCenterX = WALK_CENTER_X[frameIndex];
-            bottomPad = WALK_BOTTOM_PAD[frameIndex];
-        } else {
-            frame = idleFrame;
-            anchorCenterX = IDLE_CENTER_X[0];
-            bottomPad = IDLE_BOTTOM_PAD[0];
-        }
+        // A folha antiga mistura escalas e pivôs entre poses. Uma caminhada
+        // procedural sobre a pose estável mantém a cabeça, os pés e a arma
+        // alinhados em todas as direções, sem pixels de células vizinhas.
+        TextureRegion frame = idleFrame;
+        float anchorCenterX = IDLE_CENTER_X[0];
+        float bottomPad = IDLE_BOTTOM_PAD[0];
+        // A direção corporal pertence ao deslocamento. A arma mira livremente,
+        // sem fazer o astronauta trocar de lado quando o cursor cruza seu corpo.
         boolean flip = viradoEsquerda;
-        if (weaponEquipped) flip = Math.abs(aimAngle) > 90f;
         if (frame.isFlipX() != flip) frame.flip(true, false);
         float effectiveCenter = flip ? frameCellWidth - anchorCenterX : anchorCenterX;
         float visualX = position.x + WIDTH / 2f - effectiveCenter / frameCellWidth * VISUAL_SIZE;
         float visualY = position.y - bottomPad / frameCellHeight * VISUAL_SIZE - 5f;
+        float gait = isMoving() ? MathUtils.sin(animationTime * (sprinting ? 15f : 10.5f)) : 0f;
+        float bob = Math.abs(gait) * (sprinting ? 2.2f : 1.3f);
+        float scaleX = 1f + Math.abs(gait) * .012f;
+        float scaleY = 1f - Math.abs(gait) * .009f;
+        float lean = isMoving() ? gait * (sprinting ? 1.5f : .8f) : 0f;
 
-        if (damageTimer > 0f) batch.setColor(1f, .58f, .58f, 1f);
-        batch.draw(frame, visualX, visualY, VISUAL_SIZE, VISUAL_SIZE);
+        float blink = invulnerabilityTimer > 0f && ((int)(invulnerabilityTimer * 24f) & 1) == 0 ? .45f : 1f;
+        if (damageTimer > 0f) batch.setColor(1f, .58f, .58f, blink);
+        else batch.setColor(1f, 1f, 1f, blink);
+        batch.draw(frame, visualX, visualY + bob, VISUAL_SIZE / 2f, 8f,
+            VISUAL_SIZE, VISUAL_SIZE, scaleX, scaleY, lean);
         batch.setColor(1f, 1f, 1f, 1f);
-        if (weaponEquipped && collectTimer <= 0f) drawWeapon(batch);
+        if (weaponEquipped) drawWeapon(batch);
     }
 
     private void drawWeapon(SpriteBatch batch) {
@@ -379,14 +364,23 @@ public class Astronauta extends Entidade implements Interagivel {
         weaponSprite.draw(batch);
     }
 
-    public void triggerCollectAnimation() {
-        collectTimer = COLLECT_DURATION;
-        animationTime = 0f;
-    }
-
     public void triggerShot() {
         recoilTimer = .12f;
     }
+
+    public boolean tryDash(float dirX, float dirY) {
+        if (!ativo || dashCooldown > 0f || energia < 18f) return false;
+        if (dirX == 0f && dirY == 0f) dirX = viradoEsquerda ? -1f : 1f;
+        dashDirection.set(dirX, dirY).nor();
+        dashTimer = .18f;
+        dashCooldown = .68f;
+        invulnerabilityTimer = Math.max(invulnerabilityTimer, .24f);
+        energia -= 18f;
+        return true;
+    }
+
+    public boolean isDashing() { return dashTimer > 0f; }
+    public boolean isInvulnerable() { return invulnerabilityTimer > 0f; }
 
     public void setWeaponEquipped(boolean weaponEquipped) {
         this.weaponEquipped = weaponEquipped;
@@ -421,11 +415,21 @@ public class Astronauta extends Entidade implements Interagivel {
     }
 
     public void receberDano(float quantidade) {
-        if (!ativo || protegido || quantidade <= 0f) {
+        receberDano(quantidade, position.x + WIDTH / 2f, position.y + HEIGHT / 2f);
+    }
+
+    public void receberDano(float quantidade, float sourceX, float sourceY) {
+        if (!ativo || protegido || quantidade <= 0f || invulnerabilityTimer > 0f) {
             return;
         }
         oxigenio = Math.max(0f, oxigenio - quantidade);
         damageTimer = .22f;
+        invulnerabilityTimer = .48f;
+        Vector2 away = new Vector2(position.x + WIDTH / 2f - sourceX,
+            position.y + HEIGHT / 2f - sourceY);
+        if (away.len2() < .01f) away.set(viradoEsquerda ? 1f : -1f, .25f);
+        away.nor().scl(155f / PhysicsWorld.PPM);
+        body.setLinearVelocity(away);
         if (oxigenio == 0f) {
             ativo = false;
             body.setLinearVelocity(0f, 0f);
@@ -467,7 +471,6 @@ public class Astronauta extends Entidade implements Interagivel {
             case COMIDA -> comidaColetada++;
             case GELO -> geloColetado++;
         }
-        triggerCollectAnimation();
     }
 
     public boolean removerGelo() {

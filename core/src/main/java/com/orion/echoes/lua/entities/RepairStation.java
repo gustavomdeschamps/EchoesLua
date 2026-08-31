@@ -4,9 +4,11 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.physics.box2d.Body;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.MissionSprite;
 import com.orion.echoes.lua.systems.MissionState;
+import com.orion.echoes.lua.physics.PhysicsWorld;
 
 public class RepairStation extends Entidade {
     private final MissionState.SystemType type;
@@ -14,8 +16,10 @@ public class RepairStation extends Entidade {
     private boolean online;
     private float elapsed;
     private float activation;
+    private final Body body;
 
-    public RepairStation(float x, float y, MissionState.SystemType type, AssetManager assets) {
+    public RepairStation(float x, float y, MissionState.SystemType type, AssetManager assets,
+                         PhysicsWorld physics) {
         super(x, y, 154f, 154f);
         this.type = type;
         sprite = new Sprite(assets.missionRegion(spriteFor(type)));
@@ -23,6 +27,9 @@ public class RepairStation extends Entidade {
         sprite.setOriginCenter();
         sprite.setPosition(x - 8f, y - 8f);
         sprite.setColor(.78f, .82f, .88f, 1f);
+        // Área de interação confortável, colisão apenas no pedestal visível.
+        bounds.set(x - 22f, y - 14f, 198f, 124f);
+        body = physics.createStaticBody(x + 77f, y + 24f, 92f, 34f, "REPAIR_STATION");
     }
 
     private MissionSprite spriteFor(MissionState.SystemType type) {
@@ -75,6 +82,8 @@ public class RepairStation extends Entidade {
     public MissionState.SystemType getType() {
         return type;
     }
+
+    public Body getBody() { return body; }
 
     @Override
     public void dispose() { }

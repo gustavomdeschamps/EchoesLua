@@ -4,6 +4,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.audio.Sound;
 import com.badlogic.gdx.audio.Music;
 import com.badlogic.gdx.utils.Disposable;
+import com.badlogic.gdx.math.MathUtils;
 
 public class SoundManager implements Disposable {
 
@@ -150,6 +151,11 @@ public class SoundManager implements Disposable {
         );
     }
 
+    private void tocarVariado(Sound sound, float volume, float pitchMin, float pitchMax) {
+        if (sound == null) return;
+        sound.play(Math.min(1f, volume * volumeGeral), MathUtils.random(pitchMin, pitchMax), 0f);
+    }
+
     // =========================================
     // COLETAS
     // =========================================
@@ -275,11 +281,7 @@ public class SoundManager implements Disposable {
     // =========================================
 
     public void tocarPassoLunar() {
-
-        tocar(
-            passoLunar,
-            0.22f
-        );
+        tocarVariado(passoLunar, .22f, .92f, 1.07f);
     }
 
     public void tocarColisaoRocha() {
@@ -303,7 +305,7 @@ public class SoundManager implements Disposable {
     }
 
     public void tocarDisparo() {
-        tocar(disparoPulso, 0.72f);
+        tocarVariado(disparoPulso, .72f, .96f, 1.045f);
     }
 
     public void tocarMusicaMenu() {

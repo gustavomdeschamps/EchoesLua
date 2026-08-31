@@ -31,16 +31,28 @@ public final class MarsObject extends Entidade {
         super(x, y, width, height);
         this.kind = kind;
         this.baseY = y;
-        sprite = new Sprite(assets.marsRegion(kind.column, kind.row));
+        sprite = new Sprite(kind == Kind.ROCK
+            ? assets.marsObstacleRegion(Math.abs(((int)x * 31 + (int)y * 17)) % 6)
+            : assets.marsRegion(kind.column, kind.row));
         sprite.setSize(width, height);
         sprite.setPosition(x, y);
         sprite.setOriginCenter();
         if (kind == Kind.ROCK && physics != null) {
-            float hitWidth = width * .70f;
-            float hitHeight = height * .29f;
+            float hitWidth = width * .68f;
+            float hitHeight = height * .27f;
             bounds.set(x + (width - hitWidth) / 2f, y + height * .08f, hitWidth, hitHeight);
             body = physics.createStaticBody(bounds.x + bounds.width / 2f,
                 bounds.y + bounds.height / 2f, bounds.width, bounds.height, "MARS_ROCK");
+        } else if ((isStation() || kind == Kind.HABITAT) && physics != null) {
+            // O volume visual alto não bloqueia: só a sapata apoiada no solo.
+            float hitWidth = width * (kind == Kind.HABITAT ? .72f : .58f);
+            float hitHeight = height * .22f;
+            body = physics.createStaticBody(x + width / 2f, y + hitHeight / 2f + height * .05f,
+                hitWidth, hitHeight, "MARS_STRUCTURE");
+            bounds.set(x - 24f, y - 18f, width + 48f, height * .72f + 36f);
+        } else if (isCollectible()) {
+            body = null;
+            bounds.set(x + width * .18f, y + height * .16f, width * .64f, height * .64f);
         } else {
             body = null;
         }
@@ -65,6 +77,7 @@ public final class MarsObject extends Entidade {
     public Kind getKind() { return kind; }
     public boolean isCollectible() { return kind == Kind.MINERAL || kind == Kind.MEDKIT || kind == Kind.POWER_CELL; }
     public boolean isStation() { return kind == Kind.SOLAR_STATION || kind == Kind.OXYGEN_STATION || kind == Kind.COMMS_STATION; }
+    public boolean isBlocking() { return kind == Kind.ROCK || isStation() || kind == Kind.HABITAT; }
     public void collect() { ativo = false; }
     public void activate() { if (!enabled) { enabled = true; activation = 1f; sprite.setColor(1f, .82f, .58f, 1f); } }
     public boolean isEnabled() { return enabled; }

@@ -79,19 +79,21 @@ public final class MenuScreen implements Screen {
 
     private void drawCurrentPageShapes(float reveal) {
         if (page == Page.MAIN) {
+            ui.rect(52f, 548f, 436f, 2f, new Color(.32f, .39f, .42f, .75f));
             for (int i = 0; i < 4; i++) drawButton(buttons[i], i == selected, reveal,
                 i == 0 ? UiTheme.CYAN : i == 1 ? UiTheme.GREEN : i == 2 ? UiTheme.AMBER : UiTheme.RED);
         } else if (page == Page.HOW_TO_PLAY) {
-            ui.rect(58f, 402f, 548f, 126f, new Color(.05f, .15f, .19f, .95f));
-            ui.rect(628f, 402f, 594f, 126f, new Color(.14f, .11f, .04f, .95f));
-            ui.rect(58f, 244f, 548f, 126f, new Color(.08f, .13f, .09f, .95f));
-            ui.rect(628f, 244f, 594f, 126f, new Color(.14f, .06f, .08f, .95f));
+            ui.panel(58f, 402f, 548f, 112f, UiTheme.CYAN);
+            ui.panel(628f, 402f, 594f, 112f, UiTheme.AMBER);
+            ui.panel(58f, 264f, 548f, 112f, UiTheme.GREEN);
+            ui.panel(628f, 264f, 594f, 112f, UiTheme.RED);
             drawButton(buttons[0], selected == 0, reveal, UiTheme.CYAN);
         } else {
-            ui.rect(58f, 300f, 760f, 190f, new Color(.045f, .11f, .15f, .96f));
+            ui.panel(58f, 310f, 754f, 182f, UiTheme.CYAN);
+            ui.panel(842f, 310f, 380f, 182f, UiTheme.AMBER);
             ui.rect(90f, 401f, 680f, 14f, UiTheme.TRACK);
             ui.rect(90f, 401f, 680f * game.getSounds().getVolumeGeral(), 14f, UiTheme.CYAN);
-            ui.rect(850f, 300f, 372f, 190f, new Color(.15f, .09f, .035f, .96f));
+            ui.rect(850f, 320f, 6f, 146f, UiTheme.AMBER);
             drawButton(buttons[0], selected == 0, reveal, UiTheme.CYAN);
             drawButton(buttons[1], selected == 1, reveal, UiTheme.CYAN);
             drawButton(buttons[2], selected == 2, reveal, UiTheme.AMBER);
@@ -100,15 +102,17 @@ public final class MenuScreen implements Screen {
     }
 
     private void drawButton(Rectangle button, boolean active, float reveal, Color accent) {
-        float pulse = active ? .86f + MathUtils.sin(time * 5f) * .08f : .78f;
-        ui.rect(button.x + 4f, button.y - 4f, button.width, button.height,
-            new Color(.005f, .012f, .018f, reveal * .82f));
         ui.rect(button.x, button.y, button.width, button.height,
-            active ? new Color(accent.r * .28f, accent.g * .28f, accent.b * .28f, pulse * reveal)
-                : new Color(.05f, .075f, .09f, .9f * reveal));
+            active ? new Color(accent.r * .16f, accent.g * .16f, accent.b * .16f, .96f)
+                : new Color(.035f, .055f, .068f, .88f * reveal));
+        ui.rect(button.x, button.y, button.width, 2f,
+            active ? accent : new Color(.25f, .31f, .34f, .7f * reveal));
+        ui.rect(button.x, button.y + button.height - 2f, active ? 76f : 28f, 2f,
+            active ? accent : UiTheme.BORDER);
         if (active) {
-            ui.rect(button.x + 18f, button.y, 72f, 3f, accent);
-            ui.rect(button.x + button.width - 20f, button.y + button.height - 12f, 8f, 8f, accent);
+            float marker = 34f + MathUtils.sin(time * 5f) * 4f;
+            ui.rect(button.x, button.y, marker, 5f, accent);
+            ui.rect(button.x + button.width - 9f, button.y + 18f, 9f, 9f, accent);
         }
     }
 
@@ -116,7 +120,7 @@ public final class MenuScreen implements Screen {
         if (page == Page.MAIN) {
             ui.title("ECHOES", 2.6f, UiTheme.TEXT, 56f, 632f);
             ui.title("FASE LUNAR", .76f, UiTheme.CYAN, 62f, 570f);
-            String[] labels = {"JOGAR", "COMO JOGAR", "CONFIGURAÇÕES", "SAIR"};
+            String[] labels = {"01  JOGAR", "02  COMO JOGAR", "03  CONFIGURAÇÕES", "04  SAIR"};
             for (int i = 0; i < labels.length; i++) {
                 ui.title(labels[i], i == selected ? .78f : .68f,
                     i == selected ? UiTheme.TEXT : UiTheme.TEXT_MUTED,
@@ -125,7 +129,7 @@ public final class MenuScreen implements Screen {
         } else if (page == Page.HOW_TO_PLAY) {
             ui.title("COMO JOGAR", 1.28f, UiTheme.TEXT, 58f, 625f);
             ui.text("MOVIMENTO", .72f, UiTheme.CYAN, 88f, 492f);
-            ui.title("WASD ou setas · SHIFT para correr", .62f, UiTheme.TEXT, 88f, 454f);
+            ui.title("WASD ou setas · SHIFT corre · ESPAÇO executa o dash", .55f, UiTheme.TEXT, 88f, 454f);
             ui.text("INTERAÇÃO", .72f, UiTheme.AMBER, 658f, 492f);
             ui.title("E perto de estações e do portal", .64f, UiTheme.TEXT, 658f, 454f);
             ui.text("MIRA E DISPARO", .72f, UiTheme.GREEN, 88f, 334f);

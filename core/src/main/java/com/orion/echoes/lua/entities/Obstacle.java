@@ -3,6 +3,7 @@ package com.orion.echoes.lua.entities;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
@@ -28,15 +29,20 @@ public class Obstacle {
         Texture texture,
         PhysicsWorld physicsWorld
     ) {
+        this(x, y, width, height, new TextureRegion(texture), physicsWorld);
+    }
+
+    public Obstacle(float x, float y, float width, float height,
+                    TextureRegion region, PhysicsWorld physicsWorld) {
         this.position = new Vector2(x, y);
         this.width = width;
         this.height = height;
 
-        sprite = new Sprite(texture);
+        sprite = new Sprite(region);
         sprite.setSize(width, height);
         sprite.setPosition(x, y);
         sprite.setColor(.9f, .92f, .96f, 1f);
-        shadow = new Sprite(texture);
+        shadow = new Sprite(region);
         shadow.setSize(width + 12f, height + 10f);
         shadow.setPosition(x - 6f, y - 8f);
         shadow.setColor(.02f, .025f, .035f, .72f);

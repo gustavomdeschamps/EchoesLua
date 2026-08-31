@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.Disposable;
@@ -15,7 +16,6 @@ public class AssetManager implements Disposable {
     // PLAYER
     // ==========================================
 
-    public Texture astronautaTexture;
     public Texture astronautaSheetTexture;
     public Texture pulseRifleTexture;
 
@@ -38,16 +38,19 @@ public class AssetManager implements Disposable {
     // OBSTÁCULOS
     // ==========================================
 
-    public Texture obstacleTexture;
     public Texture missionAtlasTexture;
     public Texture marsBackgroundTexture;
-    public Texture menuEmblemTexture;
-    public Texture enemySheetTexture;
     public Texture introKeyArtTexture;
-    public Texture gameplayFxTexture;
-    public Texture lunarEnemyTexture;
     public Texture marsAtlasTexture;
-    public Texture echoSignalCoreTexture;
+    public Texture lunarEnemySheetTexture;
+    public Texture marsDroneSheetTexture;
+    public Texture marsCrawlerSheetTexture;
+    public Texture lunarObstaclesTexture;
+    public Texture marsObstaclesTexture;
+    public Texture actionFxTexture;
+    public Texture energyFxTexture;
+    public Texture landmarksTexture;
+    public Texture uiPanelTexture;
 
     // ==========================================
     // UI
@@ -63,19 +66,13 @@ public class AssetManager implements Disposable {
     public void load() {
 
         // PLAYER
-        astronautaTexture =
-            loadTextureOrPlaceholder(
-                "textures/astronauta.png",
-                Color.WHITE
-            );
-
         astronautaSheetTexture = loadTextureOrPlaceholder("textures/astronauta_sheet.png", Color.WHITE);
         pulseRifleTexture = loadTextureOrPlaceholder("textures/pulse_rifle.png", Color.WHITE);
 
         // LUA
         backgroundLuaTexture =
             loadTextureOrPlaceholder(
-                "textures/lunar_ground_v2.png",
+                "textures/lunar_ground.png",
                 new Color(
                     0.12f,
                     0.13f,
@@ -112,37 +109,32 @@ public class AssetManager implements Disposable {
 
         // OBSTÁCULO
 
-        obstacleTexture =
-            loadTextureOrPlaceholder(
-                "textures/obstacle.png",
-                Color.DARK_GRAY
-            );
-
         missionAtlasTexture =
             loadTextureOrPlaceholder(
-                "textures/mission_atlas.png",
+                "textures/mission_atlas_unified.png",
                 Color.CYAN
             );
 
         marsBackgroundTexture =
             loadTextureOrPlaceholder(
-                "textures/mars_background.png",
+                "textures/mars_ground.png",
                 Color.FIREBRICK
             );
 
-        menuEmblemTexture = loadTextureOrPlaceholder("textures/menu_emblem.png", Color.CYAN);
-        enemySheetTexture = loadTextureOrPlaceholder("textures/enemy_sheet_v2.png", Color.MAGENTA);
         introKeyArtTexture = loadTextureOrPlaceholder("textures/intro_keyart_v2.png", Color.DARK_GRAY);
-        gameplayFxTexture = loadTextureOrPlaceholder("textures/gameplay_fx_atlas.png", Color.WHITE);
-        lunarEnemyTexture = loadTextureOrPlaceholder("textures/lunar_enemy_v3.png", Color.MAGENTA);
-        marsAtlasTexture = loadTextureOrPlaceholder("textures/mars_atlas_v3.png", Color.ORANGE);
-        echoSignalCoreTexture = loadTextureOrPlaceholder("textures/echo_signal_core.png", Color.CYAN);
+        marsAtlasTexture = loadTextureOrPlaceholder("textures/mars_atlas_v4.png", Color.ORANGE);
+        lunarEnemySheetTexture = loadTextureOrPlaceholder("textures/lunar_enemy_sheet.png", Color.MAGENTA);
+        marsDroneSheetTexture = loadTextureOrPlaceholder("textures/mars_drone_sheet.png", Color.ORANGE);
+        marsCrawlerSheetTexture = loadTextureOrPlaceholder("textures/mars_crawler_sheet.png", Color.ORANGE);
+        lunarObstaclesTexture = loadTextureOrPlaceholder("textures/lunar_obstacles.png", Color.DARK_GRAY);
+        marsObstaclesTexture = loadTextureOrPlaceholder("textures/mars_obstacles.png", Color.FIREBRICK);
+        actionFxTexture = loadTextureOrPlaceholder("textures/action_fx_sheet.png", Color.WHITE);
+        energyFxTexture = loadTextureOrPlaceholder("textures/energy_fx_sheet.png", Color.CYAN);
+        landmarksTexture = loadTextureOrPlaceholder("textures/landmarks.png", Color.LIGHT_GRAY);
+        uiPanelTexture = loadTextureOrPlaceholder("textures/ui_panel_frame.png", Color.DARK_GRAY);
 
         // FILTROS
 
-        aplicarFiltro(
-            astronautaTexture
-        );
         aplicarFiltroNearest(astronautaSheetTexture);
         aplicarFiltro(pulseRifleTexture);
 
@@ -167,31 +159,34 @@ public class AssetManager implements Disposable {
         );
 
         aplicarFiltro(
-            obstacleTexture
-        );
-
-        aplicarFiltro(
             missionAtlasTexture
         );
 
         aplicarFiltro(
             marsBackgroundTexture
         );
-        aplicarFiltro(menuEmblemTexture);
-        aplicarFiltro(enemySheetTexture);
         aplicarFiltro(introKeyArtTexture);
-        aplicarFiltro(gameplayFxTexture);
-        aplicarFiltro(lunarEnemyTexture);
         aplicarFiltro(marsAtlasTexture);
-        aplicarFiltro(echoSignalCoreTexture);
+        aplicarFiltro(lunarEnemySheetTexture);
+        aplicarFiltro(marsDroneSheetTexture);
+        aplicarFiltro(marsCrawlerSheetTexture);
+        aplicarFiltro(lunarObstaclesTexture);
+        aplicarFiltro(marsObstaclesTexture);
+        aplicarFiltro(actionFxTexture);
+        aplicarFiltro(energyFxTexture);
+        aplicarFiltro(landmarksTexture);
+        aplicarFiltro(uiPanelTexture);
         backgroundLuaTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
+        marsBackgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
 
         // FONTE
 
         // Bahnschrift nasce de desenho técnico DIN: legível em tamanhos pequenos e
         // coerente com a sinalização industrial das bases, sem aspecto de dashboard web.
-        font = gerarFonte("fonts/Bahnschrift.ttf", 25);
-        titleFont = gerarFonte("fonts/Bahnschrift.ttf", 32);
+        // Segoe UI mantém acentos e formas abertas em escalas pequenas; o peso
+        // bold fica reservado à hierarquia, sem o aspecto monoespaçado anterior.
+        font = gerarFonte("fonts/SegoeUI.ttf", 25);
+        titleFont = gerarFonte("fonts/SegoeUI-Bold.ttf", 32);
     }
 
     private BitmapFont gerarFonte(String path, int size) {
@@ -299,17 +294,52 @@ public class AssetManager implements Disposable {
         if (texture != null) texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
     }
 
-    public TextureRegion fxRegion(int column) {
-        int cellWidth = gameplayFxTexture.getWidth() / 4;
-        return new TextureRegion(gameplayFxTexture, column * cellWidth + 2, 2,
-            cellWidth - 4, gameplayFxTexture.getHeight() - 4);
-    }
-
     public TextureRegion marsRegion(int column, int row) {
         int cellWidth = marsAtlasTexture.getWidth() / 4;
         int cellHeight = marsAtlasTexture.getHeight() / 3;
         return new TextureRegion(marsAtlasTexture, column * cellWidth + 2, row * cellHeight + 2,
             cellWidth - 4, cellHeight - 4);
+    }
+
+    public TextureRegion lunarEnemyFrame(int column, int row) {
+        return gridRegion(lunarEnemySheetTexture, 4, 4, column, row, 2);
+    }
+
+    public TextureRegion marsEnemyFrame(boolean drone, int column, int row) {
+        return gridRegion(drone ? marsDroneSheetTexture : marsCrawlerSheetTexture,
+            4, 4, column, row, 2);
+    }
+
+    public TextureRegion lunarObstacleRegion(int index) {
+        return gridRegion(lunarObstaclesTexture, 3, 2, index % 3, index / 3, 2);
+    }
+
+    public TextureRegion marsObstacleRegion(int index) {
+        return gridRegion(marsObstaclesTexture, 3, 2, index % 3, index / 3, 2);
+    }
+
+    public TextureRegion actionFxFrame(int column, int row) {
+        return gridRegion(actionFxTexture, 6, 4, column, row, 0);
+    }
+
+    public TextureRegion energyFxFrame(int column, int row) {
+        return gridRegion(energyFxTexture, 6, 4, column, row, 0);
+    }
+
+    public TextureRegion landmarkRegion(int column, int row) {
+        return gridRegion(landmarksTexture, 4, 2, column, row, 2);
+    }
+
+    public NinePatch uiPanelPatch() {
+        return new NinePatch(new TextureRegion(uiPanelTexture), 24, 24, 24, 24);
+    }
+
+    private TextureRegion gridRegion(Texture texture, int columns, int rows,
+                                     int column, int row, int inset) {
+        int cellWidth = texture.getWidth() / columns;
+        int cellHeight = texture.getHeight() / rows;
+        return new TextureRegion(texture, column * cellWidth + inset, row * cellHeight + inset,
+            cellWidth - inset * 2, cellHeight - inset * 2);
     }
 
     /** Retorna uma celula do atlas 4x4, indexado a partir do canto superior esquerdo. */
@@ -340,9 +370,6 @@ public class AssetManager implements Disposable {
     @Override
     public void dispose() {
 
-        disposeTexture(
-            astronautaTexture
-        );
         disposeTexture(astronautaSheetTexture);
         disposeTexture(pulseRifleTexture);
 
@@ -367,23 +394,23 @@ public class AssetManager implements Disposable {
         );
 
         disposeTexture(
-            obstacleTexture
-        );
-
-        disposeTexture(
             missionAtlasTexture
         );
 
         disposeTexture(
             marsBackgroundTexture
         );
-        disposeTexture(menuEmblemTexture);
-        disposeTexture(enemySheetTexture);
         disposeTexture(introKeyArtTexture);
-        disposeTexture(gameplayFxTexture);
-        disposeTexture(lunarEnemyTexture);
         disposeTexture(marsAtlasTexture);
-        disposeTexture(echoSignalCoreTexture);
+        disposeTexture(lunarEnemySheetTexture);
+        disposeTexture(marsDroneSheetTexture);
+        disposeTexture(marsCrawlerSheetTexture);
+        disposeTexture(lunarObstaclesTexture);
+        disposeTexture(marsObstaclesTexture);
+        disposeTexture(actionFxTexture);
+        disposeTexture(energyFxTexture);
+        disposeTexture(landmarksTexture);
+        disposeTexture(uiPanelTexture);
 
         if (font != null) {
             font.dispose();

@@ -2,16 +2,16 @@ coleta
 - Delay -
 active: false
 - Duration -
-lowMin: 300.0
-lowMax: 300.0
+lowMin: 150.0
+lowMax: 170.0
 - Count -
 min: 0
-max: 45
+max: 18
 - Emission -
 lowMin: 0.0
 lowMax: 0.0
-highMin: 50.0
-highMax: 80.0
+highMin: 38.0
+highMax: 52.0
 relative: false
 scalingCount: 1
 scaling0: 1.0
@@ -20,8 +20,8 @@ timeline0: 0.0
 - Life -
 lowMin: 0.0
 lowMax: 0.0
-highMin: 400.0
-highMax: 700.0
+highMin: 260.0
+highMax: 420.0
 relative: false
 scalingCount: 1
 scaling0: 1.0
@@ -58,8 +58,8 @@ timeline0: 0.0
 - X Scale -
 lowMin: 0.0
 lowMax: 0.0
-highMin: 7.0
-highMax: 15.0
+highMin: 3.0
+highMax: 7.0
 relative: false
 scalingCount: 1
 scaling0: 1.0
@@ -71,8 +71,8 @@ active: false
 active: true
 lowMin: 0.0
 lowMax: 0.0
-highMin: 35.0
-highMax: 90.0
+highMin: 26.0
+highMax: 62.0
 relative: false
 scalingCount: 1
 scaling0: 1.0

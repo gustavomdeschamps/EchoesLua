@@ -58,10 +58,13 @@ public final class IntroScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         float drift = Interpolation.pow2Out.apply(MathUtils.clamp(elapsed / DURATION, 0f, 1f));
+        float signalKick = MathUtils.clamp(1f - Math.abs(elapsed - 1.48f) / .16f, 0f, 1f);
+        float jitter = MathUtils.sin(elapsed * 91f) * signalKick * 3f;
         float artW = 1328f;
         float artH = 747f;
         batch.setColor(.82f, .82f, .78f, 1f);
-        batch.draw(assets.introKeyArtTexture, -24f - drift * 24f, -14f - drift * 12f, artW, artH);
+        batch.draw(assets.introKeyArtTexture, -24f - drift * 24f + jitter,
+            -14f - drift * 12f, artW, artH);
         batch.setColor(Color.WHITE);
         drawAt(assets.font, "REGISTRO DE CAMPO  //  L-01", .62f, 1.05f, 3.7f, 884f, 644f,
             new Color(.82f, .49f, .28f, 1f));
@@ -71,6 +74,7 @@ public final class IntroScreen implements Screen {
         batch.end();
 
         renderSignalTrace(MathUtils.clamp((elapsed - 1.25f) / .65f, 0f, 1f));
+        renderFilmGrain();
 
         float fadeIn = 1f - MathUtils.clamp(elapsed / .9f, 0f, 1f);
         float fadeOut = MathUtils.clamp((elapsed - 5.15f) / .65f, 0f, 1f);
@@ -86,6 +90,26 @@ public final class IntroScreen implements Screen {
             shapes.end();
             Gdx.gl.glDisable(GL20.GL_BLEND);
         }
+    }
+
+    private void renderFilmGrain() {
+        float presence = envelope(.42f, 5.3f, .5f);
+        if (presence <= 0f) return;
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        shapes.setProjectionMatrix(camera.combined);
+        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        for (int i = 0; i < 18; i++) {
+            float x = Math.floorMod(i * 173 + (int) (elapsed * (17 + i % 4)), 1280);
+            float y = Math.floorMod(i * 97 + (int) (elapsed * (9 + i % 3)), 720);
+            float alpha = (.025f + (i % 5) * .008f) * presence;
+            shapes.setColor(.86f, .79f, .68f, alpha);
+            shapes.rect(x, y, i % 4 == 0 ? 2f : 1f, i % 3 == 0 ? 2f : 1f);
+        }
+        float scan = MathUtils.clamp((elapsed - .8f) / 4f, 0f, 1f);
+        shapes.setColor(.86f, .46f, .25f, .12f * presence);
+        shapes.rect(0f, 710f - scan * 700f, 1280f, 2f);
+        shapes.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
     }
 
     private void renderSignalTrace(float alpha) {

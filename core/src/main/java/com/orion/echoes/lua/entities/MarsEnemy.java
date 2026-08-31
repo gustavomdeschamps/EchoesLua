@@ -1,26 +1,24 @@
 package com.orion.echoes.lua.entities;
 
-import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.orion.echoes.lua.managers.AssetManager;
 
-/** Drone ou rover hostil de Marte, animado sem spritesheet. */
+/** Drone ou rover marciano com leitura antecipada de ataque e animação real. */
 public final class MarsEnemy extends Entidade {
-    private final Sprite sprite;
+    private enum State { IDLE, CHASE, TELEGRAPH, ATTACK, HIT, DYING }
+    private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
     private final Rectangle testBounds = new Rectangle();
     private final boolean drone;
-    private final float worldWidth;
-    private final float worldHeight;
-    private float hp = 2f;
-    private float elapsed;
-    private float damageCooldown;
-    private float hitTimer;
-    private float deathTimer;
+    private final float worldWidth, worldHeight;
+    private State state = State.CHASE;
+    private float hp = 3f, elapsed, stateTime, damageCooldown;
+    private boolean facingLeft;
 
     public MarsEnemy(float x, float y, boolean drone, AssetManager assets,
                      float worldWidth, float worldHeight) {
@@ -28,75 +26,108 @@ public final class MarsEnemy extends Entidade {
         this.drone = drone;
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
-        bounds.set(x + (drone ? 9f : 11f), y + 5f, drone ? 52f : 60f, drone ? 29f : 34f);
-        sprite = new Sprite(assets.marsRegion(drone ? 0 : 1, 2));
-        sprite.setSize(drone ? 102f : 112f, drone ? 82f : 88f);
-        sprite.setOriginCenter();
+        bounds.set(x + (drone ? 10f : 12f), y + 6f, drone ? 50f : 58f, drone ? 28f : 33f);
+        for (int row = 0; row < 4; row++)
+            for (int column = 0; column < 4; column++)
+                frames[row][column] = assets.marsEnemyFrame(drone, column, row);
     }
 
     public void update(float delta, Astronauta target, Array<MarsObject> rocks) {
         elapsed += delta;
+        stateTime += delta;
         damageCooldown = Math.max(0f, damageCooldown - delta);
-        if (!ativo) {
-            deathTimer = Math.max(0f, deathTimer - delta);
-            float alpha = deathTimer / .4f;
-            sprite.setColor(1f, 1f, 1f, alpha);
-            sprite.setScale(.72f + alpha * .28f);
-            sprite.setRotation((1f - alpha) * 30f);
-            placeSprite(-8f * (1f - alpha));
+        if (state == State.DYING) {
+            if (stateTime >= .5f) ativo = false;
             return;
         }
+        if (!ativo) return;
         direction.set(target.getBounds().x + target.getBounds().width / 2f - centerX(),
-            target.getBounds().y + target.getBounds().height / 2f - centerY()).nor();
-        float step = (drone ? 92f : 72f) * delta;
-        float nextX = MathUtils.clamp(position.x + direction.x * step, 0f, worldWidth - width);
-        if (free(nextX, position.y, rocks)) position.x = nextX;
-        float nextY = MathUtils.clamp(position.y + direction.y * step, 0f, worldHeight - height);
-        if (free(position.x, nextY, rocks)) position.y = nextY;
-        bounds.setPosition(position.x + (drone ? 9f : 11f), position.y + 5f);
+            target.getBounds().y + target.getBounds().height / 2f - centerY());
+        float distance = direction.len();
+        if (distance > .001f) direction.scl(1f / distance);
+        if (Math.abs(direction.x) > .08f) facingLeft = direction.x < 0f;
+        float attackRange = drone ? 104f : 88f;
 
-        float gait = MathUtils.sin(elapsed * (drone ? 7f : 10f));
-        sprite.setScale(1f + gait * .018f, 1f - gait * .012f);
-        sprite.setRotation(direction.x * -4f + gait * 1.5f);
-        placeSprite(drone ? 10f + Math.abs(gait) * 4f : -7f + Math.abs(gait) * 2f);
-        if (hitTimer > 0f) {
-            hitTimer = Math.max(0f, hitTimer - delta);
-            sprite.setColor(1f, .42f, .28f, 1f);
-        } else sprite.setColor(1f, 1f, 1f, 1f);
+        switch (state) {
+            case HIT -> { if (stateTime >= .17f) change(State.CHASE); }
+            case TELEGRAPH -> { if (stateTime >= (drone ? .46f : .34f)) change(State.ATTACK); }
+            case ATTACK -> {
+                if (stateTime < .2f) move(direction.x * (drone ? 1.45f : 1.7f),
+                    direction.y * (drone ? 1.45f : 1.7f), delta, rocks);
+                if (stateTime >= .37f) change(State.CHASE);
+            }
+            default -> {
+                if (distance <= attackRange) change(State.TELEGRAPH);
+                else {
+                    changeIfNeeded(State.CHASE);
+                    float strafe = drone ? MathUtils.sin(elapsed * 1.2f) * .28f : 0f;
+                    move(direction.x - direction.y * strafe, direction.y + direction.x * strafe, delta, rocks);
+                }
+            }
+        }
     }
 
-    private void placeSprite(float bob) {
-        sprite.setPosition(centerX() - sprite.getWidth() / 2f, position.y - 10f + bob);
+    private void move(float dx, float dy, float delta, Array<MarsObject> rocks) {
+        float speed = drone ? 86f : 68f;
+        float nextX = MathUtils.clamp(position.x + dx * speed * delta, 0f, worldWidth - width);
+        if (free(nextX, position.y, rocks)) position.x = nextX;
+        float nextY = MathUtils.clamp(position.y + dy * speed * delta, 0f, worldHeight - height);
+        if (free(position.x, nextY, rocks)) position.y = nextY;
+        bounds.setPosition(position.x + (drone ? 10f : 12f), position.y + 6f);
     }
 
     private boolean free(float x, float y, Array<MarsObject> rocks) {
-        testBounds.set(x + width * .14f, y + height * .08f, width * .72f, height * .5f);
-        for (MarsObject rock : rocks) if (testBounds.overlaps(rock.getBounds())) return false;
+        testBounds.set(x + (drone ? 10f : 12f), y + 6f, drone ? 50f : 58f, drone ? 28f : 33f);
+        for (MarsObject rock : rocks) if (rock.isBlocking() && testBounds.overlaps(rock.getBounds())) return false;
         return true;
+    }
+
+    private void change(State next) { if (state != next) { state = next; stateTime = 0f; } }
+    private void changeIfNeeded(State next) { if (state != next) change(next); }
+
+    private TextureRegion currentFrame() {
+        int row, column;
+        switch (state) {
+            case IDLE -> { row = 0; column = (int)(elapsed / .22f) % 4; }
+            case CHASE -> { row = 1; column = (int)(stateTime / (drone ? .1f : .12f)) % 4; }
+            case TELEGRAPH -> { row = 2; column = Math.min(1, (int)(stateTime / .18f)); }
+            case ATTACK -> { row = 2; column = Math.min(3, 2 + (int)(stateTime / .17f)); }
+            case HIT -> { row = 3; column = Math.min(1, (int)(stateTime / .085f)); }
+            case DYING -> { row = 3; column = Math.min(3, 2 + (int)(stateTime / .24f)); }
+            default -> { row = 0; column = 0; }
+        }
+        TextureRegion frame = frames[row][column];
+        if (frame.isFlipX() != facingLeft) frame.flip(true, false);
+        return frame;
     }
 
     public boolean canDamage(Astronauta player) {
-        if (!ativo || damageCooldown > 0f || !bounds.overlaps(player.getBounds())) return false;
-        damageCooldown = 1.15f;
+        if (!ativo || state != State.ATTACK || stateTime < .07f || stateTime > .24f
+            || damageCooldown > 0f || !bounds.overlaps(player.getBounds())) return false;
+        damageCooldown = 1f;
         return true;
     }
-
     public boolean takeHit() {
-        if (!ativo) return false;
+        if (!ativo || state == State.DYING) return false;
         hp--;
-        hitTimer = .15f;
-        if (hp <= 0f) {
-            ativo = false;
-            deathTimer = .4f;
-            return true;
-        }
+        if (hp <= 0f) { change(State.DYING); return true; }
+        change(State.HIT);
         return false;
     }
-
     public float centerX() { return position.x + width / 2f; }
     public float centerY() { return position.y + height / 2f; }
-    public float getHealthRatio() { return hp / 2f; }
+    public float getHealthRatio() { return hp / 3f; }
     @Override public void update(float delta) { }
-    @Override public void render(SpriteBatch batch) { if (ativo || deathTimer > 0f) sprite.draw(batch); }
+    @Override public void render(SpriteBatch batch) {
+        if (!ativo && state != State.DYING) return;
+        float alpha = state == State.DYING ? MathUtils.clamp(1f - stateTime / .52f, 0f, 1f) : 1f;
+        if (state == State.HIT) batch.setColor(1f, .55f, .35f, alpha);
+        else batch.setColor(1f, 1f, 1f, alpha);
+        float bob = drone ? 8f + MathUtils.sin(elapsed * 5f) * 3f : 0f;
+        if (state == State.TELEGRAPH) bob += MathUtils.sin(stateTime * 25f) * 2f;
+        float size = drone ? 108f : 116f;
+        batch.draw(currentFrame(), centerX() - size / 2f, position.y - 18f + bob, size, size);
+        batch.setColor(1f, 1f, 1f, 1f);
+    }
     @Override public void dispose() { }
 }
