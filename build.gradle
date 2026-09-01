@@ -20,6 +20,12 @@ repositories {
   mavenCentral()
 }
 
+allprojects {
+  repositories {
+    mavenCentral()
+  }
+}
+
 dependencies {
   texturePacker "com.badlogicgames.gdx:gdx-tools:$gdxVersion"
 }
@@ -86,7 +92,7 @@ def atlasTasks = atlasGroups.keySet().collect { group ->
     args layout.buildDirectory.dir("atlas-input/$group").get().asFile.absolutePath,
       file('assets/atlases').absolutePath, group
     inputs.dir(layout.buildDirectory.dir("atlas-input/$group"))
-    outputs.file(file("assets/atlases/$group.atlas"))
+    outputs.file(file("assets/atlases/${group}.atlas"))
   }
 }
 

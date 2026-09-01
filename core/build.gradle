@@ -9,6 +9,21 @@ dependencies {
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
+
+  // Regras puras (missao, save, eventos) sao testadas sem abrir janela:
+  // o backend headless fornece Gdx.app e Preferences em memoria.
+  testImplementation platform("org.junit:junit-bom:$junitVersion")
+  testImplementation 'org.junit.jupiter:junit-jupiter'
+  testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+  testImplementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
+  testRuntimeOnly "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+}
+
+test {
+  useJUnitPlatform()
+  testLogging {
+    events 'passed', 'skipped', 'failed'
+  }
 }
 
 jar {
