@@ -30,6 +30,8 @@ public final class MissionOverlay implements Disposable {
     private static final float MARKER_SIZE = 46f;
     private static final float CURSOR_SIZE = 34f;
     private static final float TARGET_SNAP = 60f;
+    /** A LibGDX exige pixmap de cursor com lado potencia de dois. */
+    private static final int BLANK_CURSOR_SIZE = 16;
 
     private final SpriteBatch batch;
     private final AssetManager assets;
@@ -184,14 +186,26 @@ public final class MissionOverlay implements Disposable {
      * O jogo desenha o proprio cursor; o do sistema operacional sairia
      * duplicado por cima. Substitui-lo por um cursor transparente e a forma
      * de esconde-lo sem capturar o ponteiro dentro da janela.
+     *
+     * O tamanho e potencia de dois porque a LibGDX exige isso do pixmap de
+     * cursor. Se ainda assim a plataforma recusar, o jogo segue com o cursor
+     * do sistema visivel: um detalhe cosmetico nao pode derrubar a fase.
      */
     private void hideSystemCursor() {
-        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
-        pixmap.setColor(0f, 0f, 0f, 0f);
-        pixmap.fill();
-        blankCursor = Gdx.graphics.newCursor(pixmap, 0, 0);
-        pixmap.dispose();
-        if (blankCursor != null) Gdx.graphics.setCursor(blankCursor);
+        Pixmap pixmap = new Pixmap(BLANK_CURSOR_SIZE, BLANK_CURSOR_SIZE, Pixmap.Format.RGBA8888);
+        try {
+            pixmap.setBlending(Pixmap.Blending.None);
+            pixmap.setColor(0f, 0f, 0f, 0f);
+            pixmap.fill();
+            blankCursor = Gdx.graphics.newCursor(pixmap, 0, 0);
+            if (blankCursor != null) Gdx.graphics.setCursor(blankCursor);
+        } catch (Exception failure) {
+            Gdx.app.error("MissionOverlay", "Cursor customizado indisponivel: "
+                + failure.getMessage());
+            blankCursor = null;
+        } finally {
+            pixmap.dispose();
+        }
     }
 
     @Override

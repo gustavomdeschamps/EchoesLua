@@ -30,6 +30,7 @@ public final class MenuScreen implements Screen {
     private Skin skin;
     private Table page;
     private boolean leaving;
+    private boolean fadeCompleted;
 
     public MenuScreen(EchoesLua game) { this.game = game; }
 
@@ -181,18 +182,34 @@ public final class MenuScreen implements Screen {
         leaving = true;
         game.getSounds().pararMusicaMenu();
         game.getSounds().tocarInicio();
-        stage.getRoot().addAction(Actions.sequence(Actions.fadeOut(.28f), Actions.run(() -> {
-            game.setScreen(new LunarScreen(game, game.getBatch(), game.getAssets()));
-            dispose();
-        })));
+        /*
+         * A acao apenas marca o fim do fade. Trocar de tela aqui dentro
+         * quebraria o frame: Actions.run executa dentro de stage.act(), e o
+         * dispose() que vem junto anularia o stage antes do stage.draw()
+         * logo abaixo, no meio do mesmo render.
+         */
+        stage.getRoot().addAction(
+            Actions.sequence(Actions.fadeOut(.28f), Actions.run(() -> fadeCompleted = true)));
     }
 
     @Override public void render(float delta) {
+        if (stage == null) return;
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) && !leaving) showMain(true);
         stage.act(Math.min(delta, 1f / 30f));
+
+        // A troca acontece depois do act e antes do draw, com o stage ainda vivo.
+        if (fadeCompleted) {
+            fadeCompleted = false;
+            game.setScreen(new LunarScreen(game, game.getBatch(), game.getAssets()));
+            dispose();
+            return;
+        }
+
         stage.draw();
     }
-    @Override public void resize(int width, int height) { stage.getViewport().update(width, height, true); }
+    @Override public void resize(int width, int height) {
+        if (stage != null) stage.getViewport().update(width, height, true);
+    }
     @Override public void pause() { }
     @Override public void resume() { }
     @Override public void hide() { }
