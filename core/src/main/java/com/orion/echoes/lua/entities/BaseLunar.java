@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
 
+import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.events.EventBus;
 import com.orion.echoes.lua.events.EventType;
 import com.orion.echoes.lua.managers.AssetManager;
@@ -66,30 +67,44 @@ public class BaseLunar extends Entidade implements Interagivel {
     }
 
     public void recarregarOxigenio(Astronauta astronauta, float delta) {
+        recarregarOxigenio(astronauta, delta, 1f);
+    }
+
+    /**
+     * Recarrega o traje dentro da base.
+     *
+     * O multiplicador vem do sistema de energia da colonia: com ele online,
+     * a base deixa de ser so um abrigo e vira um posto de reabastecimento.
+     */
+    public void recarregarOxigenio(Astronauta astronauta, float delta, float multiplier) {
         if (!astronautaDentro) {
             return;
         }
 
-        astronauta.recuperarOxigenio(20f * delta);
+        astronauta.recuperarOxigenio(GameConfig.BASE_OXYGEN_RECHARGE * multiplier * delta);
+        astronauta.recuperarEnergia(GameConfig.BASE_ENERGY_RECHARGE * multiplier * delta);
     }
 
     public boolean processarGelo(Astronauta astronauta) {
+        return processarGelo(astronauta, 1f);
+    }
+
+    /** O rendimento dobra quando a extracao esta reparada. */
+    public boolean processarGelo(Astronauta astronauta, float yieldMultiplier) {
         if (!astronautaDentro) {
             return false;
         }
 
         if (!astronauta.removerGelo()) {
-            System.out.println("Nenhuma rocha de gelo disponível.");
             return false;
         }
 
-        astronauta.recuperarOxigenio(20f);
-        astronauta.adicionarAgua(1);
-        astronauta.adicionarCombustivel(1);
+        int units = Math.max(1, Math.round(yieldMultiplier));
+        astronauta.recuperarOxigenio(GameConfig.BASE_OXYGEN_RECHARGE * yieldMultiplier);
+        astronauta.adicionarAgua(units);
+        astronauta.adicionarCombustivel(units);
 
         EventBus.getInstance().publish(EventType.ICE_PROCESSED, astronauta);
-
-        System.out.println("Gelo processado com sucesso!");
         return true;
     }
 

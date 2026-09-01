@@ -38,6 +38,7 @@ public final class MenuScreen implements Screen {
         skin = UiFactory.create(game.getAssets());
         stage.addActor(new MenuBackdrop());
         Gdx.input.setInputProcessor(stage);
+        game.aplicarPreferenciasDeAudio();
         game.getSounds().tocarMusicaMenu();
         showMain(false);
         stage.getRoot().getColor().a = 0f;
@@ -70,9 +71,19 @@ public final class MenuScreen implements Screen {
         AppSettings settings = game.getSettings();
         Table content = basePage();
         content.add(title("CONFIGURAÇÕES", 1.15f)).left().colspan(2).padBottom(18f).row();
-        addSlider(content, "MÚSICA", settings.getMusicVolume(), settings::setMusicVolume);
-        addSlider(content, "EFEITOS", settings.getSfxVolume(), settings::setSfxVolume);
-        addSlider(content, "INTERFACE", settings.getUiVolume(), settings::setUiVolume);
+        addSlider(content, "MÚSICA", settings.getMusicVolume(), value -> {
+            settings.setMusicVolume(value);
+            game.aplicarPreferenciasDeAudio();
+        });
+        addSlider(content, "EFEITOS", settings.getSfxVolume(), value -> {
+            settings.setSfxVolume(value);
+            game.aplicarPreferenciasDeAudio();
+        });
+        addSlider(content, "INTERFACE", settings.getUiVolume(), value -> {
+            settings.setUiVolume(value);
+            game.aplicarPreferenciasDeAudio();
+            game.getSounds().tocarHoverUi();
+        });
         addSlider(content, "ESCALA DO HUD", (settings.getHudScale() - .85f) / .35f,
             value -> settings.setHudScale(.85f + value * .35f));
         content.add(toggle("SHAKE DE CÂMERA", settings.isShakeEnabled(), settings::setShakeEnabled)).width(300f).height(50f).pad(7f);

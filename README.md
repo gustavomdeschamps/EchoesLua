@@ -1,55 +1,117 @@
-# Echoes - Integracao Lua -> Marte
+# Echoes — Integração Lua → Marte
 
-Jogo 2D em Java 17 com LibGDX 1.14.2. A missao comeca na Lua: o astronauta precisa administrar oxigenio e energia, coletar recursos e restaurar a colonia antes de atravessar o portal para Marte.
+Jogo 2D em Java 17 com LibGDX 1.14.2. A missão começa na Lua: o astronauta
+administra oxigênio e energia, restaura os sistemas da colônia e atravessa o
+portal para Marte.
 
-## Fluxo da missao
+```
+Menu → Intro → Fase Lunar → Portal → Fase Marciana → Resultado
+```
 
-1. Colete as quatro pecas de reparo e as partes A, B e C da arma.
-2. Aproxime-se das estacoes da base e pressione `E` para reparar comunicacao, energia, extracao e estufa.
-3. Dentro da base, pressione `E` com as tres partes para fabricar a arma.
-4. Use `ESPACO` perto dos inimigos para atacar. Cada inimigo possui 3 pontos de vida.
-5. O portal libera quando pelo menos 3 sistemas estao reparados, a arma foi fabricada, os 3 hostis foram eliminados e o oxigenio esta acima de 25%.
-6. Entre no portal com `E`; o oxigenio, a energia e o progresso de combate seguem para Marte.
-7. Na fase de Marte, alcance o sinalizador ciano para concluir a missao.
+## Como jogar
 
-As pecas de reparo usam as cores ciano (antena), amarela (energia), azul (extracao) e verde (estufa). As partes da arma usam vermelho, laranja e violeta. Estacoes vermelhas estao offline; estacoes verdes estao reparadas.
+1. Colete as quatro peças de reparo e as partes A, B e C da arma.
+2. Repare as estações com `E`. **Cada sistema reparado dá um ganho diferente**,
+   então a ordem é uma decisão sua:
+   - **Comunicação** → objetivos passam a aparecer marcados no visor;
+   - **Energia** → a base recarrega o traje em dobro;
+   - **Extração** → cada rocha de gelo rende o dobro;
+   - **Estufa** → o traje volta a gerar oxigênio sozinho em campo aberto.
+3. Monte a arma na bancada dentro da base.
+4. Neutralize os hostis. São três comportamentos distintos:
+   - **perseguidor** avança em linha reta de longe;
+   - **emboscador** (violeta) fica parado até você encostar;
+   - **atirador** (âmbar) recua e dispara pulsos — dá para desviar.
+5. O portal abre com 3 sistemas online, arma montada, hostis eliminados e O2
+   acima de 25%.
+6. Em Marte, alcance o sinalizador ciano.
 
-## Direcao visual
+### Controles
 
-- `mission_atlas.png`: atlas 4x4 exclusivo com modulos, partes da arma, hostil, estacoes, portal, beacon e bancada.
-- `mars_background.png`: terreno marciano jogavel com rota luminosa para a base.
-- HUDs usam a mesma linguagem de telemetria: superficies grafite, informacao primaria branca, tecnologia ciano, energia ambar, sucesso verde e perigo vermelho.
-- A janela desktop abre em 1280x720, a mesma resolucao logica dos `FitViewport`, evitando texto reduzido e letterbox desnecessario.
+| Tecla | Ação |
+|---|---|
+| `WASD` / setas | mover |
+| `Shift` | correr (gasta mais energia) |
+| `Espaço` | dash (gasta energia) |
+| Mouse | mirar · botão esquerdo dispara |
+| `E` | reparar, montar, processar gelo, usar o portal |
+| `F5` / `F9` | salvar e carregar checkpoint lunar |
+| `Esc` | pausar · `M` volta ao menu |
 
-## Controles
+## Build e execução
 
-- `WASD` ou setas: mover
-- `E`: reparar, fabricar, processar gelo ou usar o portal
-- `ESPACO`: atacar apos fabricar a arma
-- `F5`: salvar checkpoint lunar
-- `F9`: carregar checkpoint lunar
-- `ESC`: pausar; na pausa, `M` volta ao menu
+Requer **JDK 17** e **Python 3.11+** (o build valida os assets antes de compilar).
 
-## Arquitetura
+```bash
+pip install pillow numpy soundfile
+```
 
-- `MissionState` centraliza inventario, reparos, arma, inimigos e a regra do portal (State).
-- `EventBus` publica coletas, reparos, craft, eliminacoes e transicao (Observer).
-- `MissionEntityFactory` concentra a criacao de pecas, estacoes, inimigos e portal (Factory).
-- `ParticleManager` reutiliza efeitos por meio de `ParticleEffectPool`, evitando recargas e alocacoes em cada impacto.
-- `LunarScreen` e `MarsScreen` mantem as fases separadas no mesmo executavel.
-- Entidades especificas representam pecas, estacoes, hostis e portal.
-- `SaveManager` serializa o astronauta e o progresso da missao em JSON via Preferences.
+**Linux e macOS**
 
-## Executar e validar
+```bash
+./gradlew lwjgl3:run      # rodar
+./gradlew build           # compilar e testar
+./gradlew :core:test      # só os testes
+```
 
-No Windows:
+**Windows**
 
 ```powershell
 .\gradlew.bat lwjgl3:run
-```
-
-Compilacao sem abrir janela:
-
-```powershell
 .\gradlew.bat build
 ```
+
+### Tarefas de asset
+
+```bash
+python tools/prepare_visual_assets.py                 # regenera sprites e kit de UI
+python tools/prepare_visual_assets.py --validate-only # só o QA (é o que o build roda)
+python tools/generate_music.py                        # regera as camadas de trilha
+./gradlew packVisualAssets                            # reempacota os atlas
+```
+
+O QA de assets falha o build se uma folha não dividir pela grade, se dois quadros
+consecutivos forem quase idênticos, se a paleta divergir do `ART_BIBLE.md`, se a
+costura de um terreno abrir ou se uma célula de atlas fugir da régua de escala.
+
+## Arquitetura
+
+```
+core/src/main/java/com/orion/echoes/lua/
+├── config/      GameConfig (constantes) · AppSettings (preferências)
+├── entities/    Astronauta, Enemy, EnemyPulse, Item, Portal, ...
+├── events/      EventBus / EventType / GameEvent  (Observer)
+├── factories/   MissionEntityFactory              (Factory)
+├── managers/    AssetManager, SoundManager, MusicDirector, ParticleManager
+├── physics/     PhysicsWorld (timestep fixo + interpolação de render)
+├── render/      WorldRenderer, MissionOverlay, PauseOverlay
+├── save/        SaveManager, GameSaveData, LunarCheckpoint
+├── screens/     LunarScreen, MarsScreen, MenuScreen, LoadingScreen, Hud, ...
+├── systems/     MissionState, JuiceSystem, CameraDirector, CombatSystem,
+│                CollectionSystem, InteractionSystem, FeedbackSystem
+├── ui/          UiTheme, UiFactory, TerminalUi
+└── world/       LunarWorld (layout por semente), ReachabilityGrid (flood-fill)
+```
+
+- **`MissionState`** centraliza inventário, reparos, arma, hostis, a regra do
+  portal e os benefícios passivos.
+- **`LunarScreen`** apenas orquestra a ordem do frame — construção, combate,
+  coleta, interação e render moram nos sistemas acima.
+- **`PhysicsWorld`** roda Box2D em timestep fixo e devolve a posição
+  interpolada para o render, o que elimina o micro-stutter.
+- **`MusicDirector`** mantém três camadas por mundo em fase e só cruza volumes.
+
+## Documentação
+
+- [`docs/ART_BIBLE.md`](docs/ART_BIBLE.md) — direção visual e sonora, fonte única
+  de verdade da paleta.
+- [`docs/CHANGELOG_UPGRADE.md`](docs/CHANGELOG_UPGRADE.md) — o que mudou por fase.
+- [`docs/TECHNICAL_DEBT.md`](docs/TECHNICAL_DEBT.md) — o que ficou de fora e por quê.
+
+## Créditos
+
+- **Código e arte** — projeto Echoes.
+- **Tipografia** — [Chakra Petch](https://fonts.google.com/specimen/Chakra+Petch),
+  SIL Open Font License 1.1 (`assets/fonts/OFL-ChakraPetch.txt`).
+- **Trilha** — sintetizada por `tools/generate_music.py` (NumPy + libsndfile).
+- **Engine** — [libGDX](https://libgdx.com) 1.14.2, LWJGL3.

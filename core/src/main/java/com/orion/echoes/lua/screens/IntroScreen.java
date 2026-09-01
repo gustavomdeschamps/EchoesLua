@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -25,7 +24,6 @@ public final class IntroScreen implements Screen {
     private final AssetManager assets;
     private final OrthographicCamera camera = new OrthographicCamera();
     private final FitViewport viewport = new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, camera);
-    private final ShapeRenderer shapes = new ShapeRenderer();
     private final GlyphLayout layout = new GlyphLayout();
     private float elapsed;
     private boolean finished;
@@ -80,52 +78,54 @@ public final class IntroScreen implements Screen {
         float fadeOut = MathUtils.clamp((elapsed - 5.15f) / .65f, 0f, 1f);
         float veil = Math.max(fadeIn, Interpolation.pow2In.apply(fadeOut));
         if (veil > 0f) {
-            Gdx.gl.glEnable(GL20.GL_BLEND);
-            shapes.setProjectionMatrix(camera.combined);
-            shapes.begin(ShapeRenderer.ShapeType.Filled);
-            shapes.setColor(0f, 0f, 0f, veil);
-            shapes.rect(0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT / 2f * veil);
-            shapes.rect(0f, GameConfig.WINDOW_HEIGHT - GameConfig.WINDOW_HEIGHT / 2f * veil,
+            batch.setProjectionMatrix(camera.combined);
+            batch.begin();
+            batch.setColor(0f, 0f, 0f, veil);
+            rect(0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT / 2f * veil);
+            rect(0f, GameConfig.WINDOW_HEIGHT - GameConfig.WINDOW_HEIGHT / 2f * veil,
                 GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT / 2f * veil);
-            shapes.end();
-            Gdx.gl.glDisable(GL20.GL_BLEND);
+            batch.setColor(Color.WHITE);
+            batch.end();
         }
+    }
+
+    /** Retangulo solido no proprio batch; evita alternar para ShapeRenderer. */
+    private void rect(float x, float y, float width, float height) {
+        batch.draw(assets.uiWhiteTexture, x, y, width, height);
     }
 
     private void renderFilmGrain() {
         float presence = envelope(.42f, 5.3f, .5f);
         if (presence <= 0f) return;
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapes.setProjectionMatrix(camera.combined);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
         for (int i = 0; i < 18; i++) {
             float x = Math.floorMod(i * 173 + (int) (elapsed * (17 + i % 4)), 1280);
             float y = Math.floorMod(i * 97 + (int) (elapsed * (9 + i % 3)), 720);
             float alpha = (.025f + (i % 5) * .008f) * presence;
-            shapes.setColor(.86f, .79f, .68f, alpha);
-            shapes.rect(x, y, i % 4 == 0 ? 2f : 1f, i % 3 == 0 ? 2f : 1f);
+            batch.setColor(.86f, .79f, .68f, alpha);
+            rect(x, y, i % 4 == 0 ? 2f : 1f, i % 3 == 0 ? 2f : 1f);
         }
         float scan = MathUtils.clamp((elapsed - .8f) / 4f, 0f, 1f);
-        shapes.setColor(.86f, .46f, .25f, .12f * presence);
-        shapes.rect(0f, 710f - scan * 700f, 1280f, 2f);
-        shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        batch.setColor(.86f, .46f, .25f, .12f * presence);
+        rect(0f, 710f - scan * 700f, 1280f, 2f);
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     private void renderSignalTrace(float alpha) {
         if (alpha <= 0f) return;
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapes.setProjectionMatrix(camera.combined);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(.27f, .73f, .72f, alpha * .56f);
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.setColor(.27f, .73f, .72f, alpha * .56f);
         float startX = 506f;
         for (int i = 0; i < 44; i++) {
             float x = startX + i * 11f;
             float wave = MathUtils.sin(i * .67f + elapsed * 4f) * (i > 16 && i < 25 ? 9f : 2f);
-            shapes.rect(x, 116f + wave, 2f, 2f + Math.abs(wave));
+            rect(x, 116f + wave, 2f, 2f + Math.abs(wave));
         }
-        shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     private void drawAt(BitmapFont font, String text, float scale, float start, float end,
@@ -157,5 +157,5 @@ public final class IntroScreen implements Screen {
     @Override public void pause() { }
     @Override public void resume() { }
     @Override public void hide() { }
-    @Override public void dispose() { shapes.dispose(); }
+    @Override public void dispose() { }
 }

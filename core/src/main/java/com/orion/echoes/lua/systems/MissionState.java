@@ -2,6 +2,7 @@ package com.orion.echoes.lua.systems;
 
 import com.badlogic.gdx.utils.ObjectIntMap;
 import com.badlogic.gdx.utils.ObjectSet;
+import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.events.EventBus;
 import com.orion.echoes.lua.events.EventType;
 
@@ -123,6 +124,44 @@ public class MissionState {
             return "Recupere O2 acima de 25%";
         }
         return "Portal online: atravesse para Marte";
+    }
+
+    // =====================================================
+    // BENEFICIOS PASSIVOS
+    //
+    // Reparar deixou de ser apenas um item de checklist para o portal:
+    // cada sistema online devolve uma vantagem jogavel distinta, entao a
+    // ordem dos reparos passa a ser uma decisao do jogador.
+    // =====================================================
+
+    /** Comunicacao online: objetivos e coletaveis distantes ficam marcados. */
+    public boolean isMapRevealed() {
+        return isRepaired(SystemType.COMUNICACAO);
+    }
+
+    /** Energia online: a base recarrega bem mais rapido. */
+    public float getRechargeMultiplier() {
+        return isRepaired(SystemType.ENERGIA) ? GameConfig.PERK_ENERGY_RECHARGE : 1f;
+    }
+
+    /** Extracao online: cada rocha de gelo rende o dobro. */
+    public float getIceYieldMultiplier() {
+        return isRepaired(SystemType.EXTRACAO) ? GameConfig.PERK_EXTRACTION_YIELD : 1f;
+    }
+
+    /** Estufa online: oxigenio volta sozinho, devagar, mesmo em campo aberto. */
+    public float getPassiveOxygenPerSecond() {
+        return isRepaired(SystemType.ESTUFA) ? GameConfig.PERK_GREENHOUSE_OXYGEN : 0f;
+    }
+
+    /** Texto curto do ganho, usado no feedback imediato do reparo. */
+    public static String getPerkLabel(SystemType type) {
+        return switch (type) {
+            case COMUNICACAO -> "Objetivos agora aparecem marcados no visor.";
+            case ENERGIA -> "A base recarrega o traje em dobro.";
+            case EXTRACAO -> "Cada rocha de gelo passa a render o dobro.";
+            case ESTUFA -> "O traje volta a gerar oxigênio sozinho.";
+        };
     }
 
     public boolean isRepaired(SystemType type) {

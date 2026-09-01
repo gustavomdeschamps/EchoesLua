@@ -9,7 +9,6 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -57,7 +56,6 @@ public final class MarsScreen implements Screen {
 
     private AssetManager assets;
     private SpriteBatch batch;
-    private ShapeRenderer shapes;
     private NinePatch panelPatch;
     private NinePatch modalPatch;
     private PhysicsWorld physics;
@@ -89,12 +87,14 @@ public final class MarsScreen implements Screen {
     @Override public void show() {
         assets = game.getAssets();
         batch = game.getBatch();
-        shapes = new ShapeRenderer();
         panelPatch = assets.uiPanelPatch();
         modalPatch = assets.uiModalPatch();
         physics = new PhysicsWorld();
         particles = new ParticleManager(assets);
         sounds = SoundManager.getInstance();
+        sounds.applySettings(game.getSettings());
+        sounds.setVacuum(false);
+        sounds.tocarMusicaMarte();
         input = new GameInputProcessor();
         Gdx.input.setInputProcessor(input);
         camera = new OrthographicCamera();
@@ -177,6 +177,7 @@ public final class MarsScreen implements Screen {
 
     @Override public void render(float delta) {
         delta = Math.min(delta, 1f / 30f);
+        atualizarMixer();
         update(delta);
         if (changingScreen) return;
         Gdx.gl.glClearColor(.15f, .045f, .025f, 1f);
@@ -196,6 +197,32 @@ public final class MarsScreen implements Screen {
         renderDamage();
         if (paused) renderPause();
         renderTransition();
+    }
+
+    /** Trilha e ouvinte seguem o relogio real, fora do hitstop e da pausa. */
+    private void atualizarMixer() {
+        sounds.setListener(camera.position.x, camera.position.y);
+        sounds.atualizarIntensidade(paused ? 0f : combatTension(),
+            paused ? 0f : oxygenUrgency());
+    }
+
+    private float combatTension() {
+        float strongest = 0f;
+        for (MarsEnemy enemy : enemies) {
+            if (!enemy.isAtivo()) continue;
+            float dx = enemy.centerX() - player.getPosition().x;
+            float dy = enemy.centerY() - player.getPosition().y;
+            float distance = (float) Math.sqrt(dx * dx + dy * dy);
+            strongest = Math.max(strongest,
+                1f - MathUtils.clamp(distance / GameConfig.MUSIC_TENSION_RADIUS, 0f, 1f));
+        }
+        return strongest;
+    }
+
+    private float oxygenUrgency() {
+        float oxygen = player.getOxigenio();
+        if (oxygen >= GameConfig.MUSIC_URGENCY_OXYGEN) return 0f;
+        return MathUtils.clamp(1f - oxygen / GameConfig.MUSIC_URGENCY_OXYGEN, 0f, 1f);
     }
 
     private void update(float delta) {
@@ -251,7 +278,7 @@ public final class MarsScreen implements Screen {
             enemy.update(delta, player, rocks);
             if (enemy.consumeTelegraphStarted()) {
                 particles.criarAlertaInimigo(enemy.centerX(), enemy.centerY(), true);
-                sounds.tocarAlertaInimigo();
+                sounds.tocarAlertaInimigo(enemy.centerX(), enemy.centerY());
             }
             if (enemy.canDamage(player)) {
                 player.receberDano(10f, enemy.centerX(), enemy.centerY());
@@ -280,7 +307,7 @@ public final class MarsScreen implements Screen {
             item.collect();
             juice.trigger(JuiceSystem.Preset.COLLECT);
             particles.criarEfeitoColeta(item.getPosition().x + 36f, item.getPosition().y + 36f);
-            sounds.tocarColeta();
+            sounds.tocarColetaEspacial(item.getPosition().x + 36f, item.getPosition().y + 36f);
             switch (item.getKind()) {
                 case MINERAL -> { minerals++; feedback("Núcleo marciano recuperado  •  " + minerals); }
                 case MEDKIT -> { player.recuperarOxigenio(28f); feedback("Selagem de emergência aplicada  •  O2 restaurado"); }
@@ -343,7 +370,11 @@ public final class MarsScreen implements Screen {
             if (killed) {
                 hostilesDefeated++;
                 particles.criarMorteInimigo(target.centerX(), target.centerY());
-            } else particles.criarImpactoTiro(target.centerX(), target.centerY());
+                sounds.tocarMorteInimigo(target.centerX(), target.centerY());
+            } else {
+                particles.criarImpactoTiro(target.centerX(), target.centerY());
+                sounds.tocarImpacto(target.centerX(), target.centerY());
+            }
             juice.trigger(killed ? JuiceSystem.Preset.ENEMY_KILL : JuiceSystem.Preset.SHOT_HIT);
         }
         particles.criarMuzzleFlash(shotStart.x, shotStart.y, player.getAimAngle());
@@ -401,16 +432,27 @@ public final class MarsScreen implements Screen {
         float length = Math.max(.001f, (float)Math.sqrt(dx * dx + dy * dy));
         dx /= length;
         dy /= length;
-        shapes.setProjectionMatrix(camera.combined);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(1f, .45f, .25f, alpha * .35f);
-        shapes.rectLine(px - dx * 36f, py - dy * 36f, px, py, 8f * alpha);
-        shapes.setColor(1f, .86f, .62f, alpha);
-        shapes.rectLine(px - dx * 44f, py - dy * 44f, px, py, 2f);
-        shapes.circle(px, py, 6f, 12);
-        shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        // Mesmo traco da fase lunar, em textura, sem trocar de renderer.
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.setColor(1f, .45f, .25f, alpha * .35f);
+        drawTrail(px - dx * 36f, py - dy * 36f, px, py, 8f * alpha);
+        batch.setColor(1f, .86f, .62f, alpha);
+        drawTrail(px - dx * 44f, py - dy * 44f, px, py, 2f);
+        float glow = 16f;
+        batch.draw(assets.energyFxFrame(1, 0), px - glow / 2f, py - glow / 2f, glow, glow);
+        batch.setColor(Color.WHITE);
+        batch.end();
+    }
+
+    private void drawTrail(float x1, float y1, float x2, float y2, float thickness) {
+        float lineX = x2 - x1;
+        float lineY = y2 - y1;
+        float length = (float) Math.sqrt(lineX * lineX + lineY * lineY);
+        if (length <= .001f) return;
+        float angle = MathUtils.atan2(lineY, lineX) * MathUtils.radiansToDegrees;
+        batch.draw(assets.uiWhiteTexture, x1, y1 - thickness / 2f,
+            0f, thickness / 2f, length, thickness, 1f, 1f, angle);
     }
 
     private void renderEnemyHealth() {
@@ -550,7 +592,6 @@ public final class MarsScreen implements Screen {
     @Override public void resume() { }
     @Override public void hide() { }
     @Override public void dispose() {
-        if (shapes != null) { shapes.dispose(); shapes = null; }
         if (particles != null) { particles.dispose(); particles = null; }
         if (physics != null) { physics.dispose(); physics = null; }
     }

@@ -20,6 +20,12 @@ repositories {
   mavenCentral()
 }
 
+allprojects {
+  repositories {
+    mavenCentral()
+  }
+}
+
 dependencies {
   texturePacker "com.badlogicgames.gdx:gdx-tools:$gdxVersion"
 }
@@ -57,7 +63,8 @@ def atlasGroups = [
     'ui/panel_hud.png', 'ui/panel_dialog.png', 'ui/panel_modal.png',
     'ui/button_normal.png', 'ui/button_hover.png', 'ui/button_pressed.png', 'ui/button_disabled.png',
     'ui/bar_track.png', 'ui/bar_fill.png', 'ui/resource_icons.png',
-    'ui/damage_vignette.png', 'ui/white_pixel.png'],
+    'ui/damage_vignette.png', 'ui/white_pixel.png',
+    'ui/objective_marker.png', 'ui/cursor_default.png', 'ui/cursor_target.png'],
   fx: ['action_fx_sheet.png', 'energy_fx_sheet.png']
 ]
 
@@ -86,7 +93,7 @@ def atlasTasks = atlasGroups.keySet().collect { group ->
     args layout.buildDirectory.dir("atlas-input/$group").get().asFile.absolutePath,
       file('assets/atlases').absolutePath, group
     inputs.dir(layout.buildDirectory.dir("atlas-input/$group"))
-    outputs.file(file("assets/atlases/$group.atlas"))
+    outputs.file(file("assets/atlases/${group}.atlas"))
   }
 }
 

@@ -38,6 +38,19 @@ public class EchoesLua extends Game {
         );
     }
 
+    @Override
+    public void render() {
+        /*
+         * A trilha avanca no relogio real, antes da tela.
+         * Assim fades e ducking continuam corretos em pausa,
+         * hitstop e telas sem gameplay.
+         */
+        if (sounds != null) {
+            sounds.update(com.badlogic.gdx.Gdx.graphics.getDeltaTime());
+        }
+        super.render();
+    }
+
     public SpriteBatch getBatch() {
 
         return batch;
@@ -54,6 +67,11 @@ public class EchoesLua extends Game {
     }
 
     public AppSettings getSettings() { return settings; }
+
+    /** Reaplica o mixer depois de qualquer mudanca na tela de opcoes. */
+    public void aplicarPreferenciasDeAudio() {
+        if (sounds != null) sounds.applySettings(settings);
+    }
 
     @Override
     public void dispose() {
