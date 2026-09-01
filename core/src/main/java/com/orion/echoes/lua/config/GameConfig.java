@@ -120,6 +120,37 @@ public final class GameConfig {
     public static final float BASE_HEIGHT = 350f;
 
     // ==========================================
+    // AUDIO
+    // ==========================================
+
+    public static final float MUSIC_MENU_VOLUME = 0.32f;
+    public static final float MUSIC_BASE_VOLUME = 0.58f;
+    public static final float MUSIC_TENSION_VOLUME = 0.72f;
+    public static final float MUSIC_URGENCY_VOLUME = 0.80f;
+    public static final float MUSIC_FADE_RESPONSE = 1.6f;
+    public static final float MUSIC_DUCK_ATTACK = 12f;
+    public static final float MUSIC_DUCK_RELEASE = 2.4f;
+    public static final float MUSIC_DUCK_LIGHT = 0.35f;
+    public static final float MUSIC_DUCK_STRONG = 0.62f;
+    public static final float MUSIC_DUCK_TIME = 0.9f;
+
+    /** Distancia em que uma fonte 2D ainda soa em volume cheio. */
+    public static final float AUDIO_NEAR_DISTANCE = 110f;
+    /** Distancia em que a fonte fica inaudivel. */
+    public static final float AUDIO_FAR_DISTANCE = 780f;
+    /** Meia-largura usada para converter deslocamento horizontal em pan. */
+    public static final float AUDIO_PAN_WIDTH = 520f;
+    public static final float AUDIO_MAX_PAN = 0.85f;
+    /** A Lua nao tem atmosfera: som externo chega abafado pelo traje. */
+    public static final float AUDIO_VACUUM_GAIN = 0.62f;
+    public static final float AUDIO_VACUUM_PITCH = 0.88f;
+
+    /** Raio de inimigo que alimenta a camada de tensao da trilha. */
+    public static final float MUSIC_TENSION_RADIUS = 560f;
+    /** Abaixo deste oxigenio a camada de urgencia assume. */
+    public static final float MUSIC_URGENCY_OXYGEN = 25f;
+
+    // ==========================================
     // BOX2D
     // ==========================================
 

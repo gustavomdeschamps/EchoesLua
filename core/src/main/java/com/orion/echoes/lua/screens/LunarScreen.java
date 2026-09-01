@@ -143,6 +143,10 @@ public class LunarScreen implements Screen {
         sounds =
             game.getSounds();
 
+        sounds.applySettings(game.getSettings());
+        sounds.setVacuum(true);
+        sounds.tocarMusicaLunar();
+
         astronauta =
             new Astronauta(
                 GameConfig.PLAYER_START_X,
@@ -438,6 +442,40 @@ public class LunarScreen implements Screen {
     // UPDATE
     // =====================================================
 
+    /**
+     * Mantem o mixer vivo fora do relogio de gameplay: a trilha nao pode
+     * congelar durante hitstop nem parar na pausa.
+     */
+    private void atualizarMixer() {
+        sounds.setListener(camera.position.x, camera.position.y);
+        if (pausado) {
+            sounds.atualizarIntensidade(0f, 0f);
+        } else {
+            sounds.atualizarIntensidade(tensaoDeCombate(),
+                urgenciaDeOxigenio(astronauta.getOxigenio()));
+        }
+    }
+
+    /** 0 quando nenhum hostil ameaca; 1 com hostil colado no jogador. */
+    private float tensaoDeCombate() {
+        float strongest = 0f;
+        for (Enemy enemy : enemies) {
+            if (!enemy.isAtivo()) continue;
+            float dx = enemy.centerX() - astronauta.getPosition().x;
+            float dy = enemy.centerY() - astronauta.getPosition().y;
+            float distance = (float) Math.sqrt(dx * dx + dy * dy);
+            strongest = Math.max(strongest,
+                1f - MathUtils.clamp(distance / GameConfig.MUSIC_TENSION_RADIUS, 0f, 1f));
+        }
+        return strongest;
+    }
+
+    /** Cresce conforme o oxigenio cai abaixo do limiar critico. */
+    private float urgenciaDeOxigenio(float oxygen) {
+        if (oxygen >= GameConfig.MUSIC_URGENCY_OXYGEN) return 0f;
+        return MathUtils.clamp(1f - oxygen / GameConfig.MUSIC_URGENCY_OXYGEN, 0f, 1f);
+    }
+
     private void update(float delta) {
 
         if (
@@ -711,6 +749,7 @@ public class LunarScreen implements Screen {
             if (station.repair(mission)) {
                 showFeedback(station.getType().getLabel() + " reparada. Sistema ONLINE.");
                 particleManager.criarProcessamento(station.getPosition().x + 63f, station.getPosition().y + 63f);
+                sounds.tocarReparoConcluido();
                 juice.trigger(JuiceSystem.Preset.REPAIR);
             } else if (mission.isRepaired(station.getType())) {
                 showFeedback(station.getType().getLabel() + " já está online.");
@@ -735,7 +774,7 @@ public class LunarScreen implements Screen {
             && mission.hasAllWeaponParts() && !mission.hasWeapon()) {
             mission.craftWeapon();
             showFeedback("Arma montada. Mire com o mouse e dispare.");
-            sounds.tocarProcessarGelo();
+            sounds.tocarCraft();
             juice.trigger(JuiceSystem.Preset.CRAFT);
             return;
         }
@@ -775,7 +814,8 @@ public class LunarScreen implements Screen {
             collectible.update(delta);
             if (collectible.collectIfOverlapping(astronauta, mission)) {
                 showFeedback("Coletado: " + collectible.getType().getLabel());
-                sounds.tocarColeta();
+                sounds.tocarColetaEspacial(collectible.getPosition().x + 27f,
+                    collectible.getPosition().y + 27f);
                 particleManager.criarEfeitoColeta(collectible.getPosition().x + 27f,
                     collectible.getPosition().y + 27f);
                 juice.trigger(JuiceSystem.Preset.COLLECT);
@@ -790,7 +830,7 @@ public class LunarScreen implements Screen {
             enemy.update(delta, astronauta, obstacles);
             if (enemy.consumeTelegraphStarted()) {
                 particleManager.criarAlertaInimigo(enemy.centerX(), enemy.centerY(), false);
-                sounds.tocarAlertaInimigo();
+                sounds.tocarAlertaInimigo(enemy.centerX(), enemy.centerY());
             }
             if (enemy.canDamage(astronauta)) {
                 astronauta.receberDano(12f, enemy.centerX(), enemy.centerY());
@@ -845,7 +885,11 @@ public class LunarScreen implements Screen {
             if (killed) {
                 mission.registerEnemyDefeated();
                 particleManager.criarMorteInimigo(target.centerX(), target.centerY());
-            } else particleManager.criarImpactoTiro(target.centerX(), target.centerY());
+                sounds.tocarMorteInimigo(target.centerX(), target.centerY());
+            } else {
+                particleManager.criarImpactoTiro(target.centerX(), target.centerY());
+                sounds.tocarImpacto(target.centerX(), target.centerY());
+            }
             showFeedback("Alvo atingido");
             juice.trigger(killed ? JuiceSystem.Preset.ENEMY_KILL : JuiceSystem.Preset.SHOT_HIT);
         }
@@ -1138,6 +1182,8 @@ public class LunarScreen implements Screen {
     ) {
 
         verificarPause();
+
+        atualizarMixer();
 
         if (trocarTelaSePendente()) {
             return;
