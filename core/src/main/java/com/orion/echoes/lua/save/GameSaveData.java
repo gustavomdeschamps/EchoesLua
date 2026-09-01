@@ -62,7 +62,27 @@ public class GameSaveData {
     // VERSÃO DO SAVE
     // =====================================================
 
-    public int versao = 2;
+    public int versao = CURRENT_VERSION;
+
+    /**
+     * Versao 3: o save deixou de ser so da fase lunar.
+     *
+     * Os campos abaixo guardam a campanha inteira - em que fase o jogador
+     * parou, a semente que reproduz o layout da Lua, a municao e o progresso
+     * marciano. Saves da versao 2 continuam carregando: o Json apenas deixa
+     * estes campos nos valores padrao.
+     */
+    public static final int CURRENT_VERSION = 3;
+
+    public String fase = "LUNAR";
+    public long semente;
+    public int municao;
+    public int totalHostisLunares;
+    public boolean marteVisitado;
+    public boolean marteConcluido;
+    public int marteNucleos;
+    public int marteEstacoes;
+    public int marteHostis;
 
     /*
      * Construtor vazio obrigatório
@@ -105,7 +125,7 @@ public class GameSaveData {
 
         this.baseDescoberta = false;
 
-        this.versao = 1;
+        this.versao = CURRENT_VERSION;
     }
 
     @Override

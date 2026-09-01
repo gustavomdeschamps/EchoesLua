@@ -20,6 +20,10 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.orion.echoes.lua.EchoesLua;
 import com.orion.echoes.lua.config.AppSettings;
 import com.orion.echoes.lua.config.GameConfig;
+import com.orion.echoes.lua.save.GameSaveData;
+import com.orion.echoes.lua.save.LunarCheckpoint;
+import com.orion.echoes.lua.save.SaveManager;
+import com.orion.echoes.lua.systems.CampaignState;
 import com.orion.echoes.lua.ui.UiFactory;
 import com.orion.echoes.lua.ui.UiTheme;
 
@@ -50,7 +54,11 @@ public final class MenuScreen implements Screen {
         Table content = basePage();
         content.add(title("ECHOES", 1.65f)).left().row();
         content.add(label("FASE LUNAR  //  SINAL ORION", UiTheme.CYAN)).left().padBottom(44f).row();
-        content.add(button("JOGAR", this::startGame)).width(410f).height(58f).padBottom(10f).row();
+        content.add(button("NOVO JOGO", this::startGame)).width(410f).height(58f).padBottom(10f).row();
+        if (new SaveManager().hasSave()) {
+            content.add(button("CONTINUAR CAMPANHA", this::continueGame))
+                .width(410f).height(58f).padBottom(10f).row();
+        }
         content.add(button("COMO JOGAR", () -> showHowToPlay(true))).width(410f).height(58f).padBottom(10f).row();
         content.add(button("CONFIGURAÇÕES", () -> showSettings(true))).width(410f).height(58f).padBottom(10f).row();
         content.add(button("SAIR", Gdx.app::exit)).width(410f).height(58f).row();
@@ -177,8 +185,10 @@ public final class MenuScreen implements Screen {
         else Gdx.graphics.setWindowedMode(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
     }
 
+    /** Comeca do zero: campanha nova, semente nova, Lua intacta. */
     private void startGame() {
         if (leaving) return;
+        game.startNewCampaign();
         leaving = true;
         game.getSounds().pararMusicaMenu();
         game.getSounds().tocarInicio();
@@ -192,6 +202,24 @@ public final class MenuScreen implements Screen {
             Actions.sequence(Actions.fadeOut(.28f), Actions.run(() -> fadeCompleted = true)));
     }
 
+    /**
+     * Retoma a campanha salva na fase em que ela parou.
+     *
+     * E aqui que a persistencia fica visivel: o save guarda a semente, entao a
+     * Lua carregada e exatamente a mesma, com o mesmo progresso.
+     */
+    private void continueGame() {
+        if (leaving) return;
+        GameSaveData data = new SaveManager().load();
+        if (data == null) return;
+        game.setCampaign(LunarCheckpoint.toCampaign(data));
+        leaving = true;
+        game.getSounds().pararMusicaMenu();
+        game.getSounds().tocarInicio();
+        stage.getRoot().addAction(
+            Actions.sequence(Actions.fadeOut(.28f), Actions.run(() -> fadeCompleted = true)));
+    }
+
     @Override public void render(float delta) {
         if (stage == null) return;
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE) && !leaving) showMain(true);
@@ -200,7 +228,10 @@ public final class MenuScreen implements Screen {
         // A troca acontece depois do act e antes do draw, com o stage ainda vivo.
         if (fadeCompleted) {
             fadeCompleted = false;
-            game.setScreen(new LunarScreen(game, game.getBatch(), game.getAssets()));
+            CampaignState campaign = game.getCampaign();
+            game.setScreen(campaign.getPhase() == CampaignState.Phase.MARS
+                ? new MarsScreen(game, campaign)
+                : new LunarScreen(game, game.getBatch(), game.getAssets(), campaign));
             dispose();
             return;
         }

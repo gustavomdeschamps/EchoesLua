@@ -5,8 +5,12 @@ administra oxigênio e energia, restaura os sistemas da colônia e atravessa o
 portal para Marte.
 
 ```
-Menu → Intro → Fase Lunar → Portal → Fase Marciana → Resultado
+Menu → Intro → Fase Lunar ⇄ Portal ⇄ Fase Marciana → Vitória
 ```
+
+O portal é **bidirecional**: dá para voltar à Lua a qualquer momento para
+reabastecer oxigênio e munição. A Lua é reconstruída pela mesma semente, com o
+progresso preservado.
 
 ## Como jogar
 
@@ -24,7 +28,17 @@ Menu → Intro → Fase Lunar → Portal → Fase Marciana → Resultado
    - **atirador** (âmbar) recua e dispara pulsos — dá para desviar.
 5. O portal abre com 3 sistemas online, arma montada, hostis eliminados e O2
    acima de 25%.
-6. Em Marte, alcance o sinalizador ciano.
+6. Em Marte, reative as três estações com núcleos marcianos, neutralize os
+   hostis e alcance a plataforma de extração.
+7. Ficou sem munição ou oxigênio? Use o portal ao lado do ponto de chegada
+   para voltar à Lua, processar gelo na base e retornar.
+
+### Munição
+
+O rifle tem carga limitada — 12 células ao ser fabricado, teto de 30. Recarrega
+processando gelo na base lunar (4 por rocha, 8 com a Extração reparada) e
+recolhendo células de energia em Marte (6 cada). O HUD mostra o contador e a
+barra, que ficam vermelhos quando a carga está baixa.
 
 ### Controles
 
@@ -35,7 +49,7 @@ Menu → Intro → Fase Lunar → Portal → Fase Marciana → Resultado
 | `Espaço` | dash (gasta energia) |
 | Mouse | mirar · botão esquerdo dispara |
 | `E` | reparar, montar, processar gelo, usar o portal |
-| `F5` / `F9` | salvar e carregar checkpoint lunar |
+| `F5` / `F9` | salvar e carregar a campanha (nas duas fases) |
 | `Esc` | pausar · `M` volta ao menu |
 
 ## Build e execução
@@ -87,14 +101,16 @@ core/src/main/java/com/orion/echoes/lua/
 ├── render/      WorldRenderer, MissionOverlay, PauseOverlay
 ├── save/        SaveManager, GameSaveData, LunarCheckpoint
 ├── screens/     LunarScreen, MarsScreen, MenuScreen, LoadingScreen, Hud, ...
-├── systems/     MissionState, JuiceSystem, CameraDirector, CombatSystem,
-│                CollectionSystem, InteractionSystem, FeedbackSystem
+├── systems/     MissionState, CampaignState, JuiceSystem, CameraDirector,
+│                CombatSystem, CollectionSystem, InteractionSystem, FeedbackSystem
 ├── ui/          UiTheme, UiFactory, TerminalUi
 └── world/       LunarWorld (layout por semente), ReachabilityGrid (flood-fill)
 ```
 
 - **`MissionState`** centraliza inventário, reparos, arma, hostis, a regra do
-  portal e os benefícios passivos.
+  portal, os benefícios passivos e os passos da quest.
+- **`CampaignState`** é o estado que atravessa o portal nos dois sentidos e o
+  que o save grava: semente, fase, vitais, munição e progresso das duas fases.
 - **`LunarScreen`** apenas orquestra a ordem do frame — construção, combate,
   coleta, interação e render moram nos sistemas acima.
 - **`PhysicsWorld`** roda Box2D em timestep fixo e devolve a posição

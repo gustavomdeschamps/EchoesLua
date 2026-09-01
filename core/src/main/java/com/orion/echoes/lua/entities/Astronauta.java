@@ -50,6 +50,7 @@ public class Astronauta extends Entidade implements Interagivel {
     private float damageTimer;
     private float aimAngle;
     private boolean weaponEquipped;
+    private int municao;
     private boolean sprinting;
     private float invulnerabilityTimer;
     private float dashTimer;
@@ -418,6 +419,37 @@ public class Astronauta extends Entidade implements Interagivel {
 
     public boolean isDashing() { return dashTimer > 0f; }
     public boolean isInvulnerable() { return invulnerabilityTimer > 0f; }
+
+    // ==========================================
+    // MUNICAO
+    //
+    // O rifle nasce com carga limitada e so recarrega com celulas de pulso:
+    // gelo processado na base lunar ou celulas recuperadas em Marte. E o que
+    // obriga o jogador a voltar, em vez de segurar o gatilho.
+    // ==========================================
+
+    public int getMunicao() { return municao; }
+
+    public boolean temMunicao() { return municao >= GameConfig.AMMO_PER_SHOT; }
+
+    /** Gasta um tiro; devolve false quando o pente esta vazio. */
+    public boolean consumirMunicao() {
+        if (!temMunicao()) return false;
+        municao -= GameConfig.AMMO_PER_SHOT;
+        return true;
+    }
+
+    /** Recarrega ate o teto e devolve quantas celulas realmente entraram. */
+    public int adicionarMunicao(int amount) {
+        if (amount <= 0) return 0;
+        int before = municao;
+        municao = Math.min(GameConfig.AMMO_MAX, municao + amount);
+        return municao - before;
+    }
+
+    public void setMunicao(int amount) {
+        municao = Math.max(0, Math.min(GameConfig.AMMO_MAX, amount));
+    }
 
     public void setWeaponEquipped(boolean weaponEquipped) {
         this.weaponEquipped = weaponEquipped;

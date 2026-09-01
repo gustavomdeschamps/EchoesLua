@@ -96,3 +96,37 @@ Benefícios por sistema:
 | Zero testes | 31 testes JUnit 5 cobrindo `MissionState`, `SaveManager`, `EventBus` e `ReachabilityGrid` |
 | Sem CI | GitHub Actions rodando QA de assets, testes e build a cada push |
 | Pipeline só transformava assets | 5 validações que falham o build: grade, movimento entre quadros, paleta, costura de terreno e escala de célula |
+
+---
+
+## Prova final — as 7 melhorias da campanha
+
+Requisitos do enunciado do Módulo 07 (Aula 09), verificados um a um.
+
+| # | Requisito | Antes | Depois |
+|---|---|---|---|
+| 01 | **Quest** com progressão clara | Só texto de objetivo | Passo numerado `QUEST n/7` com título próprio no HUD — `MissionState.getQuestStep()` |
+| 02 | **Combate com munição** | Tiro infinito | Rifle com carga limitada, recarregado por gelo processado e células marcianas — `Astronauta.consumirMunicao()` |
+| 03 | **Dois tipos de inimigo** | 3 hostis idênticos | Perseguidor, emboscador e atirador na Lua; drone e crawler em Marte |
+| 04 | **Save da campanha** | Só a fase lunar | `GameSaveData` v3 grava fase, semente, munição e progresso marciano; F5/F9 funcionam nas duas fases |
+| 05 | **HUD fixa** | Sem munição nem progresso | Barra e contador de munição, alerta em vermelho, passo da quest — nas duas fases |
+| 06 | **Portal bidirecional** | Só ida | Portal de volta em Marte; a semente reconstrói a mesma Lua com o mesmo progresso |
+| 07 | **Vitória** | Existia | Mantida: 3 estações online, hostis neutralizados e chegada à plataforma |
+
+### Como a ida e volta funciona
+
+`CampaignState` é o estado que atravessa o portal nos dois sentidos: semente,
+fase atual, vitais, munição, progresso lunar e marciano. Voltar de Marte não
+recomeça a Lua — a semente reproduz o layout e `LunarCheckpoint.syncWorld()`
+remove do chão o que já foi coletado e mantém abatidos os hostis já derrotados.
+
+O mesmo objeto é o que o save grava, então persistência e portal usam um
+caminho só. Saves da versão 2 continuam carregando: os campos novos ficam nos
+valores padrão.
+
+### Munição como decisão
+
+O rifle nasce com 12 células e o teto é 30. Cada rocha de gelo processada na
+base rende 4 (8 com a Extração reparada) e cada célula de energia marciana
+rende 6. Ficar sem munição em Marte é motivo real para voltar pelo portal —
+é o que dá função à ida e volta em vez de deixá-la decorativa.

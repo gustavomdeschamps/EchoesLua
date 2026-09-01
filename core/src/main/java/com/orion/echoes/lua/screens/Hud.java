@@ -59,7 +59,7 @@ public final class Hud implements Disposable {
         float objectiveY = 646f + (1f - eased) * 22f;
         float lowerY = 18f - (1f - eased) * 18f;
         float objectiveAlpha = near(playerScreenX, playerScreenY, 354f, objectiveY, 572f, 58f) ? .24f : .9f;
-        float vitalsAlpha = near(playerScreenX, playerScreenY, 18f, lowerY, 246f, 68f) ? .24f : .88f;
+        float vitalsAlpha = near(playerScreenX, playerScreenY, 18f, lowerY, 246f, 88f) ? .24f : .88f;
         float inventoryAlpha = near(playerScreenX, playerScreenY, 940f, lowerY, 322f, 52f) ? .24f : .88f;
         boolean toastVisible = message != null && !message.isBlank() && toastLife > 0f;
         float toastAlpha = toastVisible ? Math.min(1f, toastLife * 4f) : 0f;
@@ -67,28 +67,39 @@ public final class Hud implements Disposable {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         panel(batch, 354f, objectiveY, 572f, 58f, objectiveAlpha, UiTheme.AMBER);
-        panel(batch, 18f, lowerY, 246f, 68f, vitalsAlpha, UiTheme.CYAN);
+        panel(batch, 18f, lowerY, 246f, 88f, vitalsAlpha, UiTheme.CYAN);
         panel(batch, 940f, lowerY, 322f, 52f, inventoryAlpha, UiTheme.CYAN_DIM);
         if (toastVisible) {
             float width = Math.min(590f, Math.max(250f, message.length() * 9.2f));
             float height = 44f + Interpolation.swingOut.apply(toastKick) * 4f;
             panel(batch, 640f - width / 2f, 108f, width, height, .92f * toastAlpha, UiTheme.GREEN);
         }
-        bar(batch, 78f, lowerY + 39f, 132f, 9f, player.getOxigenio() / 100f,
+        bar(batch, 78f, lowerY + 59f, 132f, 9f, player.getOxigenio() / 100f,
             player.getOxigenio() <= 25f ? UiTheme.RED : UiTheme.CYAN, vitalsAlpha);
-        bar(batch, 78f, lowerY + 17f, 132f, 8f, player.getEnergia() / 100f, UiTheme.AMBER, vitalsAlpha);
+        bar(batch, 78f, lowerY + 37f, 132f, 8f, player.getEnergia() / 100f, UiTheme.AMBER, vitalsAlpha);
+        bar(batch, 78f, lowerY + 15f, 132f, 6f, player.getMunicao() / (float) GameConfig.AMMO_MAX,
+            player.getMunicao() <= GameConfig.AMMO_LOW ? UiTheme.RED : UiTheme.GREEN, vitalsAlpha);
         batch.end();
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         centered(batch, mission.getObjective(player.getOxigenio()), 1.02f, UiTheme.TEXT, 640f,
             objectiveY + 36f, objectiveAlpha);
-        text(batch, "O2", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 51f, vitalsAlpha);
+        text(batch, String.format("QUEST %d/%d", mission.getQuestStep(player.getOxigenio()),
+                MissionState.QUEST_TOTAL_STEPS),
+            .62f, UiTheme.AMBER, 372f, objectiveY + 17f, objectiveAlpha);
+        centered(batch, mission.getQuestTitle(player.getOxigenio()), .64f, UiTheme.TEXT_MUTED,
+            660f, objectiveY + 17f, objectiveAlpha * .9f);
+        text(batch, "O2", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 71f, vitalsAlpha);
         text(batch, String.format("%.0f%%", player.getOxigenio()), .75f,
-            player.getOxigenio() <= 25f ? UiTheme.RED : UiTheme.TEXT, 216f, lowerY + 49f, vitalsAlpha);
-        text(batch, "EN", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 29f, vitalsAlpha);
+            player.getOxigenio() <= 25f ? UiTheme.RED : UiTheme.TEXT, 216f, lowerY + 69f, vitalsAlpha);
+        text(batch, "EN", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 49f, vitalsAlpha);
         text(batch, String.format("%.0f%%", player.getEnergia()), .72f, UiTheme.TEXT, 216f,
-            lowerY + 27f, vitalsAlpha);
+            lowerY + 47f, vitalsAlpha);
+        boolean lowAmmo = player.getMunicao() <= GameConfig.AMMO_LOW;
+        text(batch, "MUN", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 25f, vitalsAlpha);
+        text(batch, String.format("%d", player.getMunicao()), .78f,
+            lowAmmo ? UiTheme.RED : UiTheme.GREEN, 216f, lowerY + 25f, vitalsAlpha);
         text(batch, "O2  " + player.getOxigenioColetado(), .8f, UiTheme.CYAN, 958f, lowerY + 33f, inventoryAlpha);
         text(batch, "COMIDA  " + player.getComidaColetada(), .8f, UiTheme.AMBER, 1035f, lowerY + 33f, inventoryAlpha);
         text(batch, "GELO  " + player.getGeloColetado(), .8f, UiTheme.TEXT, 1163f, lowerY + 33f, inventoryAlpha);

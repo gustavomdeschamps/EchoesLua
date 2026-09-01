@@ -29,6 +29,7 @@ import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
 import com.orion.echoes.lua.save.SaveManager;
 import com.orion.echoes.lua.systems.CameraDirector;
+import com.orion.echoes.lua.systems.CampaignState;
 import com.orion.echoes.lua.systems.CollectionSystem;
 import com.orion.echoes.lua.systems.CombatSystem;
 import com.orion.echoes.lua.systems.FeedbackSystem;
@@ -55,7 +56,7 @@ public class LunarScreen implements Screen {
     private final EchoesLua game;
     private final SpriteBatch batch;
     private final AssetManager assets;
-    private final long seed;
+    private final CampaignState campaign;
 
     private OrthographicCamera camera;
     private Viewport viewport;
@@ -92,15 +93,21 @@ public class LunarScreen implements Screen {
     private Screen nextScreen;
 
     public LunarScreen(EchoesLua game, SpriteBatch batch, AssetManager assets) {
-        this(game, batch, assets, System.nanoTime());
+        this(game, batch, assets, game.getCampaign());
     }
 
-    /** Semente fixa reproduz exatamente o mesmo layout de fase. */
-    public LunarScreen(EchoesLua game, SpriteBatch batch, AssetManager assets, long seed) {
+    /**
+     * A campanha carrega a semente e o progresso.
+     *
+     * E o que permite voltar de Marte e reencontrar a mesma Lua, com as
+     * mesmas rochas e o mesmo que ja foi coletado, em vez de outra partida.
+     */
+    public LunarScreen(EchoesLua game, SpriteBatch batch, AssetManager assets,
+                       CampaignState campaign) {
         this.game = game;
         this.batch = batch;
         this.assets = assets;
-        this.seed = seed;
+        this.campaign = campaign == null ? game.getCampaign() : campaign;
     }
 
     // =====================================================
@@ -128,9 +135,10 @@ public class LunarScreen implements Screen {
         cameraDirector = new CameraDirector(camera, viewport, juice,
             GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT);
 
-        world = new LunarWorld(seed, assets, physicsWorld);
+        world = new LunarWorld(campaign.getSeed(), assets, physicsWorld);
         astronauta = world.getPlayer();
         mission = world.getMission();
+        restaurarCampanha();
 
         feedback = new FeedbackSystem();
         feedback.showFor("Colete peças para restaurar a colônia.", ENEMY_CONTACT_MESSAGE_TIME);
@@ -140,6 +148,33 @@ public class LunarScreen implements Screen {
         worldRenderer = new WorldRenderer(batch, assets, camera);
         overlay = new MissionOverlay(batch, assets, camera, uiCamera);
         pauseOverlay = new PauseOverlay(batch, assets, uiCamera);
+    }
+
+    /**
+     * Recoloca o jogador no ponto da campanha.
+     *
+     * Numa partida nova nao ha nada a restaurar; na volta de Marte, isto
+     * devolve vitais, municao, pecas, reparos e hostis ja abatidos.
+     */
+    private void restaurarCampanha() {
+        campaign.setPhase(CampaignState.Phase.LUNAR);
+        mission.setMarsProgress(campaign.hasVisitedMars(), campaign.isMarsMissionComplete());
+        if (!campaign.hasLunarProgress() && !campaign.hasVisitedMars()) {
+            astronauta.setMunicao(campaign.getAmmo());
+            return;
+        }
+        campaign.restoreMission(mission);
+        astronauta.setVitals(campaign.getOxygen(), campaign.getEnergy());
+        astronauta.setMunicao(campaign.getAmmo());
+        LunarCheckpoint.syncWorld(world);
+    }
+
+    /** Fotografa o estado atual para o portal e para o save. */
+    private void guardarCampanha() {
+        campaign.captureMission(mission);
+        campaign.setVitals(astronauta.getOxigenio(), astronauta.getEnergia());
+        campaign.setAmmo(astronauta.getMunicao());
+        campaign.setMissionTime(astronauta.getTempoVivo());
     }
 
     private void criarCameras() {
@@ -324,8 +359,9 @@ public class LunarScreen implements Screen {
         if (!input.consumeInteractPressed()) return;
         if (interactions.interact(world) != InteractionSystem.Result.PORTAL_CROSSED) return;
         vitoria = true;
-        nextScreen = new MarsScreen(game, astronauta.getOxigenio(),
-            astronauta.getEnergia(), mission.getEnemiesDefeated());
+        guardarCampanha();
+        campaign.setPhase(CampaignState.Phase.MARS);
+        nextScreen = new MarsScreen(game, campaign);
     }
 
     // =====================================================
@@ -428,7 +464,8 @@ public class LunarScreen implements Screen {
 
     private void atualizarSaveLoad() {
         if (input.consumeSavePressed()) {
-            saveManager.save(LunarCheckpoint.capture(world));
+            guardarCampanha();
+            saveManager.save(LunarCheckpoint.capture(world, campaign));
             feedback.show("Checkpoint salvo.");
         }
 
@@ -438,7 +475,8 @@ public class LunarScreen implements Screen {
             feedback.show("Nenhum checkpoint encontrado.");
             return;
         }
-        LunarCheckpoint.apply(data, world);
+        LunarCheckpoint.apply(data, world, campaign);
+        astronauta.setMunicao(campaign.getAmmo());
         feedback.show("Checkpoint carregado.");
     }
 
