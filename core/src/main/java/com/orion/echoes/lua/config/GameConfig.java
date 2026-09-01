@@ -120,6 +120,51 @@ public final class GameConfig {
     public static final float BASE_HEIGHT = 350f;
 
     // ==========================================
+    // HOSTIS
+    // ==========================================
+
+    public static final float ENEMY_BASE_SPEED = 72f;
+    public static final float ENEMY_BASE_HP = 3f;
+
+    /** Perseguidor: o comportamento original, usado como referencia. */
+    public static final float ENEMY_STALKER_DETECTION = 480f;
+    public static final float ENEMY_STALKER_ATTACK_RANGE = 92f;
+    public static final float ENEMY_STALKER_TELEGRAPH = 0.36f;
+
+    /** Emboscador: fica parado ate o jogador chegar perto, ai avanca rapido. */
+    public static final float ENEMY_AMBUSHER_DETECTION = 210f;
+    public static final float ENEMY_AMBUSHER_ATTACK_RANGE = 104f;
+    public static final float ENEMY_AMBUSHER_TELEGRAPH = 0.26f;
+    public static final float ENEMY_AMBUSHER_SPEED = 1.55f;
+
+    /** Atirador: mantem distancia e dispara pulsos telegrafados. */
+    public static final float ENEMY_RANGED_DETECTION = 620f;
+    public static final float ENEMY_RANGED_ATTACK_RANGE = 340f;
+    public static final float ENEMY_RANGED_TELEGRAPH = 0.52f;
+    public static final float ENEMY_RANGED_SPEED = 0.72f;
+    /** Distancia que o atirador tenta manter do jogador. */
+    public static final float ENEMY_RANGED_KEEP_DISTANCE = 250f;
+    public static final float ENEMY_RANGED_COOLDOWN = 1.6f;
+
+    public static final float ENEMY_PULSE_SPEED = 235f;
+    public static final float ENEMY_PULSE_SIZE = 26f;
+    public static final float ENEMY_PULSE_LIFETIME = 2.6f;
+    public static final float ENEMY_PULSE_DAMAGE = 9f;
+
+    // ==========================================
+    // BENEFICIOS DE SISTEMA REPARADO
+    // ==========================================
+
+    /** Estufa: oxigenio regenerado por segundo mesmo fora da base. */
+    public static final float PERK_GREENHOUSE_OXYGEN = 0.85f;
+    /** Energia: multiplicador de recarga de energia e de oxigenio na base. */
+    public static final float PERK_ENERGY_RECHARGE = 2.1f;
+    /** Extracao: multiplicador de rendimento ao processar gelo. */
+    public static final float PERK_EXTRACTION_YIELD = 2f;
+    /** Recuperacao de energia por segundo dentro da base. */
+    public static final float BASE_ENERGY_RECHARGE = 9f;
+
+    // ==========================================
     // AUDIO
     // ==========================================
 

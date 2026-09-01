@@ -31,6 +31,10 @@ public class MissionEntityFactory {
         return new Enemy(x, y, assets);
     }
 
+    public Enemy enemy(float x, float y, Enemy.Behavior behavior) {
+        return new Enemy(x, y, behavior, assets);
+    }
+
     public Portal portal(float x, float y) {
         return new Portal(x, y, assets);
     }

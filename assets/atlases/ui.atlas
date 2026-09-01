@@ -46,6 +46,20 @@ button_pressed
   orig: 192, 64
   offset: 0, 0
   index: -1
+cursor_default
+  rotate: false
+  xy: 1783, 144
+  size: 64, 64
+  orig: 64, 64
+  offset: 0, 0
+  index: -1
+cursor_target
+  rotate: false
+  xy: 1783, 74
+  size: 64, 64
+  orig: 64, 64
+  offset: 0, 0
+  index: -1
 damage_vignette
   rotate: false
   xy: 1681, 656
@@ -58,6 +72,13 @@ intro_keyart_v2
   xy: 3, 3
   size: 1672, 941
   orig: 1672, 941
+  offset: 0, 0
+  index: -1
+objective_marker
+  rotate: false
+  xy: 1879, 456
+  size: 64, 64
+  orig: 64, 64
   offset: 0, 0
   index: -1
 panel_dialog
@@ -97,7 +118,7 @@ ui_panel_frame
   index: -1
 white_pixel
   rotate: false
-  xy: 1943, 576
+  xy: 2141, 646
   size: 4, 4
   orig: 4, 4
   offset: 0, 0

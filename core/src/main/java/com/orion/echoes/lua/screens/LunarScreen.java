@@ -1,6 +1,8 @@
 package com.orion.echoes.lua.screens;
 
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.graphics.Cursor;
+import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
@@ -23,6 +25,7 @@ import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.entities.BaseLunar;
 import com.orion.echoes.lua.entities.Item;
 import com.orion.echoes.lua.entities.Enemy;
+import com.orion.echoes.lua.entities.EnemyPulse;
 import com.orion.echoes.lua.entities.CraftingStation;
 import com.orion.echoes.lua.entities.MissionCollectible;
 import com.orion.echoes.lua.entities.Obstacle;
@@ -98,6 +101,15 @@ public class LunarScreen implements Screen {
     private JuiceSystem juice;
     private CameraDirector cameraDirector;
     private final Vector2 cameraTarget = new Vector2();
+    private final Vector2 objectiveTarget = new Vector2();
+    private final Array<EnemyPulse> enemyPulses = new Array<>();
+    private float markerPulse;
+    private Cursor blankCursor;
+
+    /** Distancia da borda em que o marcador de objetivo encosta. */
+    private static final float MARKER_MARGIN = 58f;
+    private static final float MARKER_SIZE = 46f;
+    private static final float CURSOR_SIZE = 34f;
     private boolean portalWasUnlocked;
     private Screen nextScreen;
 
@@ -186,6 +198,23 @@ public class LunarScreen implements Screen {
 
         pauseLayout =
             new GlyphLayout();
+
+        esconderCursorDoSistema();
+    }
+
+    /**
+     * O jogo desenha o proprio cursor; o do sistema operacional sairia
+     * duplicado por cima. Substitui-lo por um cursor transparente e a forma
+     * de esconde-lo sem capturar o ponteiro dentro da janela.
+     */
+    private void esconderCursorDoSistema() {
+        if (blankCursor != null) return;
+        Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
+        pixmap.setColor(0f, 0f, 0f, 0f);
+        pixmap.fill();
+        blankCursor = Gdx.graphics.newCursor(pixmap, 0, 0);
+        pixmap.dispose();
+        if (blankCursor != null) Gdx.graphics.setCursor(blankCursor);
     }
 
     private void criarMissao() {
@@ -211,10 +240,15 @@ public class LunarScreen implements Screen {
         }
 
         enemies = new Array<>();
-        enemies.add(factory.enemy(760, 470));
-        enemies.add(factory.enemy(1500, 1320));
-        enemies.add(factory.enemy(2180, 720));
-        enemies.add(factory.enemy(2570, 1420));
+        /*
+         * A ordem ensina sem texto: o primeiro hostil aparece isolado e no
+         * comportamento mais simples; emboscador e atirador so entram depois,
+         * quando o jogador ja leu o telegraph uma vez.
+         */
+        enemies.add(factory.enemy(760, 470, Enemy.Behavior.STALKER));
+        enemies.add(factory.enemy(1500, 1320, Enemy.Behavior.AMBUSHER));
+        enemies.add(factory.enemy(2180, 720, Enemy.Behavior.RANGED));
+        enemies.add(factory.enemy(2570, 1420, Enemy.Behavior.AMBUSHER));
         mission.setTotalEnemies(enemies.size);
         feedbackTimer = 5f;
     }
@@ -447,6 +481,7 @@ public class LunarScreen implements Screen {
      * congelar durante hitstop nem parar na pausa.
      */
     private void atualizarMixer() {
+        markerPulse += Gdx.graphics.getDeltaTime();
         sounds.setListener(camera.position.x, camera.position.y);
         if (pausado) {
             sounds.atualizarIntensidade(0f, 0f);
@@ -582,7 +617,8 @@ public class LunarScreen implements Screen {
             baseLunar
                 .recarregarOxigenio(
                     astronauta,
-                    delta
+                    delta,
+                    mission.getRechargeMultiplier()
                 );
         }
 
@@ -599,6 +635,8 @@ public class LunarScreen implements Screen {
         atualizarSomPassos(
             delta
         );
+
+        aplicarOxigenioPassivo(delta);
 
         verificarOxigenio();
 
@@ -747,7 +785,8 @@ public class LunarScreen implements Screen {
         for (RepairStation station : repairStations) {
             if (!station.isPlayerNear(astronauta)) continue;
             if (station.repair(mission)) {
-                showFeedback(station.getType().getLabel() + " reparada. Sistema ONLINE.");
+                showFeedback(station.getType().getLabel() + " ONLINE  •  "
+                    + MissionState.getPerkLabel(station.getType()));
                 particleManager.criarProcessamento(station.getPosition().x + 63f, station.getPosition().y + 63f);
                 sounds.tocarReparoConcluido();
                 juice.trigger(JuiceSystem.Preset.REPAIR);
@@ -794,7 +833,7 @@ public class LunarScreen implements Screen {
             return;
         }
 
-        if (baseLunar.processarGelo(astronauta)) {
+        if (baseLunar.processarGelo(astronauta, mission.getIceYieldMultiplier())) {
             sounds.tocarProcessarGelo();
             showFeedback("Gelo processado: O2, água e combustível gerados.");
             particleManager.criarProcessamento(
@@ -832,6 +871,12 @@ public class LunarScreen implements Screen {
                 particleManager.criarAlertaInimigo(enemy.centerX(), enemy.centerY(), false);
                 sounds.tocarAlertaInimigo(enemy.centerX(), enemy.centerY());
             }
+            if (enemy.consumeRangedShot()) {
+                enemyPulses.add(new EnemyPulse(enemy.centerX(), enemy.centerY(),
+                    enemy.getAimDirection().x, enemy.getAimDirection().y, assets));
+                sounds.tocarEspacial("disparo_pulso", SoundManager.Bus.SFX, .5f,
+                    enemy.centerX(), enemy.centerY());
+            }
             if (enemy.canDamage(astronauta)) {
                 astronauta.receberDano(12f, enemy.centerX(), enemy.centerY());
                 showFeedback("Hostil atingiu o traje: -12 O2.");
@@ -841,6 +886,8 @@ public class LunarScreen implements Screen {
                 juice.trigger(JuiceSystem.Preset.PLAYER_HURT);
             }
         }
+
+        atualizarPulsosHostis(delta);
 
         if (input.consumeAttackPressed()) atacar();
         boolean unlocked = mission.isPortalUnlocked(astronauta.getOxigenio());
@@ -853,6 +900,26 @@ public class LunarScreen implements Screen {
         portalWasUnlocked = unlocked;
         portal.setUnlocked(unlocked);
         portal.update(delta);
+    }
+
+    /** Pulsos do hostil atirador: viajam, batem em rocha ou acertam o traje. */
+    private void atualizarPulsosHostis(float delta) {
+        for (int index = enemyPulses.size - 1; index >= 0; index--) {
+            EnemyPulse pulse = enemyPulses.get(index);
+            pulse.update(delta);
+            if (pulse.collideWith(obstacles)) {
+                particleManager.criarImpactoTiro(pulse.centerX(), pulse.centerY());
+            } else if (pulse.hits(astronauta)) {
+                astronauta.receberDano(GameConfig.ENEMY_PULSE_DAMAGE,
+                    pulse.centerX(), pulse.centerY());
+                showFeedback("Pulso hostil atingiu o traje.");
+                particleManager.criarImpactoTraje(
+                    astronauta.getPosition().x + GameConfig.PLAYER_WIDTH / 2f,
+                    astronauta.getPosition().y + GameConfig.PLAYER_HEIGHT / 2f);
+                juice.trigger(JuiceSystem.Preset.PLAYER_HURT);
+            }
+            if (!pulse.isAtivo()) enemyPulses.removeIndex(index);
+        }
     }
 
     private void atacar() {
@@ -1019,6 +1086,13 @@ public class LunarScreen implements Screen {
     // =====================================================
     // OXIGENIO CRITICO
     // =====================================================
+
+    /** Estufa reparada devolve oxigenio devagar em campo aberto. */
+    private void aplicarOxigenioPassivo(float delta) {
+        float perSecond = mission.getPassiveOxygenPerSecond();
+        if (perSecond <= 0f || baseLunar.isAstronautaDentro()) return;
+        astronauta.recuperarOxigenio(perSecond * delta);
+    }
 
     private void verificarOxigenio() {
 
@@ -1261,6 +1335,10 @@ public class LunarScreen implements Screen {
             enemy.render(batch);
         }
 
+        for (EnemyPulse pulse : enemyPulses) {
+            pulse.render(batch);
+        }
+
         // OBSTACULOS
         for (
             Obstacle obstacle
@@ -1301,12 +1379,130 @@ public class LunarScreen implements Screen {
             );
         }
 
+        renderObjectiveMarker();
+
         renderDamageOverlay();
 
         if (pausado) {
 
             renderPause();
         }
+
+        if (!pausado) renderCursor();
+    }
+
+    /**
+     * Marcador direcional do objetivo atual.
+     *
+     * So aparece com a Comunicacao reparada: e o beneficio jogavel daquele
+     * reparo. Fica preso a borda quando o alvo esta fora do enquadramento e
+     * pousa sobre ele quando entra em tela.
+     */
+    private void renderObjectiveMarker() {
+        if (pausado || !mission.isMapRevealed()) return;
+        if (!encontrarAlvoDeObjetivo(objectiveTarget)) return;
+
+        float screenX = objectiveTarget.x - camera.position.x + GameConfig.WINDOW_WIDTH / 2f;
+        float screenY = objectiveTarget.y - camera.position.y + GameConfig.WINDOW_HEIGHT / 2f;
+        float centerX = GameConfig.WINDOW_WIDTH / 2f;
+        float centerY = GameConfig.WINDOW_HEIGHT / 2f;
+        float angle = MathUtils.atan2(screenY - centerY, screenX - centerX) * MathUtils.radiansToDegrees;
+        boolean offScreen = screenX < MARKER_MARGIN
+            || screenX > GameConfig.WINDOW_WIDTH - MARKER_MARGIN
+            || screenY < MARKER_MARGIN
+            || screenY > GameConfig.WINDOW_HEIGHT - MARKER_MARGIN;
+
+        float drawX = MathUtils.clamp(screenX, MARKER_MARGIN, GameConfig.WINDOW_WIDTH - MARKER_MARGIN);
+        float drawY = MathUtils.clamp(screenY, MARKER_MARGIN, GameConfig.WINDOW_HEIGHT - MARKER_MARGIN);
+        float pulse = .82f + MathUtils.sin(markerPulse * 4.2f) * .18f;
+
+        batch.setProjectionMatrix(pauseCamera.combined);
+        batch.begin();
+        batch.setColor(1f, 1f, 1f, offScreen ? .95f : .55f);
+        float size = MARKER_SIZE * pulse;
+        batch.draw(assets.uiObjectiveMarkerTexture,
+            drawX - size / 2f, drawY - size / 2f,
+            size / 2f, size / 2f, size, size, 1f, 1f,
+            offScreen ? angle : 0f);
+        batch.setColor(Color.WHITE);
+        batch.end();
+    }
+
+    /** Alvo do marcador, na mesma ordem de prioridade do texto de objetivo. */
+    private boolean encontrarAlvoDeObjetivo(Vector2 out) {
+        if (mission.getRepairCount() < 3) {
+            if (alvoMaisProximo(out)) return true;
+            for (RepairStation station : repairStations) {
+                if (mission.isRepaired(station.getType())) continue;
+                if (mission.getPartCount(station.getType().getRequiredPart()) < 1) continue;
+                out.set(station.getPosition().x + 63f, station.getPosition().y + 63f);
+                return true;
+            }
+            return false;
+        }
+        if (!mission.hasWeapon()) {
+            if (!mission.hasAllWeaponParts() && alvoMaisProximo(out)) return true;
+            out.set(craftingStation.getPosition().x + 32f, craftingStation.getPosition().y + 32f);
+            return true;
+        }
+        if (mission.getEnemiesDefeated() < mission.getTotalEnemies()) {
+            Enemy nearest = null;
+            float best = Float.MAX_VALUE;
+            for (Enemy enemy : enemies) {
+                if (!enemy.isAtivo()) continue;
+                float distance = Vector2.dst(enemy.centerX(), enemy.centerY(),
+                    astronauta.getPosition().x, astronauta.getPosition().y);
+                if (distance < best) {
+                    best = distance;
+                    nearest = enemy;
+                }
+            }
+            if (nearest == null) return false;
+            out.set(nearest.centerX(), nearest.centerY());
+            return true;
+        }
+        out.set(portal.getPosition().x + portal.getBounds().width / 2f,
+            portal.getPosition().y + portal.getBounds().height / 2f);
+        return true;
+    }
+
+    private boolean alvoMaisProximo(Vector2 out) {
+        MissionCollectible nearest = null;
+        float best = Float.MAX_VALUE;
+        for (MissionCollectible collectible : missionCollectibles) {
+            if (!collectible.isAtivo()) continue;
+            float distance = Vector2.dst(collectible.getPosition().x, collectible.getPosition().y,
+                astronauta.getPosition().x, astronauta.getPosition().y);
+            if (distance < best) {
+                best = distance;
+                nearest = collectible;
+            }
+        }
+        if (nearest == null) return false;
+        out.set(nearest.getPosition().x + 27f, nearest.getPosition().y + 27f);
+        return true;
+    }
+
+    /** Cursor autoral: muda de forma quando a mira encosta em um hostil. */
+    private void renderCursor() {
+        float x = Gdx.input.getX() * GameConfig.WINDOW_WIDTH / (float) Gdx.graphics.getWidth();
+        float y = GameConfig.WINDOW_HEIGHT
+            - Gdx.input.getY() * GameConfig.WINDOW_HEIGHT / (float) Gdx.graphics.getHeight();
+        boolean onTarget = false;
+        for (Enemy enemy : enemies) {
+            if (!enemy.isAtivo()) continue;
+            if (Vector2.dst(enemy.centerX(), enemy.centerY(), mouseWorld.x, mouseWorld.y) < 60f) {
+                onTarget = true;
+                break;
+            }
+        }
+        batch.setProjectionMatrix(pauseCamera.combined);
+        batch.begin();
+        batch.setColor(1f, 1f, 1f, onTarget ? 1f : .8f);
+        batch.draw(onTarget ? assets.uiCursorTargetTexture : assets.uiCursorDefaultTexture,
+            x - CURSOR_SIZE / 2f, y - CURSOR_SIZE / 2f, CURSOR_SIZE, CURSOR_SIZE);
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     private void renderDamageOverlay() {
@@ -1530,6 +1726,12 @@ public class LunarScreen implements Screen {
 
         if (shapeRenderer != null) {
             shapeRenderer.dispose();
+        }
+
+        if (blankCursor != null) {
+            Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
+            blankCursor.dispose();
+            blankCursor = null;
         }
     }
 }

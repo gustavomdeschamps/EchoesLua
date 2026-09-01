@@ -413,6 +413,27 @@ def generate_ui_kit() -> None:
             draw.line((cx, 19, cx, 45), fill=color, width=7)
     icons.save(ui_dir / "resource_icons.png", optimize=True)
 
+    # Marcador de objetivo: seta apontando para fora da borda da tela.
+    marker = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(marker)
+    draw.polygon(((58, 32), (22, 10), (30, 32), (22, 54)), fill=(45, 139, 208, 245))
+    draw.polygon(((58, 32), (22, 10), (30, 32), (22, 54)), outline=(202, 232, 255, 235))
+    draw.ellipse((4, 26, 16, 38), fill=(229, 164, 58, 235))
+    marker.save(ui_dir / "objective_marker.png", optimize=True)
+
+    # Cursor autoral: forma neutra fora de alvo, retículo sobre interagível.
+    for name, accent in (("cursor_default", (202, 216, 224, 240)),
+                         ("cursor_target", (229, 164, 58, 250))):
+        cursor = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
+        draw = ImageDraw.Draw(cursor)
+        draw.ellipse((18, 18, 45, 45), outline=accent, width=3)
+        for x0, y0, x1, y1 in ((32, 4, 32, 15), (32, 48, 32, 59),
+                               (4, 32, 15, 32), (48, 32, 59, 32)):
+            draw.line((x0, y0, x1, y1), fill=accent, width=3)
+        if name == "cursor_target":
+            draw.ellipse((28, 28, 35, 35), fill=accent)
+        cursor.save(ui_dir / f"{name}.png", optimize=True)
+
     vignette = Image.new("RGBA", (512, 288), (0, 0, 0, 0))
     pixels = vignette.load()
     for y in range(vignette.height):

@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.events.EventBus;
 import com.orion.echoes.lua.systems.MissionState.PartType;
 import com.orion.echoes.lua.systems.MissionState.SystemType;
@@ -120,6 +121,50 @@ class MissionStateTest {
     void totalEnemiesIsClamped() {
         mission.setTotalEnemies(-5);
         assertEquals(0, mission.getTotalEnemies());
+    }
+
+    @Test
+    @DisplayName("Cada sistema reparado libera um beneficio distinto")
+    void eachRepairGrantsItsOwnPerk() {
+        assertFalse(mission.isMapRevealed());
+        assertEquals(1f, mission.getRechargeMultiplier());
+        assertEquals(1f, mission.getIceYieldMultiplier());
+        assertEquals(0f, mission.getPassiveOxygenPerSecond());
+
+        mission.collect(PartType.ANTENA);
+        mission.repair(SystemType.COMUNICACAO);
+        assertTrue(mission.isMapRevealed());
+        assertEquals(1f, mission.getRechargeMultiplier(), "comunicacao nao mexe na recarga");
+
+        mission.collect(PartType.ENERGIA);
+        mission.repair(SystemType.ENERGIA);
+        assertEquals(GameConfig.PERK_ENERGY_RECHARGE, mission.getRechargeMultiplier());
+
+        mission.collect(PartType.EXTRACAO);
+        mission.repair(SystemType.EXTRACAO);
+        assertEquals(GameConfig.PERK_EXTRACTION_YIELD, mission.getIceYieldMultiplier());
+
+        mission.collect(PartType.ESTUFA);
+        mission.repair(SystemType.ESTUFA);
+        assertEquals(GameConfig.PERK_GREENHOUSE_OXYGEN, mission.getPassiveOxygenPerSecond());
+    }
+
+    @Test
+    @DisplayName("restore devolve os beneficios dos sistemas ja online")
+    void restoreBringsPerksBack() {
+        mission.restore(0, 0, 0, 0, 0, 0, 0, true, false, false, true, false, 0);
+        assertTrue(mission.isMapRevealed());
+        assertEquals(GameConfig.PERK_GREENHOUSE_OXYGEN, mission.getPassiveOxygenPerSecond());
+        assertEquals(1f, mission.getRechargeMultiplier());
+    }
+
+    @Test
+    @DisplayName("Todo sistema tem texto de beneficio")
+    void everySystemHasPerkLabel() {
+        for (SystemType type : SystemType.values()) {
+            String label = MissionState.getPerkLabel(type);
+            assertTrue(label != null && !label.isBlank(), "sem texto para " + type);
+        }
     }
 
     private void repararTres() {

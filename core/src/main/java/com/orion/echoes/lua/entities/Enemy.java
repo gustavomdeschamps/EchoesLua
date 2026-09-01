@@ -1,5 +1,6 @@
 package com.orion.echoes.lua.entities;
 
+import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
@@ -12,31 +13,74 @@ import com.orion.echoes.lua.managers.AssetManager;
 /** Predador lunar com telegraph legível e animações 4x4 consistentes. */
 public class Enemy extends Entidade {
     private enum State { IDLE, CHASE, TELEGRAPH, ATTACK, HIT, DYING }
-    private static final float SPEED = 72f;
-    private static final float DETECTION_RANGE = 480f;
-    private static final float ATTACK_RANGE = 92f;
+
+    /**
+     * Comportamentos que dividem o mesmo rig e a mesma folha de animação.
+     *
+     * A leitura para o jogador vem da cor e da distância em que cada um
+     * reage, não de arte nova: o mesmo hostil se comporta de três maneiras.
+     */
+    public enum Behavior {
+        /** Persegue de longe, como no desenho original da fase. */
+        STALKER(GameConfig.ENEMY_STALKER_DETECTION, GameConfig.ENEMY_STALKER_ATTACK_RANGE,
+            GameConfig.ENEMY_STALKER_TELEGRAPH, 1f, new Color(1f, 1f, 1f, 1f)),
+        /** Fica quieto até o jogador encostar, então dispara em cima dele. */
+        AMBUSHER(GameConfig.ENEMY_AMBUSHER_DETECTION, GameConfig.ENEMY_AMBUSHER_ATTACK_RANGE,
+            GameConfig.ENEMY_AMBUSHER_TELEGRAPH, GameConfig.ENEMY_AMBUSHER_SPEED,
+            new Color(.78f, .55f, 1f, 1f)),
+        /** Recua para manter distância e ataca com pulsos. */
+        RANGED(GameConfig.ENEMY_RANGED_DETECTION, GameConfig.ENEMY_RANGED_ATTACK_RANGE,
+            GameConfig.ENEMY_RANGED_TELEGRAPH, GameConfig.ENEMY_RANGED_SPEED,
+            new Color(1f, .82f, .52f, 1f));
+
+        private final float detection;
+        private final float attackRange;
+        private final float telegraph;
+        private final float speedScale;
+        private final Color tint;
+
+        Behavior(float detection, float attackRange, float telegraph,
+                 float speedScale, Color tint) {
+            this.detection = detection;
+            this.attackRange = attackRange;
+            this.telegraph = telegraph;
+            this.speedScale = speedScale;
+            this.tint = tint;
+        }
+    }
+
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
     private final Rectangle movementBounds = new Rectangle();
     private final float spawnX, spawnY;
+    private final Behavior behavior;
     private State state = State.IDLE;
-    private float hp = 3f, stateTime, contactCooldown, elapsed, targetDistance;
-    private boolean facingLeft, defeated, telegraphStarted;
+    private float hp = GameConfig.ENEMY_BASE_HP;
+    private float stateTime, contactCooldown, elapsed, targetDistance, shotCooldown;
+    private boolean facingLeft, defeated, telegraphStarted, rangedShotReady;
 
     public Enemy(float x, float y, AssetManager assets) {
+        this(x, y, Behavior.STALKER, assets);
+    }
+
+    public Enemy(float x, float y, Behavior behavior, AssetManager assets) {
         super(x, y, 72f, 58f);
         bounds.set(x + 10f, y + 6f, 52f, 30f);
         spawnX = x;
         spawnY = y;
+        this.behavior = behavior;
         for (int row = 0; row < 4; row++)
             for (int column = 0; column < 4; column++)
                 frames[row][column] = assets.lunarEnemyFrame(column, row);
     }
 
+    public Behavior getBehavior() { return behavior; }
+
     public void update(float delta, Astronauta target, Array<Obstacle> obstacles) {
         elapsed += delta;
         stateTime += delta;
         contactCooldown = Math.max(0f, contactCooldown - delta);
+        shotCooldown = Math.max(0f, shotCooldown - delta);
         if (state == State.DYING) {
             if (stateTime >= .44f) ativo = false;
             return;
@@ -51,20 +95,35 @@ public class Enemy extends Entidade {
 
         switch (state) {
             case HIT -> {
-                if (stateTime >= .18f) changeState(targetDistance <= ATTACK_RANGE ? State.TELEGRAPH : State.CHASE);
+                if (stateTime >= .18f) changeState(podeAtacar() ? State.TELEGRAPH : State.CHASE);
             }
             case TELEGRAPH -> {
-                if (stateTime >= .36f) changeState(State.ATTACK);
+                if (behavior == Behavior.RANGED) manterDistancia(delta, obstacles);
+                if (stateTime >= behavior.telegraph) {
+                    changeState(State.ATTACK);
+                    if (behavior == Behavior.RANGED) {
+                        rangedShotReady = true;
+                        shotCooldown = GameConfig.ENEMY_RANGED_COOLDOWN;
+                    }
+                }
             }
             case ATTACK -> {
-                if (stateTime < .19f) move(direction.x * 1.8f, direction.y * 1.8f, delta, obstacles);
-                if (stateTime >= .34f) changeState(targetDistance <= ATTACK_RANGE ? State.TELEGRAPH : State.CHASE);
+                // O atirador nao investe: o dano dele viaja no pulso.
+                if (behavior != Behavior.RANGED && stateTime < .19f) {
+                    move(direction.x * 1.8f, direction.y * 1.8f, delta, obstacles);
+                }
+                if (behavior == Behavior.RANGED) manterDistancia(delta, obstacles);
+                if (stateTime >= .34f) changeState(podeAtacar() ? State.TELEGRAPH : State.CHASE);
             }
             default -> {
-                if (targetDistance <= ATTACK_RANGE) {
+                if (podeAtacar()) {
                     changeState(State.TELEGRAPH);
+                } else if (behavior == Behavior.RANGED
+                    && targetDistance <= behavior.detection) {
+                    changeStateIfNeeded(State.CHASE);
+                    manterDistancia(delta, obstacles);
                 } else {
-                    if (targetDistance <= DETECTION_RANGE) changeStateIfNeeded(State.CHASE);
+                    if (targetDistance <= behavior.detection) changeStateIfNeeded(State.CHASE);
                     else {
                         changeStateIfNeeded(State.IDLE);
                         direction.set(MathUtils.cos(elapsed * .54f + spawnX * .01f),
@@ -77,8 +136,27 @@ public class Enemy extends Entidade {
         }
     }
 
+    /** O atirador so ataca com o pulso recarregado. */
+    private boolean podeAtacar() {
+        if (targetDistance > behavior.attackRange) return false;
+        return behavior != Behavior.RANGED || shotCooldown <= 0f;
+    }
+
+    /** Recua quando o jogador se aproxima demais e reaproxima quando ele foge. */
+    private void manterDistancia(float delta, Array<Obstacle> obstacles) {
+        float gap = targetDistance - GameConfig.ENEMY_RANGED_KEEP_DISTANCE;
+        if (Math.abs(gap) < 40f) {
+            float strafe = MathUtils.sin(elapsed * 1.3f + spawnX * .01f);
+            move(-direction.y * strafe, direction.x * strafe, delta, obstacles);
+            return;
+        }
+        float sign = Math.signum(gap);
+        move(direction.x * sign, direction.y * sign, delta, obstacles);
+    }
+
     private void move(float dx, float dy, float delta, Array<Obstacle> obstacles) {
-        float speed = SPEED * (state == State.ATTACK ? 1.42f : 1f);
+        float speed = GameConfig.ENEMY_BASE_SPEED * behavior.speedScale
+            * (state == State.ATTACK ? 1.42f : 1f);
         float nextX = MathUtils.clamp(position.x + dx * speed * delta, 0f, GameConfig.WORLD_WIDTH - width);
         if (isFree(nextX, position.y, obstacles)) position.x = nextX;
         float nextY = MathUtils.clamp(position.y + dy * speed * delta, 0f, GameConfig.WORLD_HEIGHT - height);
@@ -122,13 +200,23 @@ public class Enemy extends Entidade {
         if (!ativo && state != State.DYING) return;
         float alpha = state == State.DYING ? MathUtils.clamp(1f - stateTime / .5f, 0f, 1f) : 1f;
         if (state == State.HIT) batch.setColor(1f, .45f, .62f, alpha);
-        else batch.setColor(1f, 1f, 1f, alpha);
+        else batch.setColor(behavior.tint.r, behavior.tint.g, behavior.tint.b, alpha);
         float pulse = state == State.TELEGRAPH ? MathUtils.sin(stateTime * 26f) * 2f : 0f;
         batch.draw(currentFrame(), position.x - 16f, position.y - 18f + pulse, 104f, 104f);
         batch.setColor(1f, 1f, 1f, 1f);
     }
 
+    /** True uma unica vez por disparo; a tela cria o projetil. */
+    public boolean consumeRangedShot() {
+        boolean ready = rangedShotReady;
+        rangedShotReady = false;
+        return ready;
+    }
+
+    public Vector2 getAimDirection() { return direction; }
+
     public boolean canDamage(Astronauta astronauta) {
+        if (behavior == Behavior.RANGED) return false;
         if (!ativo || state != State.ATTACK || stateTime < .08f || stateTime > .24f
             || contactCooldown > 0f || !bounds.overlaps(astronauta.getBounds())) return false;
         contactCooldown = .9f;
@@ -147,7 +235,7 @@ public class Enemy extends Entidade {
     }
     public float centerX() { return position.x + width / 2f; }
     public float centerY() { return position.y + height / 2f; }
-    public float getHealthRatio() { return hp / 3f; }
+    public float getHealthRatio() { return hp / GameConfig.ENEMY_BASE_HP; }
     public boolean isDefeated() { return defeated; }
     public boolean consumeTelegraphStarted() {
         boolean started = telegraphStarted;

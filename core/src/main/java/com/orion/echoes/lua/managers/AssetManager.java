@@ -56,6 +56,9 @@ public final class AssetManager implements Disposable {
     public TextureRegion uiResourceIconsTexture;
     public TextureRegion uiDamageVignetteTexture;
     public TextureRegion uiWhiteTexture;
+    public TextureRegion uiObjectiveMarkerTexture;
+    public TextureRegion uiCursorDefaultTexture;
+    public TextureRegion uiCursorTargetTexture;
     public BitmapFont font;
     public BitmapFont titleFont;
 
@@ -126,6 +129,9 @@ public final class AssetManager implements Disposable {
         uiResourceIconsTexture = required(uiAtlas, "resource_icons");
         uiDamageVignetteTexture = required(uiAtlas, "damage_vignette");
         uiWhiteTexture = required(uiAtlas, "white_pixel");
+        uiObjectiveMarkerTexture = required(uiAtlas, "objective_marker");
+        uiCursorDefaultTexture = required(uiAtlas, "cursor_default");
+        uiCursorTargetTexture = required(uiAtlas, "cursor_target");
         actionFxTexture = required(fxAtlas, "action_fx_sheet");
         energyFxTexture = required(fxAtlas, "energy_fx_sheet");
         backgroundLuaTexture = loader.get(LUNAR_GROUND, Texture.class);
