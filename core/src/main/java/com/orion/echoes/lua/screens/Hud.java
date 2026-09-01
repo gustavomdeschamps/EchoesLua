@@ -1,14 +1,11 @@
 package com.orion.echoes.lua.screens;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Disposable;
@@ -26,8 +23,9 @@ public final class Hud implements Disposable {
     private final Viewport viewport;
     private final BitmapFont font;
     private final GlyphLayout layout = new GlyphLayout();
-    private final ShapeRenderer shapes = new ShapeRenderer();
     private final NinePatch panelPatch;
+    private final com.badlogic.gdx.graphics.g2d.TextureRegion barTrack;
+    private final com.badlogic.gdx.graphics.g2d.TextureRegion barFill;
     private String previousMessage = "";
     private float entrance;
     private float toastLife;
@@ -39,6 +37,8 @@ public final class Hud implements Disposable {
         camera.update();
         font = assets.font;
         panelPatch = assets.uiPanelPatch();
+        barTrack = assets.uiBarTrackTexture;
+        barFill = assets.uiBarFillTexture;
     }
 
     public void update(float delta, String message) {
@@ -74,17 +74,10 @@ public final class Hud implements Disposable {
             float height = 44f + Interpolation.swingOut.apply(toastKick) * 4f;
             panel(batch, 640f - width / 2f, 108f, width, height, .92f * toastAlpha, UiTheme.GREEN);
         }
-        batch.end();
-
-        shapes.setProjectionMatrix(camera.combined);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        bar(78f, lowerY + 39f, 132f, 9f, player.getOxigenio() / 100f,
+        bar(batch, 78f, lowerY + 39f, 132f, 9f, player.getOxigenio() / 100f,
             player.getOxigenio() <= 25f ? UiTheme.RED : UiTheme.CYAN, vitalsAlpha);
-        bar(78f, lowerY + 17f, 132f, 8f, player.getEnergia() / 100f, UiTheme.AMBER, vitalsAlpha);
-        shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        bar(batch, 78f, lowerY + 17f, 132f, 8f, player.getEnergia() / 100f, UiTheme.AMBER, vitalsAlpha);
+        batch.end();
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
@@ -109,14 +102,6 @@ public final class Hud implements Disposable {
         return px > x - 46f && px < x + width + 46f && py > y - 44f && py < y + height + 44f;
     }
 
-    private void capsule(float x, float y, float width, float height, float alpha, Color accent) {
-        shapes.setColor(8f / 255f, 13f / 255f, 18f / 255f, alpha);
-        shapes.rect(x, y, width, height);
-        shapes.setColor(accent.r, accent.g, accent.b, alpha);
-        shapes.rect(x + 10f, y + height - 3f, 42f, 3f);
-        shapes.rect(x + width - 20f, y, 10f, 3f);
-    }
-
     private void panel(SpriteBatch batch, float x, float y, float width, float height,
                        float alpha, Color accent) {
         panelPatch.setColor(new Color(accent.r * .42f + .58f, accent.g * .42f + .58f,
@@ -125,11 +110,13 @@ public final class Hud implements Disposable {
         panelPatch.setColor(Color.WHITE);
     }
 
-    private void bar(float x, float y, float width, float height, float ratio, Color color, float alpha) {
-        shapes.setColor(UiTheme.TRACK.r, UiTheme.TRACK.g, UiTheme.TRACK.b, alpha);
-        shapes.rect(x, y, width, height);
-        shapes.setColor(color.r, color.g, color.b, alpha);
-        shapes.rect(x, y, width * MathUtils.clamp(ratio, 0f, 1f), height);
+    private void bar(SpriteBatch batch, float x, float y, float width, float height,
+                     float ratio, Color color, float alpha) {
+        batch.setColor(1f, 1f, 1f, alpha);
+        batch.draw(barTrack, x, y, width, height);
+        batch.setColor(color.r, color.g, color.b, alpha);
+        batch.draw(barFill, x, y, width * MathUtils.clamp(ratio, 0f, 1f), height);
+        batch.setColor(Color.WHITE);
     }
 
     private void text(SpriteBatch batch, String value, float scale, Color color, float x, float y, float alpha) {
@@ -147,5 +134,5 @@ public final class Hud implements Disposable {
     }
 
     public void resize(int width, int height) { viewport.update(width, height, true); }
-    @Override public void dispose() { shapes.dispose(); }
+    @Override public void dispose() { }
 }

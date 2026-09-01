@@ -1,197 +1,151 @@
 package com.orion.echoes.lua.managers;
 
 import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.assets.loaders.TextureLoader;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
+import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.Disposable;
 
-public class AssetManager implements Disposable {
+/** Catálogo visual carregado de modo incremental pela LoadingScreen. */
+public final class AssetManager implements Disposable {
+    private static final String GAME_ATLAS = "atlases/game.atlas";
+    private static final String UI_ATLAS = "atlases/ui.atlas";
+    private static final String FX_ATLAS = "atlases/fx.atlas";
+    private static final String LUNAR_GROUND = "textures/lunar_ground.png";
+    private static final String MARS_GROUND = "textures/mars_ground.png";
 
-    // ==========================================
-    // PLAYER
-    // ==========================================
+    private final com.badlogic.gdx.assets.AssetManager loader =
+        new com.badlogic.gdx.assets.AssetManager();
+    private boolean queued;
+    private boolean ready;
 
-    public Texture astronautaSheetTexture;
-    public Texture pulseRifleTexture;
-
-    // ==========================================
-    // CENÁRIO
-    // ==========================================
-
+    public TextureRegion astronautaSheetTexture;
+    public TextureRegion astronautCombatSheetTexture;
+    public TextureRegion pulseRifleTexture;
     public Texture backgroundLuaTexture;
-    public Texture baseLunarTexture;
-
-    // ==========================================
-    // ITENS
-    // ==========================================
-
-    public Texture oxigenioTexture;
-    public Texture comidaTexture;
-    public Texture geloTexture;
-
-    // ==========================================
-    // OBSTÁCULOS
-    // ==========================================
-
-    public Texture missionAtlasTexture;
+    public TextureRegion baseLunarTexture;
+    public TextureRegion oxigenioTexture;
+    public TextureRegion comidaTexture;
+    public TextureRegion geloTexture;
+    public TextureRegion missionAtlasTexture;
     public Texture marsBackgroundTexture;
-    public Texture introKeyArtTexture;
-    public Texture marsAtlasTexture;
-    public Texture lunarEnemySheetTexture;
-    public Texture marsDroneSheetTexture;
-    public Texture marsCrawlerSheetTexture;
-    public Texture lunarObstaclesTexture;
-    public Texture marsObstaclesTexture;
-    public Texture actionFxTexture;
-    public Texture energyFxTexture;
-    public Texture landmarksTexture;
-    public Texture uiPanelTexture;
-
-    // ==========================================
-    // UI
-    // ==========================================
-
+    public TextureRegion introKeyArtTexture;
+    public TextureRegion marsAtlasTexture;
+    public TextureRegion lunarEnemySheetTexture;
+    public TextureRegion marsDroneSheetTexture;
+    public TextureRegion marsCrawlerSheetTexture;
+    public TextureRegion lunarObstaclesTexture;
+    public TextureRegion marsObstaclesTexture;
+    public TextureRegion actionFxTexture;
+    public TextureRegion energyFxTexture;
+    public TextureRegion landmarksTexture;
+    public TextureRegion uiPanelTexture;
+    public TextureRegion uiPanelHudTexture;
+    public TextureRegion uiPanelDialogTexture;
+    public TextureRegion uiPanelModalTexture;
+    public TextureRegion uiButtonNormalTexture;
+    public TextureRegion uiButtonHoverTexture;
+    public TextureRegion uiButtonPressedTexture;
+    public TextureRegion uiButtonDisabledTexture;
+    public TextureRegion uiBarTrackTexture;
+    public TextureRegion uiBarFillTexture;
+    public TextureRegion uiResourceIconsTexture;
+    public TextureRegion uiDamageVignetteTexture;
+    public TextureRegion uiWhiteTexture;
     public BitmapFont font;
     public BitmapFont titleFont;
 
-    // ==========================================
-    // LOAD
-    // ==========================================
+    public void queue() {
+        if (queued) return;
+        queued = true;
+        loader.load(GAME_ATLAS, TextureAtlas.class);
+        loader.load(UI_ATLAS, TextureAtlas.class);
+        loader.load(FX_ATLAS, TextureAtlas.class);
 
-    public void load() {
-
-        // PLAYER
-        astronautaSheetTexture = loadTextureOrPlaceholder("textures/astronauta_sheet.png", Color.WHITE);
-        pulseRifleTexture = loadTextureOrPlaceholder("textures/pulse_rifle.png", Color.WHITE);
-
-        // LUA
-        backgroundLuaTexture =
-            loadTextureOrPlaceholder(
-                "textures/lunar_ground.png",
-                new Color(
-                    0.12f,
-                    0.13f,
-                    0.16f,
-                    1f
-                )
-            );
-
-        baseLunarTexture =
-            loadTextureOrPlaceholder(
-                "textures/base_lunar.png",
-                Color.LIGHT_GRAY
-            );
-
-        // ITENS
-
-        oxigenioTexture =
-            loadTextureOrPlaceholder(
-                "textures/oxigenio.png",
-                Color.CYAN
-            );
-
-        comidaTexture =
-            loadTextureOrPlaceholder(
-                "textures/comida.png",
-                Color.ORANGE
-            );
-
-        geloTexture =
-            loadTextureOrPlaceholder(
-                "textures/gelo.png",
-                Color.SKY
-            );
-
-        // OBSTÁCULO
-
-        missionAtlasTexture =
-            loadTextureOrPlaceholder(
-                "textures/mission_atlas_unified.png",
-                Color.CYAN
-            );
-
-        marsBackgroundTexture =
-            loadTextureOrPlaceholder(
-                "textures/mars_ground.png",
-                Color.FIREBRICK
-            );
-
-        introKeyArtTexture = loadTextureOrPlaceholder("textures/intro_keyart_v2.png", Color.DARK_GRAY);
-        marsAtlasTexture = loadTextureOrPlaceholder("textures/mars_atlas_v4.png", Color.ORANGE);
-        lunarEnemySheetTexture = loadTextureOrPlaceholder("textures/lunar_enemy_sheet.png", Color.MAGENTA);
-        marsDroneSheetTexture = loadTextureOrPlaceholder("textures/mars_drone_sheet.png", Color.ORANGE);
-        marsCrawlerSheetTexture = loadTextureOrPlaceholder("textures/mars_crawler_sheet.png", Color.ORANGE);
-        lunarObstaclesTexture = loadTextureOrPlaceholder("textures/lunar_obstacles.png", Color.DARK_GRAY);
-        marsObstaclesTexture = loadTextureOrPlaceholder("textures/mars_obstacles.png", Color.FIREBRICK);
-        actionFxTexture = loadTextureOrPlaceholder("textures/action_fx_sheet.png", Color.WHITE);
-        energyFxTexture = loadTextureOrPlaceholder("textures/energy_fx_sheet.png", Color.CYAN);
-        landmarksTexture = loadTextureOrPlaceholder("textures/landmarks.png", Color.LIGHT_GRAY);
-        uiPanelTexture = loadTextureOrPlaceholder("textures/ui_panel_frame.png", Color.DARK_GRAY);
-
-        // FILTROS
-
-        aplicarFiltroNearest(astronautaSheetTexture);
-        aplicarFiltro(pulseRifleTexture);
-
-        aplicarFiltro(
-            backgroundLuaTexture
-        );
-
-        aplicarFiltro(
-            baseLunarTexture
-        );
-
-        aplicarFiltro(
-            oxigenioTexture
-        );
-
-        aplicarFiltro(
-            comidaTexture
-        );
-
-        aplicarFiltro(
-            geloTexture
-        );
-
-        aplicarFiltro(
-            missionAtlasTexture
-        );
-
-        aplicarFiltro(
-            marsBackgroundTexture
-        );
-        aplicarFiltro(introKeyArtTexture);
-        aplicarFiltro(marsAtlasTexture);
-        aplicarFiltro(lunarEnemySheetTexture);
-        aplicarFiltro(marsDroneSheetTexture);
-        aplicarFiltro(marsCrawlerSheetTexture);
-        aplicarFiltro(lunarObstaclesTexture);
-        aplicarFiltro(marsObstaclesTexture);
-        aplicarFiltro(actionFxTexture);
-        aplicarFiltro(energyFxTexture);
-        aplicarFiltro(landmarksTexture);
-        aplicarFiltro(uiPanelTexture);
-        backgroundLuaTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-        marsBackgroundTexture.setWrap(Texture.TextureWrap.Repeat, Texture.TextureWrap.Repeat);
-
-        // FONTE
-
-        // Bahnschrift nasce de desenho técnico DIN: legível em tamanhos pequenos e
-        // coerente com a sinalização industrial das bases, sem aspecto de dashboard web.
-        // Segoe UI mantém acentos e formas abertas em escalas pequenas; o peso
-        // bold fica reservado à hierarquia, sem o aspecto monoespaçado anterior.
-        font = gerarFonte("fonts/SegoeUI.ttf", 25);
-        titleFont = gerarFonte("fonts/SegoeUI-Bold.ttf", 32);
+        TextureLoader.TextureParameter terrain = new TextureLoader.TextureParameter();
+        terrain.minFilter = Texture.TextureFilter.Linear;
+        terrain.magFilter = Texture.TextureFilter.Linear;
+        terrain.wrapU = Texture.TextureWrap.Repeat;
+        terrain.wrapV = Texture.TextureWrap.Repeat;
+        loader.load(LUNAR_GROUND, Texture.class, terrain);
+        loader.load(MARS_GROUND, Texture.class, terrain);
     }
 
-    private BitmapFont gerarFonte(String path, int size) {
+    /** Avança a fila sem bloquear; retorna true somente quando tudo está pronto. */
+    public boolean update() {
+        if (!queued) throw new IllegalStateException("queue() deve ser chamado antes de update().");
+        if (!loader.update()) return false;
+        bindLoadedAssets();
+        return true;
+    }
+
+    public float getProgress() {
+        return loader.getProgress();
+    }
+
+    public boolean isReady() {
+        return ready;
+    }
+
+    private void bindLoadedAssets() {
+        if (ready) return;
+        TextureAtlas gameAtlas = loader.get(GAME_ATLAS, TextureAtlas.class);
+        TextureAtlas uiAtlas = loader.get(UI_ATLAS, TextureAtlas.class);
+        TextureAtlas fxAtlas = loader.get(FX_ATLAS, TextureAtlas.class);
+
+        astronautaSheetTexture = required(gameAtlas, "astronauta_sheet");
+        astronautCombatSheetTexture = required(gameAtlas, "astronaut_combat_sheet");
+        pulseRifleTexture = required(gameAtlas, "pulse_rifle");
+        baseLunarTexture = required(gameAtlas, "base_lunar");
+        oxigenioTexture = required(gameAtlas, "oxigenio");
+        comidaTexture = required(gameAtlas, "comida");
+        geloTexture = required(gameAtlas, "gelo");
+        missionAtlasTexture = required(gameAtlas, "mission_atlas_unified");
+        marsAtlasTexture = required(gameAtlas, "mars_atlas_v4");
+        lunarEnemySheetTexture = required(gameAtlas, "lunar_enemy_sheet");
+        marsDroneSheetTexture = required(gameAtlas, "mars_drone_sheet");
+        marsCrawlerSheetTexture = required(gameAtlas, "mars_crawler_sheet");
+        lunarObstaclesTexture = required(gameAtlas, "lunar_obstacles");
+        marsObstaclesTexture = required(gameAtlas, "mars_obstacles");
+        landmarksTexture = required(gameAtlas, "landmarks");
+        introKeyArtTexture = required(uiAtlas, "intro_keyart_v2");
+        uiPanelTexture = required(uiAtlas, "ui_panel_frame");
+        uiPanelHudTexture = required(uiAtlas, "panel_hud");
+        uiPanelDialogTexture = required(uiAtlas, "panel_dialog");
+        uiPanelModalTexture = required(uiAtlas, "panel_modal");
+        uiButtonNormalTexture = required(uiAtlas, "button_normal");
+        uiButtonHoverTexture = required(uiAtlas, "button_hover");
+        uiButtonPressedTexture = required(uiAtlas, "button_pressed");
+        uiButtonDisabledTexture = required(uiAtlas, "button_disabled");
+        uiBarTrackTexture = required(uiAtlas, "bar_track");
+        uiBarFillTexture = required(uiAtlas, "bar_fill");
+        uiResourceIconsTexture = required(uiAtlas, "resource_icons");
+        uiDamageVignetteTexture = required(uiAtlas, "damage_vignette");
+        uiWhiteTexture = required(uiAtlas, "white_pixel");
+        actionFxTexture = required(fxAtlas, "action_fx_sheet");
+        energyFxTexture = required(fxAtlas, "energy_fx_sheet");
+        backgroundLuaTexture = loader.get(LUNAR_GROUND, Texture.class);
+        marsBackgroundTexture = loader.get(MARS_GROUND, Texture.class);
+
+        font = generateFont("fonts/ChakraPetch-Regular.ttf", 25);
+        titleFont = generateFont("fonts/ChakraPetch-SemiBold.ttf", 32);
+        ready = true;
+    }
+
+    private TextureRegion required(TextureAtlas atlas, String name) {
+        TextureRegion region = atlas.findRegion(name);
+        if (region == null) throw new IllegalStateException("Região obrigatória ausente no atlas: " + name);
+        return region;
+    }
+
+    private BitmapFont generateFont(String path, int size) {
         FreeTypeFontGenerator generator = new FreeTypeFontGenerator(Gdx.files.internal(path));
-        FreeTypeFontGenerator.FreeTypeFontParameter parameter = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        FreeTypeFontGenerator.FreeTypeFontParameter parameter =
+            new FreeTypeFontGenerator.FreeTypeFontParameter();
         parameter.size = size;
         parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS
             + "áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇºª–—";
@@ -202,103 +156,16 @@ public class AssetManager implements Disposable {
         return generated;
     }
 
-    // ==========================================
-    // CARREGAMENTO SEGURO
-    // ==========================================
-
-    private Texture loadTextureOrPlaceholder(
-        String path,
-        Color color
-    ) {
-
-        if (
-            Gdx.files
-                .internal(path)
-                .exists()
-        ) {
-
-            return new Texture(
-                Gdx.files.internal(path)
-            );
-        }
-
-        Gdx.app.log(
-            "AssetManager",
-            "Asset não encontrado: "
-                + path
-                + ". Usando placeholder."
-        );
-
-        return criarPlaceholder(
-            color
-        );
+    public TextureRegion astronautFrame(int column, int row) {
+        return gridRegion(astronautaSheetTexture, 4, 4, column, row, 0);
     }
 
-    // ==========================================
-    // PLACEHOLDER
-    // ==========================================
-
-    private Texture criarPlaceholder(
-        Color color
-    ) {
-
-        Pixmap pixmap =
-            new Pixmap(
-                64,
-                64,
-                Pixmap.Format.RGBA8888
-            );
-
-        pixmap.setColor(color);
-
-        pixmap.fill();
-
-        pixmap.setColor(
-            Color.WHITE
-        );
-
-        pixmap.drawRectangle(
-            1,
-            1,
-            62,
-            62
-        );
-
-        Texture texture =
-            new Texture(pixmap);
-
-        pixmap.dispose();
-
-        return texture;
-    }
-
-    // ==========================================
-    // FILTRO
-    // ==========================================
-
-    private void aplicarFiltro(
-        Texture texture
-    ) {
-
-        if (texture == null) {
-            return;
-        }
-
-        texture.setFilter(
-            Texture.TextureFilter.Linear,
-            Texture.TextureFilter.Linear
-        );
-    }
-
-    private void aplicarFiltroNearest(Texture texture) {
-        if (texture != null) texture.setFilter(Texture.TextureFilter.Nearest, Texture.TextureFilter.Nearest);
+    public TextureRegion astronautCombatFrame(int column, int row) {
+        return gridRegion(astronautCombatSheetTexture, 4, 3, column, row, 0);
     }
 
     public TextureRegion marsRegion(int column, int row) {
-        int cellWidth = marsAtlasTexture.getWidth() / 4;
-        int cellHeight = marsAtlasTexture.getHeight() / 3;
-        return new TextureRegion(marsAtlasTexture, column * cellWidth + 2, row * cellHeight + 2,
-            cellWidth - 4, cellHeight - 4);
+        return gridRegion(marsAtlasTexture, 4, 3, column, row, 2);
     }
 
     public TextureRegion lunarEnemyFrame(int column, int row) {
@@ -331,99 +198,45 @@ public class AssetManager implements Disposable {
     }
 
     public NinePatch uiPanelPatch() {
-        return new NinePatch(new TextureRegion(uiPanelTexture), 24, 24, 24, 24);
+        return new NinePatch(uiPanelHudTexture, 24, 24, 24, 24);
     }
 
-    private TextureRegion gridRegion(Texture texture, int columns, int rows,
+    public NinePatch uiDialogPatch() { return new NinePatch(uiPanelDialogTexture, 24, 24, 24, 24); }
+    public NinePatch uiModalPatch() { return new NinePatch(uiPanelModalTexture, 24, 24, 24, 24); }
+
+    public TextureRegion resourceIcon(int index) {
+        if (index < 0 || index > 3) throw new IllegalArgumentException("Ícone inválido: " + index);
+        return gridRegion(uiResourceIconsTexture, 4, 1, index, 0, 0);
+    }
+
+    private TextureRegion gridRegion(TextureRegion sheet, int columns, int rows,
                                      int column, int row, int inset) {
-        int cellWidth = texture.getWidth() / columns;
-        int cellHeight = texture.getHeight() / rows;
-        return new TextureRegion(texture, column * cellWidth + inset, row * cellHeight + inset,
+        if (column < 0 || column >= columns || row < 0 || row >= rows) {
+            throw new IllegalArgumentException("Célula fora da grade: " + column + "," + row);
+        }
+        int cellWidth = sheet.getRegionWidth() / columns;
+        int cellHeight = sheet.getRegionHeight() / rows;
+        return new TextureRegion(sheet.getTexture(),
+            sheet.getRegionX() + column * cellWidth + inset,
+            sheet.getRegionY() + row * cellHeight + inset,
             cellWidth - inset * 2, cellHeight - inset * 2);
     }
 
-    /** Retorna uma celula do atlas 4x4, indexado a partir do canto superior esquerdo. */
     public TextureRegion missionRegion(int column, int row) {
-        if (column < 0 || column > 3 || row < 0 || row > 3) {
-            throw new IllegalArgumentException("Celula do atlas fora do intervalo 0..3.");
-        }
-        int cellWidth = missionAtlasTexture.getWidth() / 4;
-        int cellHeight = missionAtlasTexture.getHeight() / 4;
-        return new TextureRegion(
-            missionAtlasTexture,
-            column * cellWidth + 2,
-            row * cellHeight + 2,
-            cellWidth - 4,
-            cellHeight - 4
-        );
+        return gridRegion(missionAtlasTexture, 4, 4, column, row, 2);
     }
 
     public TextureRegion missionRegion(MissionSprite sprite) {
-        if (sprite == null) throw new IllegalArgumentException("Sprite de missao nulo.");
+        if (sprite == null) throw new IllegalArgumentException("Sprite de missão nulo.");
         return missionRegion(sprite.column(), sprite.row());
     }
 
-    // ==========================================
-    // DISPOSE
-    // ==========================================
-
     @Override
     public void dispose() {
-
-        disposeTexture(astronautaSheetTexture);
-        disposeTexture(pulseRifleTexture);
-
-        disposeTexture(
-            backgroundLuaTexture
-        );
-
-        disposeTexture(
-            baseLunarTexture
-        );
-
-        disposeTexture(
-            oxigenioTexture
-        );
-
-        disposeTexture(
-            comidaTexture
-        );
-
-        disposeTexture(
-            geloTexture
-        );
-
-        disposeTexture(
-            missionAtlasTexture
-        );
-
-        disposeTexture(
-            marsBackgroundTexture
-        );
-        disposeTexture(introKeyArtTexture);
-        disposeTexture(marsAtlasTexture);
-        disposeTexture(lunarEnemySheetTexture);
-        disposeTexture(marsDroneSheetTexture);
-        disposeTexture(marsCrawlerSheetTexture);
-        disposeTexture(lunarObstaclesTexture);
-        disposeTexture(marsObstaclesTexture);
-        disposeTexture(actionFxTexture);
-        disposeTexture(energyFxTexture);
-        disposeTexture(landmarksTexture);
-        disposeTexture(uiPanelTexture);
-
-        if (font != null) {
-            font.dispose();
-        }
+        if (font != null) font.dispose();
         if (titleFont != null) titleFont.dispose();
-    }
-
-    private void disposeTexture(
-        Texture texture
-    ) {
-
-        if (texture != null) {
-            texture.dispose();
-        }
+        loader.dispose();
+        ready = false;
+        queued = false;
     }
 }

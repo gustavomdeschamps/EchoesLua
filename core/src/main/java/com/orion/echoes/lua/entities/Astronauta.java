@@ -15,6 +15,8 @@ import com.orion.echoes.lua.save.GameSaveData;
 
 public class Astronauta extends Entidade implements Interagivel {
 
+    public enum SurfaceProfile { LUNAR, MARS }
+
     // ==========================================
     // TAMANHO
     // ==========================================
@@ -29,23 +31,26 @@ public class Astronauta extends Entidade implements Interagivel {
     // VISUAL
     // ==========================================
 
-    private static final float VISUAL_SIZE = 104f;
     private static final float FOOTPRINT_WIDTH = 30f;
     private static final float FOOTPRINT_HEIGHT = 22f;
     private static final float BODY_CENTER_Y = 17f;
-    private static final float[] IDLE_CENTER_X = {190.5f};
-    private static final float[] IDLE_BOTTOM_PAD = {28f};
-    private final TextureRegion idleFrame;
+    private enum AnimationState { IDLE, WALK, RUN, DASH, ATTACK, HURT, DEAD }
+    private final TextureRegion[][] movementFrames =
+        new TextureRegion[4][GameConfig.PLAYER_ANIMATION_FRAMES];
+    private final TextureRegion[][] movementFramesLeft =
+        new TextureRegion[4][GameConfig.PLAYER_ANIMATION_FRAMES];
+    private final TextureRegion[][] combatFrames =
+        new TextureRegion[3][GameConfig.PLAYER_ANIMATION_FRAMES];
+    private final TextureRegion[][] combatFramesLeft =
+        new TextureRegion[3][GameConfig.PLAYER_ANIMATION_FRAMES];
     private final Sprite weaponSprite;
-    private final float frameCellWidth;
-    private final float frameCellHeight;
     private float animationTime;
+    private AnimationState animationState = AnimationState.IDLE;
     private float recoilTimer;
     private float damageTimer;
     private float aimAngle;
     private boolean weaponEquipped;
     private boolean sprinting;
-    private boolean movingLastFrame;
     private float invulnerabilityTimer;
     private float dashTimer;
     private float dashCooldown;
@@ -65,6 +70,7 @@ public class Astronauta extends Entidade implements Interagivel {
         GameConfig.PLAYER_SPEED;
 
     private boolean viradoEsquerda = false;
+    private SurfaceProfile surfaceProfile = SurfaceProfile.LUNAR;
 
     // ==========================================
     // STATUS
@@ -117,13 +123,18 @@ public class Astronauta extends Entidade implements Interagivel {
         // SPRITE
         // ======================================
 
-        int cellWidth = assets.astronautaSheetTexture.getWidth() / 4;
-        int cellHeight = assets.astronautaSheetTexture.getHeight() / 4;
-        // Dois pixels de respiro impedem que a borda da célula vizinha apareça
-        // durante escala/flip, principalmente na pose de coleta que toca o grid.
-        frameCellWidth = cellWidth - 4f;
-        frameCellHeight = cellHeight - 4f;
-        idleFrame = frame(assets, 0, 0, cellWidth, cellHeight);
+        for (int row = 0; row < movementFrames.length; row++) {
+            for (int column = 0; column < GameConfig.PLAYER_ANIMATION_FRAMES; column++) {
+                movementFrames[row][column] = assets.astronautFrame(column, row);
+                movementFramesLeft[row][column] = mirrored(movementFrames[row][column]);
+            }
+        }
+        for (int row = 0; row < combatFrames.length; row++) {
+            for (int column = 0; column < GameConfig.PLAYER_ANIMATION_FRAMES; column++) {
+                combatFrames[row][column] = assets.astronautCombatFrame(column, row);
+                combatFramesLeft[row][column] = mirrored(combatFrames[row][column]);
+            }
+        }
         weaponSprite = new Sprite(assets.pulseRifleTexture);
         weaponSprite.setSize(62f, 41f);
         weaponSprite.setOrigin(13f, 20.5f);
@@ -160,9 +171,10 @@ public class Astronauta extends Entidade implements Interagivel {
             );
     }
 
-    private TextureRegion frame(AssetManager assets, int column, int row, int cellWidth, int cellHeight) {
-        return new TextureRegion(assets.astronautaSheetTexture,
-            column * cellWidth + 2, row * cellHeight + 2, cellWidth - 4, cellHeight - 4);
+    private TextureRegion mirrored(TextureRegion source) {
+        TextureRegion copy = new TextureRegion(source);
+        copy.flip(true, false);
+        return copy;
     }
 
     // ==========================================
@@ -196,18 +208,22 @@ public class Astronauta extends Entidade implements Interagivel {
         float velocidadeX =
             dirX
                 * currentSpeed
-                / PhysicsWorld.PPM;
+                / GameConfig.PPM;
 
         float velocidadeY =
             dirY
                 * currentSpeed
-                / PhysicsWorld.PPM;
+                / GameConfig.PPM;
 
         if (dashTimer > 0f) {
-            body.setLinearVelocity(dashDirection.x * 430f / PhysicsWorld.PPM,
-                dashDirection.y * 430f / PhysicsWorld.PPM);
+            body.setLinearVelocity(dashDirection.x * GameConfig.PLAYER_DASH_SPEED / GameConfig.PPM,
+                dashDirection.y * GameConfig.PLAYER_DASH_SPEED / GameConfig.PPM);
         } else {
-            float response = 1f - (float)Math.exp(-delta / ((dirX == 0f && dirY == 0f) ? .085f : .14f));
+            boolean stopping = dirX == 0f && dirY == 0f;
+            float responseTime = surfaceProfile == SurfaceProfile.LUNAR
+                ? (stopping ? GameConfig.PLAYER_LUNAR_DECEL_TIME : GameConfig.PLAYER_LUNAR_ACCEL_TIME)
+                : (stopping ? GameConfig.PLAYER_MARS_DECEL_TIME : GameConfig.PLAYER_MARS_ACCEL_TIME);
+            float response = 1f - (float)Math.exp(-delta / responseTime);
             Vector2 velocity = body.getLinearVelocity();
             body.setLinearVelocity(MathUtils.lerp(velocity.x, velocidadeX, response),
                 MathUtils.lerp(velocity.y, velocidadeY, response));
@@ -230,6 +246,10 @@ public class Astronauta extends Entidade implements Interagivel {
         }
     }
 
+    public void setSurfaceProfile(SurfaceProfile profile) {
+        surfaceProfile = profile == null ? SurfaceProfile.LUNAR : profile;
+    }
+
     // ==========================================
     // UPDATE
     // ==========================================
@@ -239,22 +259,20 @@ public class Astronauta extends Entidade implements Interagivel {
         float delta
     ) {
 
-        if (!ativo) {
-            return;
-        }
+        if (!ativo) return;
 
-        boolean movingNow = isMoving();
-        if (movingNow) {
-            animationTime += delta;
-        } else if (movingLastFrame) {
-            animationTime = 0f;
-        }
-        movingLastFrame = movingNow;
         recoilTimer = Math.max(0f, recoilTimer - delta);
         damageTimer = Math.max(0f, damageTimer - delta);
         invulnerabilityTimer = Math.max(0f, invulnerabilityTimer - delta);
         dashTimer = Math.max(0f, dashTimer - delta);
         dashCooldown = Math.max(0f, dashCooldown - delta);
+        AnimationState nextState = resolveAnimationState();
+        if (nextState != animationState) {
+            animationState = nextState;
+            animationTime = 0f;
+        } else {
+            animationTime += delta;
+        }
 
         // Tempo de sobrevivência
         tempoVivo += delta;
@@ -268,11 +286,11 @@ public class Astronauta extends Entidade implements Interagivel {
 
         position.set(
             bodyPosition.x
-                * PhysicsWorld.PPM
+                * GameConfig.PPM
                 - WIDTH / 2f,
 
             bodyPosition.y
-                * PhysicsWorld.PPM
+                * GameConfig.PPM
                 - BODY_CENTER_Y
         );
 
@@ -319,36 +337,49 @@ public class Astronauta extends Entidade implements Interagivel {
         SpriteBatch batch
     ) {
 
-        if (!ativo) {
-            return;
-        }
-
-        // A folha antiga mistura escalas e pivôs entre poses. Uma caminhada
-        // procedural sobre a pose estável mantém a cabeça, os pés e a arma
-        // alinhados em todas as direções, sem pixels de células vizinhas.
-        TextureRegion frame = idleFrame;
-        float anchorCenterX = IDLE_CENTER_X[0];
-        float bottomPad = IDLE_BOTTOM_PAD[0];
-        // A direção corporal pertence ao deslocamento. A arma mira livremente,
-        // sem fazer o astronauta trocar de lado quando o cursor cruza seu corpo.
-        boolean flip = viradoEsquerda;
-        if (frame.isFlipX() != flip) frame.flip(true, false);
-        float effectiveCenter = flip ? frameCellWidth - anchorCenterX : anchorCenterX;
-        float visualX = position.x + WIDTH / 2f - effectiveCenter / frameCellWidth * VISUAL_SIZE;
-        float visualY = position.y - bottomPad / frameCellHeight * VISUAL_SIZE - 5f;
-        float gait = isMoving() ? MathUtils.sin(animationTime * (sprinting ? 15f : 10.5f)) : 0f;
-        float bob = Math.abs(gait) * (sprinting ? 2.2f : 1.3f);
-        float scaleX = 1f + Math.abs(gait) * .012f;
-        float scaleY = 1f - Math.abs(gait) * .009f;
-        float lean = isMoving() ? gait * (sprinting ? 1.5f : .8f) : 0f;
+        TextureRegion frame = currentAnimationFrame();
+        float visualX = position.x + WIDTH / 2f - GameConfig.PLAYER_VISUAL_SIZE / 2f;
+        float visualY = position.y - 5f;
 
         float blink = invulnerabilityTimer > 0f && ((int)(invulnerabilityTimer * 24f) & 1) == 0 ? .45f : 1f;
         if (damageTimer > 0f) batch.setColor(1f, .58f, .58f, blink);
         else batch.setColor(1f, 1f, 1f, blink);
-        batch.draw(frame, visualX, visualY + bob, VISUAL_SIZE / 2f, 8f,
-            VISUAL_SIZE, VISUAL_SIZE, scaleX, scaleY, lean);
+        batch.draw(frame, visualX, visualY,
+            GameConfig.PLAYER_VISUAL_SIZE, GameConfig.PLAYER_VISUAL_SIZE);
         batch.setColor(1f, 1f, 1f, 1f);
         if (weaponEquipped) drawWeapon(batch);
+    }
+
+    private AnimationState resolveAnimationState() {
+        if (!ativo) return AnimationState.DEAD;
+        if (damageTimer > 0f) return AnimationState.HURT;
+        if (recoilTimer > 0f) return AnimationState.ATTACK;
+        if (dashTimer > 0f) return AnimationState.DASH;
+        if (isMoving()) return sprinting ? AnimationState.RUN : AnimationState.WALK;
+        return AnimationState.IDLE;
+    }
+
+    private TextureRegion currentAnimationFrame() {
+        AnimationState state = ativo ? animationState : AnimationState.DEAD;
+        int row;
+        float frameTime;
+        boolean combat;
+        switch (state) {
+            case WALK -> { row = 1; frameTime = GameConfig.PLAYER_WALK_FRAME_TIME; combat = false; }
+            case RUN -> { row = 2; frameTime = GameConfig.PLAYER_RUN_FRAME_TIME; combat = false; }
+            case DASH -> { row = 3; frameTime = GameConfig.PLAYER_DASH_FRAME_TIME; combat = false; }
+            case ATTACK -> { row = 0; frameTime = GameConfig.PLAYER_ATTACK_FRAME_TIME; combat = true; }
+            case HURT -> { row = 1; frameTime = GameConfig.PLAYER_HURT_FRAME_TIME; combat = true; }
+            case DEAD -> { row = 2; frameTime = GameConfig.PLAYER_DEATH_FRAME_TIME; combat = true; }
+            default -> { row = 0; frameTime = GameConfig.PLAYER_IDLE_FRAME_TIME; combat = false; }
+        }
+        int frameIndex = state == AnimationState.DEAD
+            ? GameConfig.PLAYER_ANIMATION_FRAMES - 1
+            : (int) (animationTime / frameTime) % GameConfig.PLAYER_ANIMATION_FRAMES;
+        if (combat) return viradoEsquerda
+            ? combatFramesLeft[row][frameIndex] : combatFrames[row][frameIndex];
+        return viradoEsquerda
+            ? movementFramesLeft[row][frameIndex] : movementFrames[row][frameIndex];
     }
 
     private void drawWeapon(SpriteBatch batch) {
@@ -369,13 +400,13 @@ public class Astronauta extends Entidade implements Interagivel {
     }
 
     public boolean tryDash(float dirX, float dirY) {
-        if (!ativo || dashCooldown > 0f || energia < 18f) return false;
+        if (!ativo || dashCooldown > 0f || energia < GameConfig.PLAYER_DASH_ENERGY_COST) return false;
         if (dirX == 0f && dirY == 0f) dirX = viradoEsquerda ? -1f : 1f;
         dashDirection.set(dirX, dirY).nor();
-        dashTimer = .18f;
-        dashCooldown = .68f;
+        dashTimer = GameConfig.PLAYER_DASH_DURATION;
+        dashCooldown = GameConfig.PLAYER_DASH_COOLDOWN;
         invulnerabilityTimer = Math.max(invulnerabilityTimer, .24f);
-        energia -= 18f;
+        energia -= GameConfig.PLAYER_DASH_ENERGY_COST;
         return true;
     }
 
@@ -428,7 +459,7 @@ public class Astronauta extends Entidade implements Interagivel {
         Vector2 away = new Vector2(position.x + WIDTH / 2f - sourceX,
             position.y + HEIGHT / 2f - sourceY);
         if (away.len2() < .01f) away.set(viradoEsquerda ? 1f : -1f, .25f);
-        away.nor().scl(155f / PhysicsWorld.PPM);
+        away.nor().scl(155f / GameConfig.PPM);
         body.setLinearVelocity(away);
         if (oxigenio == 0f) {
             ativo = false;
@@ -592,13 +623,13 @@ public class Astronauta extends Entidade implements Interagivel {
                 data.posX
                     + WIDTH / 2f
             )
-                / PhysicsWorld.PPM,
+                / GameConfig.PPM,
 
             (
                 data.posY
                     + BODY_CENTER_Y
             )
-                / PhysicsWorld.PPM,
+                / GameConfig.PPM,
 
             0
         );

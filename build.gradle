@@ -12,6 +12,18 @@ buildscript {
   }
 }
 
+configurations {
+  texturePacker
+}
+
+repositories {
+  mavenCentral()
+}
+
+dependencies {
+  texturePacker "com.badlogicgames.gdx:gdx-tools:$gdxVersion"
+}
+
 allprojects {
   apply plugin: 'eclipse'
   apply plugin: 'idea'
@@ -25,6 +37,65 @@ allprojects {
   }
 }
 
+tasks.register('validateVisualAssets', Exec) {
+  group = 'verification'
+  description = 'Valida dimensões e grades dos spritesheets antes do build.'
+  workingDir rootProject.projectDir
+  def pythonExecutable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'python' : 'python3'
+  commandLine pythonExecutable, 'tools/prepare_visual_assets.py', '--validate-only'
+}
+
+def atlasGroups = [
+  game: [
+    'astronauta_sheet.png', 'astronaut_combat_sheet.png', 'pulse_rifle.png', 'base_lunar.png',
+    'oxigenio.png', 'comida.png', 'gelo.png', 'mission_atlas_unified.png',
+    'mars_atlas_v4.png', 'lunar_enemy_sheet.png', 'mars_drone_sheet.png',
+    'mars_crawler_sheet.png', 'lunar_obstacles.png', 'mars_obstacles.png',
+    'landmarks.png'
+  ],
+  ui: ['intro_keyart_v2.png', 'ui_panel_frame.png',
+    'ui/panel_hud.png', 'ui/panel_dialog.png', 'ui/panel_modal.png',
+    'ui/button_normal.png', 'ui/button_hover.png', 'ui/button_pressed.png', 'ui/button_disabled.png',
+    'ui/bar_track.png', 'ui/bar_fill.png', 'ui/resource_icons.png',
+    'ui/damage_vignette.png', 'ui/white_pixel.png'],
+  fx: ['action_fx_sheet.png', 'energy_fx_sheet.png']
+]
+
+tasks.register('prepareAtlasInputs') {
+  dependsOn tasks.named('validateVisualAssets')
+  inputs.files(atlasGroups.values().flatten().collect { file("assets/textures/$it") })
+  inputs.file(file('tools/texturepacker/pack.json'))
+  outputs.dir(layout.buildDirectory.dir('atlas-input'))
+  doLast {
+    delete(layout.buildDirectory.dir('atlas-input'))
+    atlasGroups.each { group, names ->
+      copy {
+        from(file('tools/texturepacker/pack.json'))
+        from(names.collect { file("assets/textures/$it") })
+        into(layout.buildDirectory.dir("atlas-input/$group"))
+      }
+    }
+  }
+}
+
+def atlasTasks = atlasGroups.keySet().collect { group ->
+  tasks.register("pack${group.capitalize()}Atlas", JavaExec) {
+    dependsOn tasks.named('prepareAtlasInputs')
+    classpath = configurations.texturePacker
+    mainClass = 'com.badlogic.gdx.tools.texturepacker.TexturePacker'
+    args layout.buildDirectory.dir("atlas-input/$group").get().asFile.absolutePath,
+      file('assets/atlases').absolutePath, group
+    inputs.dir(layout.buildDirectory.dir("atlas-input/$group"))
+    outputs.file(file("assets/atlases/$group.atlas"))
+  }
+}
+
+tasks.register('packVisualAssets') {
+  group = 'assets'
+  description = 'Empacota sprites em game.atlas, ui.atlas e fx.atlas.'
+  dependsOn atlasTasks
+}
+
 configure(subprojects) {
   apply plugin: 'java-library'
   java.sourceCompatibility = 17
@@ -32,6 +103,7 @@ configure(subprojects) {
   // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
   // The article can be helpful when using assets.txt in your project.
   tasks.register('generateAssetList') {
+    dependsOn rootProject.tasks.named('packVisualAssets')
     inputs.dir("${project.rootDir}/assets/")
     // projectFolder/assets
     File assetsFolder = new File("${project.rootDir}/assets/")
@@ -48,6 +120,7 @@ configure(subprojects) {
     }
   }
   processResources.dependsOn 'generateAssetList'
+  processResources.dependsOn rootProject.tasks.named('validateVisualAssets')
 
   compileJava {
     options.incremental = true

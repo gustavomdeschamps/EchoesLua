@@ -6,11 +6,9 @@ import com.badlogic.gdx.physics.box2d.BodyDef;
 import com.badlogic.gdx.physics.box2d.FixtureDef;
 import com.badlogic.gdx.physics.box2d.PolygonShape;
 import com.badlogic.gdx.physics.box2d.World;
+import com.orion.echoes.lua.config.GameConfig;
 
 public class PhysicsWorld {
-
-    // Conversão pixels -> metros
-    public static final float PPM = 32f;
 
     /*
      * O jogo é visto de cima.
@@ -22,6 +20,7 @@ public class PhysicsWorld {
     public static final float GRAVITY_LUA = -1.62f;
 
     private final World world;
+    private float accumulator;
 
     public PhysicsWorld() {
 
@@ -40,12 +39,17 @@ public class PhysicsWorld {
     // =====================================================
 
     public void update(float delta) {
+        accumulator += Math.min(delta, GameConfig.MAX_FRAME_DELTA);
+        while (accumulator >= GameConfig.TIME_STEP) {
+            world.step(GameConfig.TIME_STEP,
+                GameConfig.VELOCITY_ITERATIONS,
+                GameConfig.POSITION_ITERATIONS);
+            accumulator -= GameConfig.TIME_STEP;
+        }
+    }
 
-        world.step(
-            delta,
-            6,
-            2
-        );
+    public float getAlpha() {
+        return accumulator / GameConfig.TIME_STEP;
     }
 
     public World getWorld() {
@@ -72,8 +76,8 @@ public class PhysicsWorld {
             BodyDef.BodyType.DynamicBody;
 
         bodyDef.position.set(
-            x / PPM,
-            y / PPM
+            x / GameConfig.PPM,
+            y / GameConfig.PPM
         );
 
         bodyDef.fixedRotation = true;
@@ -85,8 +89,8 @@ public class PhysicsWorld {
             new PolygonShape();
 
         shape.setAsBox(
-            (width / 2f) / PPM,
-            (height / 2f) / PPM
+            (width / 2f) / GameConfig.PPM,
+            (height / 2f) / GameConfig.PPM
         );
 
         FixtureDef fixtureDef =
@@ -137,8 +141,8 @@ public class PhysicsWorld {
             BodyDef.BodyType.StaticBody;
 
         bodyDef.position.set(
-            x / PPM,
-            y / PPM
+            x / GameConfig.PPM,
+            y / GameConfig.PPM
         );
 
         Body body =
@@ -148,8 +152,8 @@ public class PhysicsWorld {
             new PolygonShape();
 
         shape.setAsBox(
-            (width / 2f) / PPM,
-            (height / 2f) / PPM
+            (width / 2f) / GameConfig.PPM,
+            (height / 2f) / GameConfig.PPM
         );
 
         FixtureDef fixtureDef =
@@ -194,8 +198,8 @@ public class PhysicsWorld {
             BodyDef.BodyType.StaticBody;
 
         bodyDef.position.set(
-            x / PPM,
-            y / PPM
+            x / GameConfig.PPM,
+            y / GameConfig.PPM
         );
 
         Body body =
@@ -205,8 +209,8 @@ public class PhysicsWorld {
             new PolygonShape();
 
         shape.setAsBox(
-            (width / 2f) / PPM,
-            (height / 2f) / PPM
+            (width / 2f) / GameConfig.PPM,
+            (height / 2f) / GameConfig.PPM
         );
 
         FixtureDef fixtureDef =

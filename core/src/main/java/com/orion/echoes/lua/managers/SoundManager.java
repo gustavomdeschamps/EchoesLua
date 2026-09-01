@@ -60,56 +60,56 @@ public class SoundManager implements Disposable {
         }
 
         coleta =
-            carregar("sounds/coleta.wav");
+            carregar("sounds/coleta.ogg");
 
         coletaOxigenio =
-            carregar("sounds/coleta_oxigenio.wav");
+            carregar("sounds/coleta_oxigenio.ogg");
 
         coletaComida =
-            carregar("sounds/coleta_comida.wav");
+            carregar("sounds/coleta_comida.ogg");
 
         coletaGelo =
-            carregar("sounds/coleta_gelo.wav");
+            carregar("sounds/coleta_gelo.ogg");
 
         processarGelo =
-            carregar("sounds/processar_gelo.wav");
+            carregar("sounds/processar_gelo.ogg");
 
         semGelo =
-            carregar("sounds/sem_gelo.wav");
+            carregar("sounds/sem_gelo.ogg");
 
         baseRecarregando =
-            carregar("sounds/base_recarregando.wav");
+            carregar("sounds/base_recarregando.ogg");
 
         alertaOxigenio =
-            carregar("sounds/alerta_oxigenio.wav");
+            carregar("sounds/alerta_oxigenio.ogg");
 
         menuIniciar =
-            carregar("sounds/menu_iniciar.wav");
+            carregar("sounds/menu_iniciar.ogg");
 
         pause =
-            carregar("sounds/pause.wav");
+            carregar("sounds/pause.ogg");
 
         unpause =
-            carregar("sounds/unpause.wav");
+            carregar("sounds/unpause.ogg");
 
         gameOver =
-            carregar("sounds/game_over.wav");
+            carregar("sounds/game_over.ogg");
 
         vitoria =
-            carregar("sounds/vitoria.wav");
+            carregar("sounds/vitoria.ogg");
 
         passoLunar =
-            carregar("sounds/passo_lunar.wav");
+            carregar("sounds/passo_lunar.ogg");
 
         colisaoRocha =
-            carregar("sounds/colisao_rocha.wav");
+            carregar("sounds/colisao_rocha.ogg");
 
         hoverUi =
-            carregar("sounds/hover_ui.wav");
+            carregar("sounds/hover_ui.ogg");
 
-        disparoPulso = carregar("sounds/disparo_pulso.wav");
-        if (Gdx.files.internal("sounds/menu_ambiente.wav").exists()) {
-            musicaMenu = Gdx.audio.newMusic(Gdx.files.internal("sounds/menu_ambiente.wav"));
+        disparoPulso = carregar("sounds/disparo_pulso.ogg");
+        if (Gdx.files.internal("sounds/menu_ambiente.ogg").exists()) {
+            musicaMenu = Gdx.audio.newMusic(Gdx.files.internal("sounds/menu_ambiente.ogg"));
             musicaMenu.setLooping(true);
             musicaMenu.setVolume(.32f * volumeGeral);
         }
@@ -306,6 +306,10 @@ public class SoundManager implements Disposable {
 
     public void tocarDisparo() {
         tocarVariado(disparoPulso, .72f, .96f, 1.045f);
+    }
+
+    public void tocarAlertaInimigo() {
+        tocarVariado(alertaOxigenio, .34f, 1.12f, 1.2f);
     }
 
     public void tocarMusicaMenu() {

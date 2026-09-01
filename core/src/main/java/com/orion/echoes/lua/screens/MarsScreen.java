@@ -30,6 +30,8 @@ import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.ParticleManager;
 import com.orion.echoes.lua.managers.SoundManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.systems.CameraDirector;
+import com.orion.echoes.lua.systems.JuiceSystem;
 import com.orion.echoes.lua.ui.UiTheme;
 
 /** Segunda missão jogável: restaura a base marciana e alcança a plataforma. */
@@ -51,11 +53,13 @@ public final class MarsScreen implements Screen {
     private final Vector2 mouseWorld = new Vector2();
     private final Vector2 shotStart = new Vector2();
     private final Vector2 shotEnd = new Vector2();
+    private final Vector2 cameraTarget = new Vector2();
 
     private AssetManager assets;
     private SpriteBatch batch;
     private ShapeRenderer shapes;
     private NinePatch panelPatch;
+    private NinePatch modalPatch;
     private PhysicsWorld physics;
     private ParticleManager particles;
     private SoundManager sounds;
@@ -67,9 +71,10 @@ public final class MarsScreen implements Screen {
     private Viewport uiViewport;
     private MarsObject habitat;
     private MarsObject landingPad;
-    private float missionTime, reveal, dustTimer, stepTimer, shotTimer, damageFlash;
+    private float missionTime, reveal, dustTimer, stepTimer, shotTimer;
     private float messageTimer, extractionGlow;
-    private float hitStopTimer, cameraShakeTimer, cameraShakePower;
+    private JuiceSystem juice;
+    private CameraDirector cameraDirector;
     private int minerals, activeStations, hostilesDefeated;
     private boolean changingScreen;
     private boolean paused;
@@ -86,6 +91,7 @@ public final class MarsScreen implements Screen {
         batch = game.getBatch();
         shapes = new ShapeRenderer();
         panelPatch = assets.uiPanelPatch();
+        modalPatch = assets.uiModalPatch();
         physics = new PhysicsWorld();
         particles = new ParticleManager(assets);
         sounds = SoundManager.getInstance();
@@ -93,6 +99,9 @@ public final class MarsScreen implements Screen {
         Gdx.input.setInputProcessor(input);
         camera = new OrthographicCamera();
         viewport = new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, camera);
+        juice = new JuiceSystem();
+        juice.setShakeEnabled(game.getSettings().isShakeEnabled());
+        cameraDirector = new CameraDirector(camera, viewport, juice, WORLD_W, WORLD_H);
         uiCamera = new OrthographicCamera();
         uiViewport = new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, uiCamera);
         uiCamera.position.set(640f, 360f, 0f);
@@ -102,6 +111,7 @@ public final class MarsScreen implements Screen {
         new Wall(0f, -24f, WORLD_W, 24f, physics);
         new Wall(0f, WORLD_H, WORLD_W, 24f, physics);
         player = new Astronauta(230f, 250f, assets, physics);
+        player.setSurfaceProfile(Astronauta.SurfaceProfile.MARS);
         player.setVitals(Math.max(45f, initialOxygen), Math.max(38f, initialEnergy));
         player.setWeaponEquipped(true);
         buildColony();
@@ -204,22 +214,23 @@ public final class MarsScreen implements Screen {
             }
             return;
         }
-        if (hitStopTimer > 0f) {
-            hitStopTimer = Math.max(0f, hitStopTimer - delta);
+        juice.update(delta);
+        float gameplayDelta = juice.gameplayDelta(delta);
+        if (gameplayDelta <= 0f) {
             particles.update(delta * .35f);
             return;
         }
+        delta = gameplayDelta;
         missionTime += delta;
         reveal = Math.min(1f, reveal + delta / .65f);
         messageTimer = Math.max(0f, messageTimer - delta);
         shotTimer = Math.max(0f, shotTimer - delta);
-        damageFlash = Math.max(0f, damageFlash - delta);
         extractionGlow += delta;
         Vector2 direction = input.getDirection();
         if (input.consumeDashPressed() && player.tryDash(direction.x, direction.y)) {
             particles.criarPoeiraMarte(player.getPosition().x + 27f, player.getPosition().y,
                 true, direction.x, direction.y);
-            shakeCamera(.16f, 5f);
+            juice.trigger(JuiceSystem.Preset.DASH);
         }
         player.move(direction.x, direction.y, input.isRunning(), delta);
         physics.update(delta);
@@ -238,17 +249,20 @@ public final class MarsScreen implements Screen {
         collectItems();
         for (MarsEnemy enemy : enemies) {
             enemy.update(delta, player, rocks);
+            if (enemy.consumeTelegraphStarted()) {
+                particles.criarAlertaInimigo(enemy.centerX(), enemy.centerY(), true);
+                sounds.tocarAlertaInimigo();
+            }
             if (enemy.canDamage(player)) {
                 player.receberDano(10f, enemy.centerX(), enemy.centerY());
-                damageFlash = .28f;
                 particles.criarImpactoTraje(player.getPosition().x + 27f, player.getPosition().y + 38f);
                 feedback("Impacto no traje: perda de oxigênio.");
-                shakeCamera(.24f, 8f);
+                juice.trigger(JuiceSystem.Preset.PLAYER_HURT);
             }
         }
         particles.update(delta);
         updateFootFx(delta, direction);
-        updateCamera();
+        updateCamera(delta);
         if (missionComplete() && player.getBounds().overlaps(landingPad.getBounds())) {
             changingScreen = true;
             game.setScreen(new VictoryScreen(game, missionTime));
@@ -264,6 +278,7 @@ public final class MarsScreen implements Screen {
         for (MarsObject item : items) {
             if (!item.isAtivo() || !player.getBounds().overlaps(item.getBounds())) continue;
             item.collect();
+            juice.trigger(JuiceSystem.Preset.COLLECT);
             particles.criarEfeitoColeta(item.getPosition().x + 36f, item.getPosition().y + 36f);
             sounds.tocarColeta();
             switch (item.getKind()) {
@@ -285,6 +300,7 @@ public final class MarsScreen implements Screen {
             minerals--;
             activeStations++;
             station.activate();
+            juice.trigger(JuiceSystem.Preset.REPAIR);
             particles.criarProcessamento(station.getBounds().x + station.getBounds().width / 2f,
                 station.getBounds().y + station.getBounds().height * .55f);
             feedback(activeStations == 3 ? "Colônia sincronizada. Neutralize os hostis e alcance a plataforma."
@@ -323,12 +339,12 @@ public final class MarsScreen implements Screen {
         shotEnd.set(x + dx * 480f, y + dy * 480f);
         if (target != null) {
             shotEnd.set(target.centerX(), target.centerY());
-            if (target.takeHit()) {
+            boolean killed = target.takeHit();
+            if (killed) {
                 hostilesDefeated++;
                 particles.criarMorteInimigo(target.centerX(), target.centerY());
             } else particles.criarImpactoTiro(target.centerX(), target.centerY());
-            hitStopTimer = .05f;
-            shakeCamera(.12f, 4.5f);
+            juice.trigger(killed ? JuiceSystem.Preset.ENEMY_KILL : JuiceSystem.Preset.SHOT_HIT);
         }
         particles.criarMuzzleFlash(shotStart.x, shotStart.y, player.getAimAngle());
         player.triggerShot();
@@ -352,28 +368,22 @@ public final class MarsScreen implements Screen {
         }
     }
 
-    private void updateCamera() {
-        float halfW = viewport.getWorldWidth() / 2f;
-        float halfH = viewport.getWorldHeight() / 2f;
-        Vector2 velocity = player.getBody().getLinearVelocity();
-        float x = MathUtils.clamp(player.getPosition().x + 27f + velocity.x * PhysicsWorld.PPM * .18f,
-            halfW, WORLD_W - halfW);
-        float y = MathUtils.clamp(player.getPosition().y + 38f + velocity.y * PhysicsWorld.PPM * .14f,
-            halfH, WORLD_H - halfH);
-        camera.position.x = MathUtils.lerp(camera.position.x, x, .11f);
-        camera.position.y = MathUtils.lerp(camera.position.y, y, .11f);
-        cameraShakeTimer = Math.max(0f, cameraShakeTimer - Gdx.graphics.getDeltaTime());
-        if (cameraShakeTimer > 0f) {
-            float falloff = cameraShakeTimer / .24f;
-            camera.position.x += MathUtils.random(-cameraShakePower, cameraShakePower) * falloff;
-            camera.position.y += MathUtils.random(-cameraShakePower, cameraShakePower) * falloff;
-        }
-        camera.update();
+    private void updateCamera(float delta) {
+        cameraTarget.set(player.getPosition().x + GameConfig.PLAYER_WIDTH / 2f,
+            player.getPosition().y + GameConfig.PLAYER_HEIGHT / 2f);
+        cameraDirector.update(cameraTarget, player.getBody().getLinearVelocity(),
+            hasNearbyHostile(), delta);
     }
 
-    private void shakeCamera(float duration, float power) {
-        cameraShakeTimer = Math.max(cameraShakeTimer, duration);
-        cameraShakePower = Math.max(cameraShakePower * .65f, power);
+    private boolean hasNearbyHostile() {
+        float radius2 = GameConfig.CAMERA_COMBAT_RADIUS * GameConfig.CAMERA_COMBAT_RADIUS;
+        for (MarsEnemy enemy : enemies) {
+            if (!enemy.isAtivo()) continue;
+            float dx = enemy.centerX() - cameraTarget.x;
+            float dy = enemy.centerY() - cameraTarget.y;
+            if (dx * dx + dy * dy < radius2) return true;
+        }
+        return false;
     }
 
     private boolean missionComplete() {
@@ -404,17 +414,18 @@ public final class MarsScreen implements Screen {
     }
 
     private void renderEnemyHealth() {
-        shapes.setProjectionMatrix(camera.combined);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
         for (MarsEnemy enemy : enemies) {
             if (!enemy.isAtivo() || enemy.getHealthRatio() >= 1f) continue;
-            shapes.setColor(MARS_DARK);
-            shapes.rect(enemy.centerX() - 28f, enemy.centerY() + 48f, 56f, 6f);
-            shapes.setColor(MARS);
-            shapes.rect(enemy.centerX() - 28f, enemy.centerY() + 48f,
+            batch.setColor(MARS_DARK);
+            batch.draw(assets.uiBarTrackTexture, enemy.centerX() - 28f, enemy.centerY() + 48f, 56f, 6f);
+            batch.setColor(MARS);
+            batch.draw(assets.uiBarFillTexture, enemy.centerX() - 28f, enemy.centerY() + 48f,
                 56f * enemy.getHealthRatio(), 6f);
         }
-        shapes.end();
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     private void renderHud() {
@@ -425,27 +436,15 @@ public final class MarsScreen implements Screen {
         drawUiPanel(330f, 646f, 620f, 52f, MARS, .94f);
         if (messageTimer > 0f) drawUiPanel(398f, 128f, 484f, 48f, UiTheme.AMBER,
             Math.min(.94f, messageTimer * 2f));
-        batch.end();
-        shapes.setProjectionMatrix(uiCamera.combined);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        panel(32f, 28f, 294f, 82f, MARS, .91f);
-        bar(88f, 75f, 178f, 9f, player.getOxigenio() / 100f,
+        drawBar(88f, 75f, 178f, 9f, player.getOxigenio() / 100f,
             player.getOxigenio() < 25f ? UiTheme.RED : UiTheme.CYAN);
-        bar(88f, 49f, 178f, 8f, player.getEnergia() / 100f, UiTheme.AMBER);
-        panel(914f, 28f, 334f, 82f, MARS, .91f);
-        panel(330f, 646f, 620f, 52f, MARS, .94f);
-        if (messageTimer > 0f) panel(398f, 128f, 484f, 48f, UiTheme.AMBER,
-            Math.min(.94f, messageTimer * 2f));
+        drawBar(88f, 49f, 178f, 8f, player.getEnergia() / 100f, UiTheme.AMBER);
         if (missionComplete()) {
             float pulse = .35f + MathUtils.sin(extractionGlow * 4f) * .15f;
-            shapes.setColor(MARS.r, MARS.g, MARS.b, pulse);
-            shapes.rect(330f, 642f, 620f, 3f);
+            batch.setColor(MARS.r, MARS.g, MARS.b, pulse);
+            batch.draw(assets.uiWhiteTexture, 330f, 642f, 620f, 3f);
         }
-        shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
-        batch.setProjectionMatrix(uiCamera.combined);
-        batch.begin();
+        batch.setColor(Color.WHITE);
         text("O2", .72f, UiTheme.TEXT_MUTED, 50f, 88f, 1f);
         text(String.format("%.0f%%", player.getOxigenio()), .7f, UiTheme.TEXT, 275f, 87f, 1f);
         text("EN", .72f, UiTheme.TEXT_MUTED, 50f, 61f, 1f);
@@ -462,19 +461,14 @@ public final class MarsScreen implements Screen {
     }
 
     private void renderDamage() {
-        if (damageFlash <= 0f) return;
-        float alpha = damageFlash / .28f;
-        shapes.setProjectionMatrix(uiCamera.combined);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(.78f, .03f, .02f, alpha * .5f);
-        float edge = 34f * alpha;
-        shapes.rect(0f, 0f, 1280f, edge);
-        shapes.rect(0f, 720f - edge, 1280f, edge);
-        shapes.rect(0f, 0f, edge, 720f);
-        shapes.rect(1280f - edge, 0f, edge, 720f);
-        shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        float alpha = juice.getDamageFlashAlpha();
+        if (alpha <= 0f) return;
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+        batch.setColor(1f, .55f, .35f, alpha * .85f);
+        batch.draw(assets.uiDamageVignetteTexture, 0f, 0f, 1280f, 720f);
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     private void renderLandmarks() {
@@ -487,23 +481,15 @@ public final class MarsScreen implements Screen {
     }
 
     private void renderPause() {
-        shapes.setProjectionMatrix(uiCamera.combined);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(.055f, .016f, .012f, .88f);
-        shapes.rect(0f, 0f, 1280f, 720f);
-        shapes.setColor(MARS.r, MARS.g, MARS.b, .92f);
-        shapes.rect(72f, 572f, 214f, 8f);
-        shapes.rect(72f, 188f, 760f, 2f);
-        shapes.setColor(.12f, .045f, .03f, .9f);
-        shapes.rect(72f, 220f, 760f, 92f);
-        shapes.setColor(.94f, .52f, .29f, .15f);
-        shapes.rect(872f, 0f, 408f, 720f);
-        shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
-
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
+        batch.setColor(.055f, .016f, .012f, .91f);
+        batch.draw(assets.uiWhiteTexture, 0f, 0f, 1280f, 720f);
+        modalPatch.setColor(new Color(1f, .84f, .76f, .98f));
+        modalPatch.draw(batch, 54f, 106f, 790f, 500f);
+        modalPatch.draw(batch, 872f, 106f, 354f, 500f);
+        modalPatch.setColor(Color.WHITE);
+        batch.setColor(Color.WHITE);
         text("REGISTRO MARCIANO · EM ESPERA", .75f, MARS, 74f, 616f, 1f);
         text("PAUSA", 2.25f, UiTheme.TEXT, 68f, 540f, 1f);
         text("A poeira parou. A telemetria também.", .88f, UiTheme.TEXT_MUTED, 74f, 475f, 1f);
@@ -520,21 +506,12 @@ public final class MarsScreen implements Screen {
     private void renderTransition() {
         if (reveal >= 1f) return;
         float alpha = 1f - Interpolation.pow3Out.apply(reveal);
-        shapes.setProjectionMatrix(uiCamera.combined);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
-        shapes.setColor(.07f, .012f, .008f, alpha);
-        shapes.rect(0f, 0f, 1280f, 720f);
-        shapes.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
-    }
-
-    private void panel(float x, float y, float w, float h, Color accent, float alpha) {
-        shapes.setColor(UiTheme.SURFACE.r, UiTheme.SURFACE.g, UiTheme.SURFACE.b, alpha);
-        shapes.rect(x + 4f, y + 4f, w - 8f, h - 8f);
-        shapes.setColor(accent.r, accent.g, accent.b, alpha);
-        shapes.rect(x + 10f, y + h - 3f, 48f, 3f);
-        shapes.rect(x + w - 18f, y, 8f, 3f);
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+        batch.setColor(.07f, .012f, .008f, alpha);
+        batch.draw(assets.uiWhiteTexture, 0f, 0f, 1280f, 720f);
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     private void drawUiPanel(float x, float y, float w, float h, Color accent, float alpha) {
@@ -544,11 +521,12 @@ public final class MarsScreen implements Screen {
         panelPatch.setColor(Color.WHITE);
     }
 
-    private void bar(float x, float y, float w, float h, float ratio, Color color) {
-        shapes.setColor(UiTheme.TRACK);
-        shapes.rect(x, y, w, h);
-        shapes.setColor(color);
-        shapes.rect(x, y, w * MathUtils.clamp(ratio, 0f, 1f), h);
+    private void drawBar(float x, float y, float w, float h, float ratio, Color color) {
+        batch.setColor(Color.WHITE);
+        batch.draw(assets.uiBarTrackTexture, x, y, w, h);
+        batch.setColor(color);
+        batch.draw(assets.uiBarFillTexture, x, y, w * MathUtils.clamp(ratio, 0f, 1f), h);
+        batch.setColor(Color.WHITE);
     }
 
     private void text(String value, float scale, Color color, float x, float y, float alpha) {

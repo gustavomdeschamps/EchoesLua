@@ -124,6 +124,11 @@ public class ParticleManager implements Disposable {
             angle, .78f, 1.05f, true, 1f, 1f, 1f);
     }
 
+    public void criarAlertaInimigo(float x, float y, boolean mars) {
+        spawnAnimated(energyFrames[3], x - 58f, y - 38f, 116f, 78f, .38f,
+            0f, .72f, 1.18f, true, 1f, mars ? .34f : .18f, mars ? .12f : .82f);
+    }
+
     public void criarPortal(float x, float y) {
         spawnAnimated(energyFrames[2], x - 92f, y - 92f, 184f, 184f, .72f,
             0f, .72f, 1.12f, true, 1f, 1f, 1f);

@@ -21,7 +21,7 @@ public class Enemy extends Entidade {
     private final float spawnX, spawnY;
     private State state = State.IDLE;
     private float hp = 3f, stateTime, contactCooldown, elapsed, targetDistance;
-    private boolean facingLeft, defeated;
+    private boolean facingLeft, defeated, telegraphStarted;
 
     public Enemy(float x, float y, AssetManager assets) {
         super(x, y, 72f, 58f);
@@ -93,7 +93,11 @@ public class Enemy extends Entidade {
     }
 
     private void changeState(State next) {
-        if (state != next) { state = next; stateTime = 0f; }
+        if (state != next) {
+            state = next;
+            stateTime = 0f;
+            if (next == State.TELEGRAPH) telegraphStarted = true;
+        }
     }
     private void changeStateIfNeeded(State next) { if (state != next) changeState(next); }
 
@@ -145,5 +149,10 @@ public class Enemy extends Entidade {
     public float centerY() { return position.y + height / 2f; }
     public float getHealthRatio() { return hp / 3f; }
     public boolean isDefeated() { return defeated; }
+    public boolean consumeTelegraphStarted() {
+        boolean started = telegraphStarted;
+        telegraphStarted = false;
+        return started;
+    }
     @Override public void dispose() { }
 }

@@ -18,7 +18,7 @@ public final class MarsEnemy extends Entidade {
     private final float worldWidth, worldHeight;
     private State state = State.CHASE;
     private float hp = 3f, elapsed, stateTime, damageCooldown;
-    private boolean facingLeft;
+    private boolean facingLeft, telegraphStarted;
 
     public MarsEnemy(float x, float y, boolean drone, AssetManager assets,
                      float worldWidth, float worldHeight) {
@@ -82,7 +82,13 @@ public final class MarsEnemy extends Entidade {
         return true;
     }
 
-    private void change(State next) { if (state != next) { state = next; stateTime = 0f; } }
+    private void change(State next) {
+        if (state != next) {
+            state = next;
+            stateTime = 0f;
+            if (next == State.TELEGRAPH) telegraphStarted = true;
+        }
+    }
     private void changeIfNeeded(State next) { if (state != next) change(next); }
 
     private TextureRegion currentFrame() {
@@ -117,6 +123,11 @@ public final class MarsEnemy extends Entidade {
     public float centerX() { return position.x + width / 2f; }
     public float centerY() { return position.y + height / 2f; }
     public float getHealthRatio() { return hp / 3f; }
+    public boolean consumeTelegraphStarted() {
+        boolean started = telegraphStarted;
+        telegraphStarted = false;
+        return started;
+    }
     @Override public void update(float delta) { }
     @Override public void render(SpriteBatch batch) {
         if (!ativo && state != State.DYING) return;

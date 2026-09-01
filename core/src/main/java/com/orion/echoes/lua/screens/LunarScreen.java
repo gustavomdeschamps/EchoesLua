@@ -7,6 +7,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
@@ -37,6 +38,8 @@ import com.orion.echoes.lua.physics.PhysicsWorld;
 import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.SaveManager;
 import com.orion.echoes.lua.systems.MissionState;
+import com.orion.echoes.lua.systems.CameraDirector;
+import com.orion.echoes.lua.systems.JuiceSystem;
 import com.orion.echoes.lua.ui.UiTheme;
 
 public class LunarScreen implements Screen {
@@ -53,6 +56,7 @@ public class LunarScreen implements Screen {
 
     private ShapeRenderer shapeRenderer;
     private GlyphLayout pauseLayout;
+    private NinePatch pausePanel;
 
     private PhysicsWorld physicsWorld;
     private GameInputProcessor input;
@@ -91,10 +95,9 @@ public class LunarScreen implements Screen {
     private final Vector2 shotStart = new Vector2();
     private final Vector2 shotEnd = new Vector2();
     private float shotFxTimer;
-    private float damageFlashTimer;
-    private float hitStopTimer;
-    private float cameraShakeTimer;
-    private float cameraShakePower;
+    private JuiceSystem juice;
+    private CameraDirector cameraDirector;
+    private final Vector2 cameraTarget = new Vector2();
     private boolean portalWasUnlocked;
     private Screen nextScreen;
 
@@ -118,6 +121,11 @@ public class LunarScreen implements Screen {
 
         criarCamera();
         criarCameraPause();
+        juice = new JuiceSystem();
+        juice.setShakeEnabled(game.getSettings().isShakeEnabled());
+        cameraDirector = new CameraDirector(camera, viewport, juice,
+            GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT);
+        pausePanel = assets.uiModalPatch();
 
         physicsWorld =
             new PhysicsWorld();
@@ -447,11 +455,13 @@ public class LunarScreen implements Screen {
                 1f / 30f
             );
 
-        if (hitStopTimer > 0f) {
-            hitStopTimer = Math.max(0f, hitStopTimer - delta);
+        juice.update(delta);
+        float gameplayDelta = juice.gameplayDelta(delta);
+        if (gameplayDelta == 0f) {
             particleManager.update(delta * .35f);
             return;
         }
+        delta = gameplayDelta;
 
         // ==========================================
         // MOVIMENTO
@@ -463,7 +473,7 @@ public class LunarScreen implements Screen {
         if (input.consumeDashPressed() && astronauta.tryDash(direction.x, direction.y)) {
             particleManager.criarPoeiraLunar(astronauta.getPosition().x + 27f,
                 astronauta.getPosition().y + 4f, true, direction.x, direction.y);
-            shakeCamera(.16f, 5f);
+            juice.trigger(JuiceSystem.Preset.DASH);
         }
 
         astronauta.move(
@@ -493,7 +503,6 @@ public class LunarScreen implements Screen {
         astronauta.setAimTarget(mouseWorld.x, mouseWorld.y);
         astronauta.setWeaponEquipped(mission.hasWeapon());
         shotFxTimer = Math.max(0f, shotFxTimer - delta);
-        damageFlashTimer = Math.max(0f, damageFlashTimer - delta);
 
         // ==========================================
         // ITENS FLUTUANTES
@@ -648,6 +657,7 @@ public class LunarScreen implements Screen {
                 astronauta
             );
             astronauta.registrarColeta(tipo);
+            juice.trigger(JuiceSystem.Preset.COLLECT);
 
             particleManager
                 .criarEfeitoColeta(
@@ -701,6 +711,7 @@ public class LunarScreen implements Screen {
             if (station.repair(mission)) {
                 showFeedback(station.getType().getLabel() + " reparada. Sistema ONLINE.");
                 particleManager.criarProcessamento(station.getPosition().x + 63f, station.getPosition().y + 63f);
+                juice.trigger(JuiceSystem.Preset.REPAIR);
             } else if (mission.isRepaired(station.getType())) {
                 showFeedback(station.getType().getLabel() + " já está online.");
             } else {
@@ -725,6 +736,7 @@ public class LunarScreen implements Screen {
             mission.craftWeapon();
             showFeedback("Arma montada. Mire com o mouse e dispare.");
             sounds.tocarProcessarGelo();
+            juice.trigger(JuiceSystem.Preset.CRAFT);
             return;
         }
 
@@ -766,6 +778,7 @@ public class LunarScreen implements Screen {
                 sounds.tocarColeta();
                 particleManager.criarEfeitoColeta(collectible.getPosition().x + 27f,
                     collectible.getPosition().y + 27f);
+                juice.trigger(JuiceSystem.Preset.COLLECT);
             }
         }
 
@@ -775,14 +788,17 @@ public class LunarScreen implements Screen {
 
         for (Enemy enemy : enemies) {
             enemy.update(delta, astronauta, obstacles);
+            if (enemy.consumeTelegraphStarted()) {
+                particleManager.criarAlertaInimigo(enemy.centerX(), enemy.centerY(), false);
+                sounds.tocarAlertaInimigo();
+            }
             if (enemy.canDamage(astronauta)) {
                 astronauta.receberDano(12f, enemy.centerX(), enemy.centerY());
                 showFeedback("Hostil atingiu o traje: -12 O2.");
-                damageFlashTimer = .28f;
                 particleManager.criarImpactoTraje(
                     astronauta.getPosition().x + GameConfig.PLAYER_WIDTH / 2f,
                     astronauta.getPosition().y + GameConfig.PLAYER_HEIGHT / 2f);
-                shakeCamera(.24f, 8f);
+                juice.trigger(JuiceSystem.Preset.PLAYER_HURT);
             }
         }
 
@@ -825,13 +841,13 @@ public class LunarScreen implements Screen {
         shotEnd.set(x + dirX * 420f, y + dirY * 420f);
         if (target != null) {
             shotEnd.set(target.centerX(), target.centerY());
-            if (target.takeHit()) {
+            boolean killed = target.takeHit();
+            if (killed) {
                 mission.registerEnemyDefeated();
                 particleManager.criarMorteInimigo(target.centerX(), target.centerY());
             } else particleManager.criarImpactoTiro(target.centerX(), target.centerY());
             showFeedback("Alvo atingido");
-            hitStopTimer = .05f;
-            shakeCamera(.12f, 4.5f);
+            juice.trigger(killed ? JuiceSystem.Preset.ENEMY_KILL : JuiceSystem.Preset.SHOT_HIT);
         }
         particleManager.criarMuzzleFlash(shotStart.x, shotStart.y, astronauta.getAimAngle());
         astronauta.triggerShot();
@@ -1004,75 +1020,22 @@ public class LunarScreen implements Screen {
     // =====================================================
 
     private void atualizarCamera() {
-
-        float targetX =
-            astronauta
-                .getPosition()
-                .x
-                + GameConfig.PLAYER_WIDTH / 2f;
-
-        float targetY =
-            astronauta
-                .getPosition()
-                .y
-                + GameConfig.PLAYER_HEIGHT / 2f;
-
-        float halfWidth =
-            viewport
-                .getWorldWidth()
-                / 2f;
-
-        float halfHeight =
-            viewport
-                .getWorldHeight()
-                / 2f;
-
-        Vector2 velocity = astronauta.getBody().getLinearVelocity();
-        targetX += velocity.x * PhysicsWorld.PPM * .18f;
-        targetY += velocity.y * PhysicsWorld.PPM * .14f;
-
-        targetX =
-            MathUtils.clamp(
-                targetX,
-                halfWidth,
-                GameConfig.WORLD_WIDTH
-                    - halfWidth
-            );
-
-        targetY =
-            MathUtils.clamp(
-                targetY,
-                halfHeight,
-                GameConfig.WORLD_HEIGHT
-                    - halfHeight
-            );
-
-        camera.position.x =
-            MathUtils.lerp(
-                camera.position.x,
-                targetX,
-                0.12f
-            );
-
-        camera.position.y =
-            MathUtils.lerp(
-                camera.position.y,
-                targetY,
-                0.12f
-            );
-
-        cameraShakeTimer = Math.max(0f, cameraShakeTimer - Gdx.graphics.getDeltaTime());
-        if (cameraShakeTimer > 0f) {
-            float falloff = cameraShakeTimer / .24f;
-            camera.position.x += MathUtils.random(-cameraShakePower, cameraShakePower) * falloff;
-            camera.position.y += MathUtils.random(-cameraShakePower, cameraShakePower) * falloff;
-        }
-        camera.update();
+        cameraTarget.set(astronauta.getPosition().x + GameConfig.PLAYER_WIDTH / 2f,
+            astronauta.getPosition().y + GameConfig.PLAYER_HEIGHT / 2f);
+        cameraDirector.update(cameraTarget, astronauta.getBody().getLinearVelocity(),
+            hasNearbyHostile(), Gdx.graphics.getDeltaTime());
     }
 
-    private void shakeCamera(float duration, float power) {
-        cameraShakeTimer = Math.max(cameraShakeTimer, duration);
-        cameraShakePower = Math.max(cameraShakePower * .65f, power);
+    private boolean hasNearbyHostile() {
+        float px = astronauta.getPosition().x;
+        float py = astronauta.getPosition().y;
+        for (Enemy enemy : enemies) {
+            if (!enemy.isAtivo()) continue;
+            float dx = enemy.centerX() - px;
+            float dy = enemy.centerY() - py;
+            if (dx * dx + dy * dy < GameConfig.CAMERA_COMBAT_RADIUS * GameConfig.CAMERA_COMBAT_RADIUS) return true;
+        }
+        return false;
     }
 
     // =====================================================
@@ -1301,19 +1264,15 @@ public class LunarScreen implements Screen {
     }
 
     private void renderDamageOverlay() {
-        if (damageFlashTimer <= 0f) return;
-        float alpha = damageFlashTimer / .28f;
-        shapeRenderer.setProjectionMatrix(pauseCamera.combined);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(.72f, .02f, .03f, alpha * .48f);
-        float edge = 34f * alpha;
-        shapeRenderer.rect(0f, 0f, GameConfig.WINDOW_WIDTH, edge);
-        shapeRenderer.rect(0f, GameConfig.WINDOW_HEIGHT - edge, GameConfig.WINDOW_WIDTH, edge);
-        shapeRenderer.rect(0f, 0f, edge, GameConfig.WINDOW_HEIGHT);
-        shapeRenderer.rect(GameConfig.WINDOW_WIDTH - edge, 0f, edge, GameConfig.WINDOW_HEIGHT);
-        shapeRenderer.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        float alpha = juice.getDamageFlashAlpha();
+        if (alpha <= 0f) return;
+        batch.setProjectionMatrix(pauseCamera.combined);
+        batch.begin();
+        batch.setColor(1f, 1f, 1f, alpha * .82f);
+        batch.draw(assets.uiDamageVignetteTexture, 0f, 0f,
+            GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     private void renderLandmarks() {
@@ -1350,18 +1309,19 @@ public class LunarScreen implements Screen {
     }
 
     private void renderEnemyHealthBars() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
         for (Enemy enemy : enemies) {
             if (!enemy.isAtivo() || enemy.getHealthRatio() >= 1f) continue;
             float x = enemy.centerX() - 34f;
             float y = enemy.centerY() + 46f;
-            shapeRenderer.setColor(UiTheme.TRACK);
-            shapeRenderer.rect(x, y, 68f, 7f);
-            shapeRenderer.setColor(UiTheme.MAGENTA);
-            shapeRenderer.rect(x, y, 68f * enemy.getHealthRatio(), 7f);
+            batch.setColor(Color.WHITE);
+            batch.draw(assets.uiBarTrackTexture, x, y, 68f, 7f);
+            batch.setColor(UiTheme.MAGENTA);
+            batch.draw(assets.uiBarFillTexture, x, y, 68f * enemy.getHealthRatio(), 7f);
         }
-        shapeRenderer.end();
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     private String getContextHint() {
@@ -1399,24 +1359,15 @@ public class LunarScreen implements Screen {
     // =====================================================
 
     private void renderPause() {
-        shapeRenderer.setProjectionMatrix(pauseCamera.combined);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(.012f, .021f, .027f, .88f);
-        shapeRenderer.rect(0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
-        shapeRenderer.setColor(UiTheme.CYAN);
-        shapeRenderer.rect(72f, 574f, 192f, 8f);
-        shapeRenderer.rect(72f, 188f, 760f, 2f);
-        shapeRenderer.setColor(.035f, .12f, .14f, .72f);
-        shapeRenderer.rect(72f, 220f, 760f, 92f);
-        shapeRenderer.setColor(.1f, .2f, .23f, .25f);
-        shapeRenderer.rect(872f, 0f, 408f, 720f);
-        shapeRenderer.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
-
         batch.setProjectionMatrix(pauseCamera.combined);
         batch.begin();
+        batch.setColor(.012f, .021f, .027f, .91f);
+        batch.draw(assets.uiWhiteTexture, 0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
+        pausePanel.setColor(new Color(1f, 1f, 1f, .97f));
+        pausePanel.draw(batch, 54f, 106f, 790f, 500f);
+        pausePanel.draw(batch, 872f, 106f, 354f, 500f);
+        pausePanel.setColor(Color.WHITE);
+        batch.setColor(Color.WHITE);
         desenharPauseTexto("REGISTRO LUNAR · EM ESPERA", .72f, UiTheme.CYAN, 74f, 618f);
         desenharPauseTexto("PAUSA", 2.45f, UiTheme.TEXT, 68f, 540f);
         desenharPauseTexto("A missão está congelada. Nenhum recurso será consumido.",

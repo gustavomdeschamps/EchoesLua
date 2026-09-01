@@ -9,7 +9,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -21,16 +21,19 @@ import com.orion.echoes.lua.managers.AssetManager;
 public class TerminalUi implements Disposable {
     private final OrthographicCamera camera = new OrthographicCamera();
     private final Viewport viewport;
-    private final ShapeRenderer shapes = new ShapeRenderer();
     private final GlyphLayout layout = new GlyphLayout();
     private final BitmapFont font;
     private final BitmapFont titleFont;
     private final SpriteBatch batch;
+    private final TextureRegion white;
+    private final NinePatch panelPatch;
 
     public TerminalUi(SpriteBatch batch, AssetManager assets) {
         this.batch = batch;
         this.font = assets.font;
         this.titleFont = assets.titleFont;
+        this.white = assets.uiWhiteTexture;
+        this.panelPatch = assets.uiDialogPatch();
         viewport = new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, camera);
         camera.position.set(GameConfig.WINDOW_WIDTH / 2f, GameConfig.WINDOW_HEIGHT / 2f, 0f);
         camera.update();
@@ -42,33 +45,31 @@ public class TerminalUi implements Disposable {
     }
 
     public void beginShapes() {
-        shapes.setProjectionMatrix(camera.combined);
+        batch.setProjectionMatrix(camera.combined);
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        shapes.begin(ShapeRenderer.ShapeType.Filled);
+        batch.begin();
     }
 
     public void endShapes() {
-        shapes.end();
+        batch.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
     }
 
     public void panel(float x, float y, float width, float height, Color accent) {
-        shapes.setColor(0f, 0f, 0f, .42f);
-        shapes.rect(x + 5f, y - 5f, width, height);
-        shapes.setColor(UiTheme.SURFACE_STRONG);
-        shapes.rect(x, y, width, height);
-        // Marcas de calibração nos cantos substituem a barra lateral genérica.
-        shapes.setColor(accent);
-        shapes.rect(x + 12f, y + height - 3f, 54f, 3f);
-        shapes.rect(x + 12f, y + height - 15f, 3f, 12f);
-        shapes.rect(x + width - 28f, y, 16f, 3f);
-        shapes.rect(x + width - 15f, y, 3f, 12f);
+        batch.setColor(0f, 0f, 0f, .42f);
+        batch.draw(white, x + 5f, y - 5f, width, height);
+        panelPatch.setColor(new Color(accent.r * .32f + .68f, accent.g * .32f + .68f,
+            accent.b * .32f + .68f, 1f));
+        panelPatch.draw(batch, x, y, width, height);
+        panelPatch.setColor(Color.WHITE);
+        batch.setColor(Color.WHITE);
     }
 
     public void rect(float x, float y, float width, float height, Color color) {
-        shapes.setColor(color);
-        shapes.rect(x, y, width, height);
+        batch.setColor(color);
+        batch.draw(white, x, y, width, height);
+        batch.setColor(Color.WHITE);
     }
 
     public void beginText() {
@@ -83,6 +84,10 @@ public class TerminalUi implements Disposable {
         batch.draw(texture, x, y, width, height);
         batch.setColor(Color.WHITE);
         batch.end();
+    }
+
+    public void image(TextureRegion region, float x, float y, float width, float height, Color tint) {
+        region(region, x, y, width, height, tint);
     }
 
     public void region(TextureRegion region, float x, float y, float width, float height, Color tint) {
@@ -127,5 +132,5 @@ public class TerminalUi implements Disposable {
     }
 
     public void resize(int width, int height) { viewport.update(width, height, true); }
-    @Override public void dispose() { shapes.dispose(); }
+    @Override public void dispose() { }
 }

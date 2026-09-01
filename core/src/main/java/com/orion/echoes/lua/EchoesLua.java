@@ -5,7 +5,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.SoundManager;
-import com.orion.echoes.lua.screens.IntroScreen;
+import com.orion.echoes.lua.config.AppSettings;
+import com.orion.echoes.lua.screens.LoadingScreen;
 
 public class EchoesLua extends Game {
 
@@ -14,6 +15,7 @@ public class EchoesLua extends Game {
     private AssetManager assets;
 
     private SoundManager sounds;
+    private AppSettings settings;
 
     @Override
     public void create() {
@@ -24,15 +26,15 @@ public class EchoesLua extends Game {
         assets =
             new AssetManager();
 
-        assets.load();
+        assets.queue();
+
+        settings = new AppSettings();
 
         sounds =
             SoundManager.getInstance();
 
-        sounds.load();
-
         setScreen(
-            new IntroScreen(this)
+            new LoadingScreen(this)
         );
     }
 
@@ -50,6 +52,8 @@ public class EchoesLua extends Game {
 
         return sounds;
     }
+
+    public AppSettings getSettings() { return settings; }
 
     @Override
     public void dispose() {
