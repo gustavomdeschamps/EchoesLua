@@ -101,6 +101,9 @@ public class Astronauta extends Entidade implements Interagivel {
 
     private boolean protegido = false;
 
+    private final PhysicsWorld physicsWorld;
+    private final Vector2 renderPosition = new Vector2();
+
     // ==========================================
     // CONSTRUTOR
     // ==========================================
@@ -169,6 +172,9 @@ public class Astronauta extends Entidade implements Interagivel {
                 FOOTPRINT_HEIGHT,
                 this
             );
+
+        this.physicsWorld = physicsWorld;
+        physicsWorld.trackForRender(body);
     }
 
     private TextureRegion mirrored(TextureRegion source) {
@@ -282,7 +288,7 @@ public class Astronauta extends Entidade implements Interagivel {
         // ======================================
 
         Vector2 bodyPosition =
-            body.getPosition();
+            physicsWorld.getRenderPosition(body, renderPosition);
 
         position.set(
             bodyPosition.x

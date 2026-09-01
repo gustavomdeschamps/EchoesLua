@@ -11,7 +11,6 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -57,7 +56,6 @@ public class LunarScreen implements Screen {
     private OrthographicCamera pauseCamera;
     private Viewport pauseViewport;
 
-    private ShapeRenderer shapeRenderer;
     private GlyphLayout pauseLayout;
     private NinePatch pausePanel;
 
@@ -192,9 +190,6 @@ public class LunarScreen implements Screen {
             new Hud(
                 assets
             );
-
-        shapeRenderer =
-            new ShapeRenderer();
 
         pauseLayout =
             new GlyphLayout();
@@ -1537,17 +1532,31 @@ public class LunarScreen implements Screen {
         float length = Math.max(.001f, (float)Math.sqrt(dx * dx + dy * dy));
         dx /= length;
         dy /= length;
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        Gdx.gl.glEnable(GL20.GL_BLEND);
-        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(.45f, .95f, 1f, alpha * .35f);
-        shapeRenderer.rectLine(px - dx * 34f, py - dy * 34f, px, py, 7f * alpha);
-        shapeRenderer.setColor(.9f, 1f, 1f, alpha);
-        shapeRenderer.rectLine(px - dx * 42f, py - dy * 42f, px, py, 2f);
-        shapeRenderer.circle(px, py, 5f + 4f * alpha, 12);
-        shapeRenderer.end();
-        Gdx.gl.glDisable(GL20.GL_BLEND);
+        /*
+         * Texturas em vez de ShapeRenderer: o traco entra no mesmo batch das
+         * entidades, sem alternar begin/end e sem o flush de GPU que isso custa.
+         */
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.setColor(.45f, .95f, 1f, alpha * .35f);
+        desenharTraco(px - dx * 34f, py - dy * 34f, px, py, 7f * alpha);
+        batch.setColor(.9f, 1f, 1f, alpha);
+        desenharTraco(px - dx * 42f, py - dy * 42f, px, py, 2f);
+        float glow = (5f + 4f * alpha) * 2.6f;
+        batch.draw(assets.energyFxFrame(1, 0), px - glow / 2f, py - glow / 2f, glow, glow);
+        batch.setColor(Color.WHITE);
+        batch.end();
+    }
+
+    /** Segmento texturizado: substitui rectLine sem sair do SpriteBatch. */
+    private void desenharTraco(float x1, float y1, float x2, float y2, float thickness) {
+        float lineX = x2 - x1;
+        float lineY = y2 - y1;
+        float length = (float) Math.sqrt(lineX * lineX + lineY * lineY);
+        if (length <= .001f) return;
+        float angle = MathUtils.atan2(lineY, lineX) * MathUtils.radiansToDegrees;
+        batch.draw(assets.uiWhiteTexture, x1, y1 - thickness / 2f,
+            0f, thickness / 2f, length, thickness, 1f, 1f, angle);
     }
 
     private void renderEnemyHealthBars() {
@@ -1722,10 +1731,6 @@ public class LunarScreen implements Screen {
 
         if (physicsWorld != null) {
             physicsWorld.dispose();
-        }
-
-        if (shapeRenderer != null) {
-            shapeRenderer.dispose();
         }
 
         if (blankCursor != null) {
