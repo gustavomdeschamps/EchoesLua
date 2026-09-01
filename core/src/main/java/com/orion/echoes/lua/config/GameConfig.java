@@ -120,6 +120,21 @@ public final class GameConfig {
     public static final float BASE_HEIGHT = 350f;
 
     // ==========================================
+    // MUNICAO
+    // ==========================================
+
+    /** Carga que o rifle recebe ao ser fabricado. */
+    public static final int AMMO_ON_CRAFT = 12;
+    public static final int AMMO_MAX = 30;
+    public static final int AMMO_PER_SHOT = 1;
+    /** Celulas de pulso obtidas ao processar uma rocha de gelo na base. */
+    public static final int AMMO_PER_ICE = 4;
+    /** Celula de energia marciana recuperada em campo. */
+    public static final int AMMO_PER_POWER_CELL = 6;
+    /** Abaixo disto o HUD passa a alertar. */
+    public static final int AMMO_LOW = 3;
+
+    // ==========================================
     // HOSTIS
     // ==========================================
 

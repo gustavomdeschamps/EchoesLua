@@ -120,13 +120,41 @@ class SaveManagerTest {
     }
 
     @Test
-    @DisplayName("Novo jogo comeca com vitais cheios e versao 1")
+    @DisplayName("Novo jogo comeca com vitais cheios e no formato de save atual")
     void newGameStartsFull() {
         GameSaveData data = saveManager.createNewGameData();
         assertEquals(100f, data.oxigenio);
         assertEquals(100f, data.energia);
         assertEquals(0f, data.tempoVivo);
-        assertEquals(1, data.versao);
+        assertEquals(GameSaveData.CURRENT_VERSION, data.versao);
         assertFalse(data.baseDescoberta);
+    }
+
+    @Test
+    @DisplayName("Round-trip preserva os campos de campanha da versao 3")
+    void campaignFieldsSurviveRoundTrip() {
+        GameSaveData original = new GameSaveData(500f, 400f, 70f, 55f, 42f);
+        original.fase = "MARS";
+        original.semente = 987654321L;
+        original.municao = 17;
+        original.totalHostisLunares = 4;
+        original.marteVisitado = true;
+        original.marteConcluido = true;
+        original.marteNucleos = 2;
+        original.marteEstacoes = 3;
+        original.marteHostis = 4;
+        saveManager.save(original);
+
+        GameSaveData loaded = new SaveManager().load();
+        assertNotNull(loaded);
+        assertEquals("MARS", loaded.fase);
+        assertEquals(987654321L, loaded.semente);
+        assertEquals(17, loaded.municao);
+        assertEquals(4, loaded.totalHostisLunares);
+        assertTrue(loaded.marteVisitado);
+        assertTrue(loaded.marteConcluido);
+        assertEquals(2, loaded.marteNucleos);
+        assertEquals(3, loaded.marteEstacoes);
+        assertEquals(4, loaded.marteHostis);
     }
 }

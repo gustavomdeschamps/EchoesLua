@@ -117,6 +117,11 @@ public final class CombatSystem {
             feedback.show("Ataque indisponível: fabrique a arma na base.");
             return;
         }
+        if (!player.consumirMunicao()) {
+            feedback.show("Sem munição. Processe gelo na base para gerar células.");
+            sounds.tocarSemGelo();
+            return;
+        }
         float x = player.getPosition().x + GameConfig.PLAYER_WIDTH / 2f;
         float y = player.getPosition().y + GameConfig.PLAYER_HEIGHT * .48f;
         float dirX = MathUtils.cosDeg(player.getAimAngle());

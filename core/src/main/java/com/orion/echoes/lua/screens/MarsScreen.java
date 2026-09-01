@@ -21,6 +21,7 @@ import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.entities.MarsEnemy;
 import com.orion.echoes.lua.entities.MarsObject;
+import com.orion.echoes.lua.entities.Portal;
 import com.orion.echoes.lua.entities.Wall;
 import com.orion.echoes.lua.events.EventBus;
 import com.orion.echoes.lua.events.EventType;
@@ -29,7 +30,11 @@ import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.ParticleManager;
 import com.orion.echoes.lua.managers.SoundManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.save.GameSaveData;
+import com.orion.echoes.lua.save.LunarCheckpoint;
+import com.orion.echoes.lua.save.SaveManager;
 import com.orion.echoes.lua.systems.CameraDirector;
+import com.orion.echoes.lua.systems.CampaignState;
 import com.orion.echoes.lua.systems.JuiceSystem;
 import com.orion.echoes.lua.ui.UiTheme;
 
@@ -41,8 +46,7 @@ public final class MarsScreen implements Screen {
     private static final Color MARS_DARK = Color.valueOf("572A24");
 
     private final EchoesLua game;
-    private final float initialOxygen;
-    private final float initialEnergy;
+    private final CampaignState campaign;
     private final Array<MarsObject> props = new Array<>();
     private final Array<MarsObject> rocks = new Array<>();
     private final Array<MarsObject> items = new Array<>();
@@ -68,6 +72,7 @@ public final class MarsScreen implements Screen {
     private Viewport viewport;
     private Viewport uiViewport;
     private MarsObject habitat;
+    private Portal returnPortal;
     private MarsObject landingPad;
     private float missionTime, reveal, dustTimer, stepTimer, shotTimer;
     private float messageTimer, extractionGlow;
@@ -78,10 +83,9 @@ public final class MarsScreen implements Screen {
     private boolean paused;
     private String message = "A tempestade apagou a colônia. Recupere os núcleos marcianos.";
 
-    public MarsScreen(EchoesLua game, float oxygen, float energy, int defeatedEnemies) {
+    public MarsScreen(EchoesLua game, CampaignState campaign) {
         this.game = game;
-        initialOxygen = oxygen;
-        initialEnergy = energy;
+        this.campaign = campaign == null ? game.getCampaign() : campaign;
     }
 
     @Override public void show() {
@@ -112,9 +116,11 @@ public final class MarsScreen implements Screen {
         new Wall(0f, WORLD_H, WORLD_W, 24f, physics);
         player = new Astronauta(230f, 250f, assets, physics);
         player.setSurfaceProfile(Astronauta.SurfaceProfile.MARS);
-        player.setVitals(Math.max(45f, initialOxygen), Math.max(38f, initialEnergy));
+        player.setVitals(Math.max(45f, campaign.getOxygen()), Math.max(38f, campaign.getEnergy()));
         player.setWeaponEquipped(true);
+        player.setMunicao(campaign.getAmmo());
         buildColony();
+        restaurarCampanha();
         camera.position.set(640f, 360f, 0f);
         camera.update();
         EventBus.getInstance().publish(EventType.MARS_ENTERED);
@@ -126,6 +132,13 @@ public final class MarsScreen implements Screen {
         stations.add(prop(1550f, 1330f, 225f, 190f, MarsObject.Kind.OXYGEN_STATION));
         stations.add(prop(2440f, 1130f, 225f, 190f, MarsObject.Kind.COMMS_STATION));
         landingPad = prop(2570f, 1530f, 250f, 190f, MarsObject.Kind.LANDING_PAD);
+        /*
+         * O portal de volta nasce ao lado do ponto de chegada e fica sempre
+         * aberto: voltar a Lua para reabastecer municao e oxigenio e uma
+         * jogada valida, nao uma recompensa.
+         */
+        returnPortal = new Portal(360f, 300f, assets);
+        returnPortal.setUnlocked(true);
         prop(2400f, 1230f, 120f, 140f, MarsObject.Kind.BEACON);
         float[][] data = {{530,760,130},{850,420,115},{1080,930,145},{1320,580,125},
             {1710,810,150},{1980,430,120},{2350,650,145},{2750,320,110},{610,1660,120},
@@ -143,6 +156,32 @@ public final class MarsScreen implements Screen {
         enemies.add(new MarsEnemy(1600f, 520f, false, assets, WORLD_W, WORLD_H));
         enemies.add(new MarsEnemy(2120f, 1250f, true, assets, WORLD_W, WORLD_H));
         enemies.add(new MarsEnemy(2420f, 420f, false, assets, WORLD_W, WORLD_H));
+    }
+
+    /**
+     * Reabre Marte no ponto em que o jogador saiu.
+     *
+     * Sem isto, voltar pelo portal significaria reativar as mesmas estacoes e
+     * recacar os mesmos hostis - o portal bidirecional so faz sentido se as
+     * duas pontas lembrarem do que ja foi feito.
+     */
+    private void restaurarCampanha() {
+        campaign.setPhase(CampaignState.Phase.MARS);
+        campaign.markMarsVisited();
+        minerals = campaign.getMinerals();
+        hostilesDefeated = Math.min(campaign.getMarsHostilesDefeated(), enemies.size);
+        for (int index = 0; index < hostilesDefeated; index++) enemies.get(index).setAtivo(false);
+        int online = Math.min(campaign.getMarsStationsOnline(), stations.size);
+        for (int index = 0; index < online; index++) stations.get(index).activate();
+        activeStations = online;
+    }
+
+    /** Fotografa Marte antes de voltar pelo portal ou de salvar. */
+    private void guardarCampanha() {
+        campaign.setVitals(player.getOxigenio(), player.getEnergia());
+        campaign.setAmmo(player.getMunicao());
+        campaign.setMissionTime(missionTime);
+        campaign.setMarsProgress(minerals, activeStations, hostilesDefeated, missionComplete());
     }
 
     private MarsObject prop(float x, float y, float w, float h, MarsObject.Kind kind) {
@@ -187,6 +226,7 @@ public final class MarsScreen implements Screen {
         batch.draw(assets.marsBackgroundTexture, 0f, 0f, WORLD_W, WORLD_H);
         renderLandmarks();
         for (MarsObject object : props) object.render(batch);
+        returnPortal.render(batch);
         for (MarsEnemy enemy : enemies) enemy.render(batch);
         player.render(batch);
         particles.render(batch);
@@ -272,7 +312,12 @@ public final class MarsScreen implements Screen {
         player.setAimTarget(mouseWorld.x, mouseWorld.y);
         if (input.consumeAttackPressed()) shoot();
         if (input.consumeInteractPressed()) interact();
+        // O portal de volta troca de tela e libera fisica e particulas; seguir
+        // com o resto do update depois disso seria mexer em recurso morto.
+        if (changingScreen) return;
+        atualizarSaveLoad();
         for (MarsObject object : props) object.update(delta);
+        returnPortal.update(delta);
         collectItems();
         for (MarsEnemy enemy : enemies) {
             enemy.update(delta, player, rocks);
@@ -292,6 +337,7 @@ public final class MarsScreen implements Screen {
         updateCamera(delta);
         if (missionComplete() && player.getBounds().overlaps(landingPad.getBounds())) {
             changingScreen = true;
+            guardarCampanha();
             game.setScreen(new VictoryScreen(game, missionTime));
             dispose();
         } else if (player.isMorto()) {
@@ -311,7 +357,13 @@ public final class MarsScreen implements Screen {
             switch (item.getKind()) {
                 case MINERAL -> { minerals++; feedback("Núcleo marciano recuperado  •  " + minerals); }
                 case MEDKIT -> { player.recuperarOxigenio(28f); feedback("Selagem de emergência aplicada  •  O2 restaurado"); }
-                case POWER_CELL -> { player.recuperarEnergia(35f); feedback("Célula de energia integrada"); }
+                case POWER_CELL -> {
+                    player.recuperarEnergia(35f);
+                    int cells = player.adicionarMunicao(GameConfig.AMMO_PER_POWER_CELL);
+                    feedback(cells > 0
+                        ? "Célula integrada  •  +" + cells + " de munição"
+                        : "Célula de energia integrada");
+                }
                 default -> { }
             }
         }
@@ -334,8 +386,61 @@ public final class MarsScreen implements Screen {
                 : "Estação reativada  •  " + activeStations + "/3");
             return;
         }
+        if (returnPortal.isPlayerNear(player)) {
+            atravessarPortalDeVolta();
+            return;
+        }
         feedback(missionComplete() ? "Sinal de extração disponível na plataforma."
             : "Nenhum sistema ao alcance.");
+    }
+
+    /**
+     * F5 e F9 tambem valem em Marte.
+     *
+     * O save e da campanha inteira, entao gravar aqui registra a fase
+     * marciana; carregar um save lunar a partir daqui seria trocar de fase no
+     * meio do frame, e por isso e recusado com aviso.
+     */
+    private void atualizarSaveLoad() {
+        if (input.consumeSavePressed()) {
+            guardarCampanha();
+            GameSaveData data = player.toSaveData();
+            LunarCheckpoint.applyCampaign(data, campaign);
+            new SaveManager().save(data);
+            feedback("Campanha salva na fase marciana.");
+        }
+        if (!input.consumeLoadPressed()) return;
+        GameSaveData data = new SaveManager().load();
+        if (data == null) {
+            feedback("Nenhum checkpoint encontrado.");
+            return;
+        }
+        if (!CampaignState.Phase.MARS.name().equals(data.fase)) {
+            feedback("O checkpoint salvo é da fase lunar. Carregue pelo menu.");
+            return;
+        }
+        player.fromSaveData(data);
+        player.setMunicao(data.municao);
+        minerals = data.marteNucleos;
+        for (int index = activeStations; index < Math.min(data.marteEstacoes, stations.size); index++) {
+            stations.get(index).activate();
+        }
+        activeStations = Math.min(data.marteEstacoes, stations.size);
+        hostilesDefeated = Math.min(data.marteHostis, enemies.size);
+        for (int index = 0; index < enemies.size; index++) {
+            enemies.get(index).setAtivo(index >= hostilesDefeated);
+        }
+        feedback("Checkpoint marciano carregado.");
+    }
+
+    /** Portal de volta: devolve o jogador a mesma Lua que ele deixou. */
+    private void atravessarPortalDeVolta() {
+        guardarCampanha();
+        campaign.setPhase(CampaignState.Phase.LUNAR);
+        changingScreen = true;
+        sounds.tocarInicio();
+        game.setScreen(new LunarScreen(game, game.getBatch(), game.getAssets(), campaign));
+        dispose();
     }
 
     private float distanceTo(MarsObject object) {
@@ -481,6 +586,8 @@ public final class MarsScreen implements Screen {
         drawBar(88f, 75f, 178f, 9f, player.getOxigenio() / 100f,
             player.getOxigenio() < 25f ? UiTheme.RED : UiTheme.CYAN);
         drawBar(88f, 49f, 178f, 8f, player.getEnergia() / 100f, UiTheme.AMBER);
+        drawBar(88f, 33f, 178f, 6f, player.getMunicao() / (float) GameConfig.AMMO_MAX,
+            player.getMunicao() <= GameConfig.AMMO_LOW ? UiTheme.RED : UiTheme.GREEN);
         if (missionComplete()) {
             float pulse = .35f + MathUtils.sin(extractionGlow * 4f) * .15f;
             batch.setColor(MARS.r, MARS.g, MARS.b, pulse);
@@ -491,6 +598,9 @@ public final class MarsScreen implements Screen {
         text(String.format("%.0f%%", player.getOxigenio()), .7f, UiTheme.TEXT, 275f, 87f, 1f);
         text("EN", .72f, UiTheme.TEXT_MUTED, 50f, 61f, 1f);
         text(String.format("%.0f%%", player.getEnergia()), .7f, UiTheme.TEXT, 275f, 60f, 1f);
+        text("MUN", .72f, UiTheme.TEXT_MUTED, 50f, 40f, 1f);
+        text(String.format("%d", player.getMunicao()), .7f,
+            player.getMunicao() <= GameConfig.AMMO_LOW ? UiTheme.RED : UiTheme.GREEN, 275f, 39f, 1f);
         text("NÚCLEOS  " + minerals, .74f, UiTheme.AMBER, 944f, 84f, 1f);
         text("ESTAÇÕES  " + activeStations + "/3", .74f, UiTheme.CYAN, 1050f, 84f, 1f);
         text("HOSTIS  " + hostilesDefeated + "/" + enemies.size, .72f, UiTheme.TEXT_MUTED, 944f, 55f, 1f);

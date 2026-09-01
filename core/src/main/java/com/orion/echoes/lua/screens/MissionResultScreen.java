@@ -90,7 +90,8 @@ abstract class MissionResultScreen implements Screen {
         if (!(click || Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE))) return;
         if (selected == 0) {
             game.getSounds().tocarInicio();
-            game.setScreen(new LunarScreen(game, game.getBatch(), game.getAssets()));
+            game.setScreen(new LunarScreen(game, game.getBatch(), game.getAssets(),
+                game.startNewCampaign()));
         } else {
             game.setScreen(new MenuScreen(game));
         }

@@ -57,6 +57,8 @@ public class MissionState {
     private boolean weaponCrafted;
     private int enemiesDefeated;
     private int totalEnemies;
+    private boolean marsVisited;
+    private boolean marsMissionComplete;
 
     public void collect(PartType type) {
         parts.getAndIncrement(type, 0, 1);
@@ -125,6 +127,57 @@ public class MissionState {
         }
         return "Portal online: atravesse para Marte";
     }
+
+    // =====================================================
+    // QUEST
+    //
+    // O mesmo progresso do texto de objetivo, exposto como passo numerado
+    // para o HUD mostrar onde o jogador esta na campanha.
+    // =====================================================
+
+    /** Total de marcos da campanha, do primeiro reparo ao desembarque. */
+    public static final int QUEST_TOTAL_STEPS = 7;
+
+    /**
+     * Passo atual, de 1 a {@value #QUEST_TOTAL_STEPS}.
+     *
+     * Os dois ultimos passos pertencem a Marte e so avancam quando a tela
+     * marciana informa o progresso por {@link #setMarsProgress}.
+     */
+    public int getQuestStep(float oxygen) {
+        if (getRepairCount() < 3) return hasAnyPart() ? 2 : 1;
+        if (!weaponCrafted) return 3;
+        if (enemiesDefeated < totalEnemies) return 4;
+        if (!isPortalUnlocked(oxygen)) return 5;
+        if (!marsMissionComplete) return marsVisited ? 6 : 5;
+        return QUEST_TOTAL_STEPS;
+    }
+
+    /** Titulo curto do passo, para o cabecalho do HUD. */
+    public String getQuestTitle(float oxygen) {
+        return switch (getQuestStep(oxygen)) {
+            case 1 -> "Encontrar as peças de reparo";
+            case 2 -> "Reativar três sistemas da colônia";
+            case 3 -> "Fabricar o rifle de pulso";
+            case 4 -> "Neutralizar os hostis lunares";
+            case 5 -> "Atravessar o portal para Marte";
+            case 6 -> "Restaurar a colônia marciana";
+            default -> "Alcançar a plataforma de extração";
+        };
+    }
+
+    private boolean hasAnyPart() {
+        for (PartType type : PartType.values()) if (getPartCount(type) > 0) return true;
+        return getRepairCount() > 0;
+    }
+
+    /** A fase marciana reporta seu proprio avanco para a quest continuar. */
+    public void setMarsProgress(boolean visited, boolean complete) {
+        marsVisited = visited || marsVisited;
+        marsMissionComplete = complete;
+    }
+
+    public boolean isMarsMissionComplete() { return marsMissionComplete; }
 
     // =====================================================
     // BENEFICIOS PASSIVOS

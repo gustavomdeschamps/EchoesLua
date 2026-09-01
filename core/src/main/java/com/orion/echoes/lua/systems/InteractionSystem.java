@@ -49,7 +49,7 @@ public final class InteractionSystem {
         }
 
         if (world.getCraftingStation().isPlayerNear(player)) {
-            craft(mission);
+            craft(mission, player);
             return Result.HANDLED;
         }
 
@@ -84,10 +84,12 @@ public final class InteractionSystem {
         feedback.show("Falta a peça de " + station.getType().getRequiredPart().getLabel() + ".");
     }
 
-    private void craft(MissionState mission) {
+    private void craft(MissionState mission, Astronauta player) {
         if (mission.hasAllWeaponParts() && !mission.hasWeapon()) {
             mission.craftWeapon();
-            feedback.show("Arma montada. Mire com o mouse e dispare.");
+            player.adicionarMunicao(GameConfig.AMMO_ON_CRAFT);
+            feedback.show("Arma montada com " + player.getMunicao()
+                + " células. Mire com o mouse e dispare.");
             sounds.tocarCraft();
             juice.trigger(JuiceSystem.Preset.CRAFT);
             return;
@@ -101,8 +103,12 @@ public final class InteractionSystem {
             sounds.tocarSemGelo();
             return;
         }
+        int cells = world.getPlayer().adicionarMunicao(
+            Math.round(GameConfig.AMMO_PER_ICE * mission.getIceYieldMultiplier()));
         sounds.tocarProcessarGelo();
-        feedback.show("Gelo processado: O2, água e combustível gerados.");
+        feedback.show(cells > 0
+            ? "Gelo processado: O2, água e +" + cells + " células de pulso."
+            : "Gelo processado: O2 e água. Munição já está no limite.");
         particles.criarProcessamento(
             world.getBase().getPosition().x + GameConfig.BASE_WIDTH / 2f,
             world.getBase().getPosition().y + GameConfig.BASE_HEIGHT / 2f);
