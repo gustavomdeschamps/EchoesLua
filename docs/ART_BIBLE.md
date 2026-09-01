@@ -83,6 +83,49 @@ dos módulos lunares sem cair em fonte monoespaçada de “terminal genérico”
 arquivos vieram do catálogo Google Fonts e são distribuídos sob SIL Open Font
 License 1.1, preservada em `assets/fonts/OFL-ChakraPetch.txt`.
 
+## Trilha e desenho de som
+
+O som segue a mesma lógica funcional da paleta: cada camada tem um papel e não
+concorre com as outras.
+
+- **Camadas adaptativas.** Cada mundo tem três loops de 32 s tocando juntos:
+  base (sempre presente), tensão (entra com hostil próximo) e urgência (entra
+  com O2 abaixo de 25%). A intensidade só cruza volumes — o transporte nunca
+  reinicia, então as camadas permanecem em fase.
+- **Loops sem emenda.** Toda frequência e todo LFO em `tools/generate_music.py`
+  é múltiplo exato do fundamental do loop (1/32 Hz). Isso torna o último sample
+  contínuo com o primeiro, condição para o crossfade não denunciar o corte.
+- **Barramentos.** Música, SFX, interface e ambiente têm volume próprio,
+  persistido em `AppSettings` e exposto na tela de opções.
+- **Vácuo lunar.** A Lua não tem atmosfera: som externo chega atenuado e mais
+  grave, como se conduzido pelo traje. Marte, com atmosfera fina, não aplica
+  essa correção.
+- **Espaço.** Fontes do mundo atenuam com a distância e panoramizam pelo lado da
+  tela. O telegraph do hostil é posicionado de propósito: o jogador precisa
+  localizar de onde vem o ataque.
+- **Ducking.** Stingers de reparo, craft e alerta abaixam a trilha por um
+  instante em vez de disputar espaço com ela.
+
+## Leitura dos hostis
+
+Os três comportamentos dividem o mesmo rig e a mesma folha 4×4; a diferença é de
+cor e de distância de reação, não de arte nova.
+
+- **Perseguidor** — tinta neutra. Reage de longe e avança em linha reta.
+- **Emboscador** — desvio violeta (`lunar-core`). Fica parado até o jogador
+  encostar, então avança rápido com telegraph curto.
+- **Atirador** — desvio âmbar (`energy-amber`). Recua para manter distância e
+  ataca com pulsos desviáveis; não causa dano por contato.
+
+## Layout por semente
+
+O desenho geral da fase é autoral e fixo — base, estações, bancada e portal têm
+posição fixa. A semente desloca as rochas dentro de uma folga curta e sorteia
+onde caem peças e recursos. Antes de entrar em jogo, um flood-fill
+(`world/ReachabilityGrid`) confirma que todo ponto obrigatório é alcançável a
+partir do início; sem essa checagem um sorteio infeliz fecharia uma peça atrás
+de um anel de rochas e travaria a missão.
+
 ## Assinatura de Echoes
 
 O sinal de rádio é o motivo recorrente: arcos concêntricos incompletos aparecem apenas em portal, transmissão, objetivo concluído e molduras principais. Ele não deve virar decoração repetida em todos os painéis.
