@@ -6,6 +6,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
 
 /** Drone ou rover marciano com leitura antecipada de ataque e animação real. */
@@ -26,7 +27,7 @@ public final class MarsEnemy extends Entidade {
         this.drone = drone;
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
-        bounds.set(x + (drone ? 10f : 12f), y + 6f, drone ? 50f : 58f, drone ? 28f : 33f);
+        sincronizarHitbox();
         for (int row = 0; row < 4; row++)
             for (int column = 0; column < 4; column++)
                 frames[row][column] = assets.marsEnemyFrame(drone, column, row);
@@ -73,11 +74,48 @@ public final class MarsEnemy extends Entidade {
         if (free(nextX, position.y, rocks)) position.x = nextX;
         float nextY = MathUtils.clamp(position.y + dy * speed * delta, 0f, worldHeight - height);
         if (free(position.x, nextY, rocks)) position.y = nextY;
-        bounds.setPosition(position.x + (drone ? 10f : 12f), position.y + 6f);
+        sincronizarHitbox();
+    }
+
+    /**
+     * Hitbox derivada do sprite, incluindo a flutuacao do drone.
+     *
+     * Este era o pior desalinhamento do jogo: o drone subia ate 11px que a
+     * caixa nao acompanhava, entao mirar no sprite fazia o tiro passar por
+     * baixo. Agora corpo e desenho sobem juntos.
+     */
+    private void sincronizarHitbox() {
+        bounds.set(hitboxX(position.x), hitboxY(position.y), hitboxWidth(), hitboxHeight());
+    }
+
+    private float spriteSize() {
+        return drone ? GameConfig.MARS_DRONE_SPRITE_SIZE : GameConfig.MARS_CRAWLER_SPRITE_SIZE;
+    }
+
+    /** Deslocamento vertical do sprite; o drone paira, o crawler nao. */
+    private float spriteBob() {
+        return drone ? 8f + MathUtils.sin(elapsed * 5f) * 3f : 0f;
+    }
+
+    private float hitboxWidth() {
+        return spriteSize() * GameConfig.ENEMY_HITBOX_WIDTH_RATIO;
+    }
+
+    private float hitboxHeight() {
+        return spriteSize() * GameConfig.ENEMY_HITBOX_HEIGHT_RATIO;
+    }
+
+    private float hitboxX(float originX) {
+        return originX + width / 2f - hitboxWidth() / 2f;
+    }
+
+    private float hitboxY(float originY) {
+        float spriteY = originY + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y + spriteBob();
+        return spriteY + spriteSize() * GameConfig.ENEMY_HITBOX_BASE_RATIO;
     }
 
     private boolean free(float x, float y, Array<MarsObject> rocks) {
-        testBounds.set(x + (drone ? 10f : 12f), y + 6f, drone ? 50f : 58f, drone ? 28f : 33f);
+        testBounds.set(hitboxX(x), hitboxY(y), hitboxWidth(), hitboxHeight());
         for (MarsObject rock : rocks) if (rock.isBlocking() && testBounds.overlaps(rock.getBounds())) return false;
         return true;
     }
@@ -120,8 +158,12 @@ public final class MarsEnemy extends Entidade {
         change(State.HIT);
         return false;
     }
+    /** Centro do sprite, acompanhando a flutuacao: e onde a mira encosta. */
     public float centerX() { return position.x + width / 2f; }
-    public float centerY() { return position.y + height / 2f; }
+
+    public float centerY() {
+        return position.y + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y + spriteBob() + spriteSize() / 2f;
+    }
     public float getHealthRatio() { return hp / 3f; }
     public boolean consumeTelegraphStarted() {
         boolean started = telegraphStarted;
@@ -134,10 +176,11 @@ public final class MarsEnemy extends Entidade {
         float alpha = state == State.DYING ? MathUtils.clamp(1f - stateTime / .52f, 0f, 1f) : 1f;
         if (state == State.HIT) batch.setColor(1f, .55f, .35f, alpha);
         else batch.setColor(1f, 1f, 1f, alpha);
-        float bob = drone ? 8f + MathUtils.sin(elapsed * 5f) * 3f : 0f;
+        float bob = spriteBob();
         if (state == State.TELEGRAPH) bob += MathUtils.sin(stateTime * 25f) * 2f;
-        float size = drone ? 108f : 116f;
-        batch.draw(currentFrame(), centerX() - size / 2f, position.y - 18f + bob, size, size);
+        float size = spriteSize();
+        batch.draw(currentFrame(), centerX() - size / 2f,
+            position.y + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y + bob, size, size);
         batch.setColor(1f, 1f, 1f, 1f);
     }
     @Override public void dispose() { }

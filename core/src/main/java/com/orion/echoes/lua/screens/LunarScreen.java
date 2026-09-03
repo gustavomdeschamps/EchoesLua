@@ -15,6 +15,9 @@ import com.orion.echoes.lua.EchoesLua;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.entities.Enemy;
+import com.orion.echoes.lua.entities.EnemyPulse;
+import com.orion.echoes.lua.entities.MissionCollectible;
+import com.orion.echoes.lua.entities.Obstacle;
 import com.orion.echoes.lua.entities.Item;
 import com.orion.echoes.lua.entities.RepairStation;
 import com.orion.echoes.lua.input.GameInputProcessor;
@@ -22,6 +25,7 @@ import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.ParticleManager;
 import com.orion.echoes.lua.managers.SoundManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.render.HitboxDebugRenderer;
 import com.orion.echoes.lua.render.MissionOverlay;
 import com.orion.echoes.lua.render.PauseOverlay;
 import com.orion.echoes.lua.render.WorldRenderer;
@@ -36,6 +40,7 @@ import com.orion.echoes.lua.systems.FeedbackSystem;
 import com.orion.echoes.lua.systems.InteractionSystem;
 import com.orion.echoes.lua.systems.JuiceSystem;
 import com.orion.echoes.lua.systems.MissionState;
+import com.orion.echoes.lua.ui.UiTheme;
 import com.orion.echoes.lua.world.LunarWorld;
 
 /**
@@ -79,6 +84,7 @@ public class LunarScreen implements Screen {
     private WorldRenderer worldRenderer;
     private MissionOverlay overlay;
     private PauseOverlay pauseOverlay;
+    private HitboxDebugRenderer hitboxDebug;
 
     private LunarWorld world;
     private Astronauta astronauta;
@@ -148,6 +154,7 @@ public class LunarScreen implements Screen {
         worldRenderer = new WorldRenderer(batch, assets, camera);
         overlay = new MissionOverlay(batch, assets, camera, uiCamera);
         pauseOverlay = new PauseOverlay(batch, assets, uiCamera);
+        hitboxDebug = new HitboxDebugRenderer(batch, assets);
     }
 
     /**
@@ -207,6 +214,7 @@ public class LunarScreen implements Screen {
 
         worldRenderer.render(world, particleManager);
         combat.render(world);
+        renderHitboxDebug();
 
         if (!pausado) {
             String hudMessage = feedback.resolveHudText(world);
@@ -223,6 +231,55 @@ public class LunarScreen implements Screen {
 
         if (pausado) pauseOverlay.render(world);
         else overlay.renderCursor(world, mouseWorld);
+    }
+
+    /**
+     * Sobreposicao de hitboxes (F3).
+     *
+     * Cada cor tem um papel: ciano e o jogador, magenta os hostis, ambar os
+     * coletaveis, verde as estacoes e portal, cinza as rochas. O contorno
+     * apagado e o retangulo do sprite - se ele nao estiver centrado na caixa,
+     * o desalinhamento esta na tela.
+     */
+    private void renderHitboxDebug() {
+        if (!hitboxDebug.begin(camera)) return;
+
+        for (Obstacle obstacle : world.getObstacles()) {
+            hitboxDebug.box(obstacle.getBounds(), UiTheme.TEXT_MUTED);
+        }
+        hitboxDebug.box(world.getBase().getBounds(), UiTheme.CYAN_DIM);
+        for (RepairStation station : world.getRepairStations()) {
+            hitboxDebug.box(station.getBounds(), UiTheme.GREEN);
+        }
+        hitboxDebug.box(world.getCraftingStation().getBounds(), UiTheme.GREEN);
+        hitboxDebug.box(world.getPortal().getBounds(), UiTheme.GREEN);
+
+        for (Item item : world.getItems()) {
+            if (!item.isColetado()) hitboxDebug.box(item.getBounds(), UiTheme.AMBER);
+        }
+        for (MissionCollectible collectible : world.getCollectibles()) {
+            if (collectible.isAtivo()) hitboxDebug.box(collectible.getBounds(), UiTheme.AMBER);
+        }
+
+        for (Enemy enemy : world.getEnemies()) {
+            if (!enemy.isAtivo()) continue;
+            hitboxDebug.box(enemy.getBounds(), UiTheme.MAGENTA);
+            hitboxDebug.sprite(enemy.getPosition().x + GameConfig.ENEMY_SPRITE_OFFSET_X,
+                enemy.getPosition().y + GameConfig.ENEMY_SPRITE_OFFSET_Y,
+                GameConfig.ENEMY_SPRITE_SIZE, GameConfig.ENEMY_SPRITE_SIZE);
+            hitboxDebug.center(enemy.centerX(), enemy.centerY(), UiTheme.MAGENTA);
+        }
+        for (EnemyPulse pulse : world.getEnemyPulses()) {
+            hitboxDebug.box(pulse.getBounds(), UiTheme.RED);
+        }
+
+        hitboxDebug.box(astronauta.getBounds(), UiTheme.CYAN);
+        hitboxDebug.sprite(
+            astronauta.getPosition().x + GameConfig.PLAYER_WIDTH / 2f
+                - GameConfig.PLAYER_VISUAL_SIZE / 2f,
+            astronauta.getPosition().y - 5f,
+            GameConfig.PLAYER_VISUAL_SIZE, GameConfig.PLAYER_VISUAL_SIZE);
+        hitboxDebug.end();
     }
 
     private void update(float delta) {
@@ -443,6 +500,7 @@ public class LunarScreen implements Screen {
     }
 
     private void verificarPause() {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) hitboxDebug.toggle();
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             pausado = !pausado;
             astronauta.getBody().setLinearVelocity(0f, 0f);

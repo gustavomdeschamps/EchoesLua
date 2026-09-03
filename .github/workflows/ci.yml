@@ -34,8 +34,8 @@ jobs:
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: QA de assets
-        run: python tools/prepare_visual_assets.py --validate-only
+      - name: QA de assets (obrigatório no CI)
+        run: ./gradlew validateVisualAssets -PstrictAssetQa=true --no-daemon
 
       - name: Testes
         run: ./gradlew :core:test --no-daemon

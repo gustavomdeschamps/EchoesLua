@@ -51,13 +51,22 @@ barra, que ficam vermelhos quando a carga está baixa.
 | `E` | reparar, montar, processar gelo, usar o portal |
 | `F5` / `F9` | salvar e carregar a campanha (nas duas fases) |
 | `Esc` | pausar · `M` volta ao menu |
+| `F3` | sobrepor hitboxes (depuração visual) |
 
 ## Build e execução
 
-Requer **JDK 17** e **Python 3.11+** (o build valida os assets antes de compilar).
+Requer apenas **JDK 17**. Basta clonar e rodar.
+
+```bash
+./gradlew lwjgl3:run
+```
+
+O QA de assets é escrito em Python e é **opcional**: sem as bibliotecas ele
+avisa e é pulado, sem quebrar o build. Para habilitá-lo (e é o que o CI faz):
 
 ```bash
 pip install pillow numpy soundfile
+./gradlew validateVisualAssets -PstrictAssetQa=true
 ```
 
 **Linux e macOS**
@@ -116,6 +125,15 @@ core/src/main/java/com/orion/echoes/lua/
 - **`PhysicsWorld`** roda Box2D em timestep fixo e devolve a posição
   interpolada para o render, o que elimina o micro-stutter.
 - **`MusicDirector`** mantém três camadas por mundo em fase e só cruza volumes.
+
+### Depuração visual de hitboxes
+
+`F3` desenha as caixas de colisão por cima dos sprites, nas duas fases. Cada
+cor tem um papel: ciano é o jogador, magenta os hostis, âmbar os coletáveis,
+verde as estruturas interativas, cinza as rochas. O contorno apagado é o
+retângulo do sprite — se ele não estiver centrado na caixa, o desalinhamento
+está visível na tela. A cruz marca o ponto usado para mira, barra de vida e
+partículas.
 
 ## Documentação
 
