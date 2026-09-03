@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -17,12 +18,14 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import com.orion.echoes.lua.EchoesLua;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.entities.Astronauta;
+import com.orion.echoes.lua.entities.Pickup;
 import com.orion.echoes.lua.entities.TitanEnemy;
 import com.orion.echoes.lua.entities.TitanBoss;
 import com.orion.echoes.lua.entities.TitanPortal;
 import com.orion.echoes.lua.entities.Wall;
 import com.orion.echoes.lua.input.GameInputProcessor;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.managers.MissionSprite;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
@@ -40,6 +43,9 @@ public final class TitanScreen implements Screen {
     private final EchoesLua game;
     private final CampaignState campaign;
     private final Array<TitanEnemy> enemies = new Array<>();
+    private final Array<Pickup> suprimentos = new Array<>();
+    /** Refinaria de campo: e aqui que o gelo de Tita vira municao. */
+    private final Rectangle refinaria = new Rectangle(430f, 150f, 148f, 132f);
     private final Vector2 mouseWorld = new Vector2();
     private final Vector2 shotOrigin = new Vector2();
     private final GlyphLayout layout = new GlyphLayout();
@@ -107,6 +113,16 @@ public final class TitanScreen implements Screen {
         enemies.add(new TitanEnemy(2050f, 520f, assets));
         // O chefe guarda o fundo do mapa: o jogador o encontra depois dos comuns.
         boss = new TitanBoss(2150f, 1150f, assets);
+        // Oxigenio e gelo espalhados: a fase longa precisa de folego e de
+        // insumo para nao travar o jogador sem municao.
+        for (float[] ponto : new float[][] {{540f, 900f}, {1180f, 480f}, {1620f, 1260f},
+                {2280f, 980f}, {860f, 1420f}, {1980f, 300f}}) {
+            suprimentos.add(new Pickup(ponto[0], ponto[1], Pickup.Kind.OXIGENIO, assets));
+        }
+        for (float[] ponto : new float[][] {{700f, 1180f}, {1420f, 760f}, {2140f, 1440f},
+                {1020f, 260f}, {2420f, 620f}}) {
+            suprimentos.add(new Pickup(ponto[0], ponto[1], Pickup.Kind.GELO, assets));
+        }
         campaign.setPhase(CampaignState.Phase.TITAN);
         campaign.setEntrouTita(true);
         camera.position.set(player.getPosition().x, player.getPosition().y, 0f);
@@ -125,6 +141,9 @@ public final class TitanScreen implements Screen {
         batch.draw(assets.titanBackgroundTexture, 0f, 0f, WORLD_W, WORLD_H);
         batch.setColor(Color.WHITE);
         returnPortal.render(batch);
+        batch.draw(assets.missionRegion(MissionSprite.CRAFTING_TERMINAL),
+            refinaria.x, refinaria.y, refinaria.width, refinaria.height);
+        for (Pickup suprimento : suprimentos) suprimento.render(batch);
         desenharAvisoDoChefe();
         for (TitanEnemy enemy : enemies) enemy.render(batch);
         boss.render(batch);
@@ -155,7 +174,8 @@ public final class TitanScreen implements Screen {
         }
         atualizarChefe(delta);
         returnPortal.update(delta);
-        if (input.consumeInteractPressed() && returnPortal.isPlayerNear(player)) returnToMars();
+        coletarSuprimentos(delta);
+        if (input.consumeInteractPressed()) interagir();
         if (input.consumeSavePressed()) saveTitan();
         camera.position.x = MathUtils.clamp(player.getPosition().x,
             GameConfig.WINDOW_WIDTH / 2f, WORLD_W - GameConfig.WINDOW_WIDTH / 2f);
@@ -286,6 +306,42 @@ public final class TitanScreen implements Screen {
         dispose();
     }
 
+    /** Coleta de oxigenio e gelo na superficie. */
+    private void coletarSuprimentos(float delta) {
+        for (Pickup suprimento : suprimentos) {
+            suprimento.update(delta);
+            if (!suprimento.coletar(player)) continue;
+            feedback(suprimento.getKind() == Pickup.Kind.OXIGENIO
+                ? "Cilindro de oxigênio  •  O2 restaurado"
+                : "Gelo de metano recolhido  •  refine na refinaria");
+        }
+    }
+
+    /** E: refina na refinaria, ou volta a Marte no portal. */
+    private void interagir() {
+        if (refinaria.overlaps(player.getBounds())) { refinar(); return; }
+        if (returnPortal.isPlayerNear(player)) returnToMars();
+    }
+
+    /**
+     * Gelo vira municao.
+     *
+     * E o que impede a fase de virar beco sem saida: sem municao o chefe e
+     * invencivel, e a refinaria da sempre um caminho de volta.
+     */
+    private void refinar() {
+        if (!player.removerGelo()) {
+            feedback("Sem gelo para refinar. Recolha gelo pelo mapa.");
+            return;
+        }
+        int celulas = player.adicionarMunicao(GameConfig.AMMO_PER_ICE);
+        player.recuperarOxigenio(GameConfig.OXYGEN_ITEM_VALUE * .5f);
+        combat.setMunicao(player.getMunicao());
+        feedback(celulas > 0
+            ? "Gelo refinado  •  +" + celulas + " de munição"
+            : "Munição já está no limite.");
+    }
+
     private void feedback(String value) { message = value; messageTimer = 3f; }
 
     private void renderHud() {
@@ -300,7 +356,8 @@ public final class TitanScreen implements Screen {
         text(String.format("O2  %.0f%%     ENERGIA  %.0f%%     MUNIÇÃO  %d",
             player.getOxigenio(), player.getEnergia(), player.getMunicao()), .74f,
             UiTheme.TEXT, 58f, 88f);
-        text("E no portal retorna a Marte", .65f, UiTheme.TEXT_MUTED, 58f, 55f);
+        text(String.format("GELO  %d     E: refinaria vira munição  •  portal retorna a Marte",
+            player.getGelo()), .65f, UiTheme.TEXT_MUTED, 58f, 55f);
         if (messageTimer > 0f) {
             layout.setText(assets.font, message);
             text(message, .68f, UiTheme.TEXT, 455f, 160f);

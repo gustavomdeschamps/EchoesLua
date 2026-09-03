@@ -16,13 +16,21 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.orion.echoes.lua.EchoesLua;
 import com.orion.echoes.lua.config.GameConfig;
 
-/** Tela funcional: mantém o render responsivo enquanto o AssetManager trabalha. */
+/**
+ * Abertura sobre a imagem de apresentacao.
+ *
+ * A antiga tela da lua desenhada em codigo saiu: o jogo abre direto na key
+ * art e so mantem uma linha de progresso discreta no rodape, porque os
+ * atlas ainda estao carregando e o render precisa continuar respondendo.
+ * A arte e carregada em Texture propria justamente por isso - o atlas de UI
+ * que a contem so fica pronto no fim deste carregamento.
+ */
 public final class LoadingScreen implements Screen {
     private static final float MINIMUM_DISPLAY_TIME = .55f;
     private final EchoesLua game;
     private final SpriteBatch batch;
     private final Texture pixel = solidPixel();
-    private final Texture disc = softDisc();
+    private final Texture keyArt = carregarKeyArt();
     private final BitmapFont font = new BitmapFont();
     private final GlyphLayout layout = new GlyphLayout();
     private final OrthographicCamera camera = new OrthographicCamera();
@@ -62,36 +70,29 @@ public final class LoadingScreen implements Screen {
     private void drawInterface() {
         float reveal = Interpolation.fade.apply(MathUtils.clamp(elapsed / .42f, 0f, 1f));
         float barX = 456f;
-        float barY = 264f;
+        float barY = 58f;
         float barW = 368f;
-        float barH = 5f;
+        float barH = 4f;
 
-        /*
-         * Esta tela existe justamente porque os atlas ainda nao chegaram, entao
-         * ela desenha com duas texturas minimas geradas em memoria, e nao com
-         * ShapeRenderer: um renderer a mais so para a barra nao se paga.
-         */
         String status = "PREPARANDO MISSÃO  " + MathUtils.round(displayedProgress * 100f) + "%";
-        font.getData().setScale(.92f);
-        font.setColor(new Color(.82f, .87f, .86f, reveal));
+        font.getData().setScale(.86f);
+        font.setColor(new Color(.82f, .87f, .86f, reveal * .9f));
         layout.setText(font, status);
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        batch.setColor(.035f, .055f, .069f, 1f);
-        batch.draw(pixel, 0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
-        batch.setColor(.08f, .11f, .13f, reveal);
+        // A key art cobre a tela inteira; o leve escurecimento existe so para
+        // o texto do rodape continuar legivel sobre o regolito claro.
+        batch.setColor(reveal, reveal, reveal, 1f);
+        batch.draw(keyArt, 0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
+        batch.setColor(.01f, .014f, .02f, .55f * reveal);
+        batch.draw(pixel, 0f, 0f, GameConfig.WINDOW_WIDTH, 118f);
+        batch.setColor(.08f, .11f, .13f, reveal * .85f);
         batch.draw(pixel, barX, barY, barW, barH);
         batch.setColor(.35f, .78f, .76f, reveal);
         batch.draw(pixel, barX, barY, barW * displayedProgress, barH);
-        batch.setColor(.84f, .49f, .25f, reveal * .85f);
-        batch.draw(disc, 584f, 344f, 112f, 112f);
-        batch.setColor(.035f, .055f, .069f, 1f);
-        batch.draw(disc, 604f, 360f, 108f, 108f);
-        batch.setColor(.35f, .78f, .76f, reveal * .75f);
-        batch.draw(pixel, 622f, 363f, 36f, 2f);
         batch.setColor(Color.WHITE);
-        font.draw(batch, status, 640f - layout.width / 2f, 236f);
+        font.draw(batch, status, 640f - layout.width / 2f, 92f);
         batch.end();
     }
 
@@ -112,31 +113,17 @@ public final class LoadingScreen implements Screen {
         return texture;
     }
 
-    /** Disco com borda suave, para o emblema circular da tela de carga. */
-    private static Texture softDisc() {
-        int size = 128;
-        Pixmap pixmap = new Pixmap(size, size, Pixmap.Format.RGBA8888);
-        float radius = size / 2f - 1f;
-        for (int y = 0; y < size; y++) {
-            for (int x = 0; x < size; x++) {
-                float dx = x - size / 2f + .5f;
-                float dy = y - size / 2f + .5f;
-                float distance = (float) Math.sqrt(dx * dx + dy * dy);
-                float alpha = MathUtils.clamp(radius - distance, 0f, 1f);
-                pixmap.setColor(1f, 1f, 1f, alpha);
-                pixmap.drawPixel(x, y);
-            }
-        }
-        Texture texture = new Texture(pixmap);
+    /** Key art da abertura, carregada direto do arquivo porque o atlas ainda nao existe. */
+    private static Texture carregarKeyArt() {
+        Texture texture = new Texture(Gdx.files.internal("textures/intro_keyart_v2.png"));
         texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        pixmap.dispose();
         return texture;
     }
 
     @Override
     public void dispose() {
         pixel.dispose();
-        disc.dispose();
+        keyArt.dispose();
         font.dispose();
     }
 }

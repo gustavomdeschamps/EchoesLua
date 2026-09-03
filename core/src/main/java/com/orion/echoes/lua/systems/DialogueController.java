@@ -10,9 +10,15 @@ public final class DialogueController {
     public void start(String[] lines) {
         if (lines == null || lines.length == 0) {
             this.lines = new String[0];
+            /*
+             * Roteiro vazio nao conclui nada.
+             *
+             * Marcar finished aqui ligaria a flag da missao sem o jogador ter
+             * lido uma unica fala.
+             */
             index = 0;
             open = false;
-            finished = true;
+            finished = false;
             return;
         }
         this.lines = lines.clone();
