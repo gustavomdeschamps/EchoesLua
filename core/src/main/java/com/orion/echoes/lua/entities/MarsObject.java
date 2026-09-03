@@ -4,8 +4,10 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.render.SpriteFit;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 
 /** Prop marciano com atlas próprio e estados simples de coleta/ativação. */
@@ -19,6 +21,8 @@ public final class MarsObject extends Entidade {
     }
 
     private final Kind kind;
+    /** Retangulo realmente desenhado; hitbox e flutuacao seguem ele. */
+    private final Rectangle drawRect = new Rectangle();
     private final Sprite sprite;
     private final float baseY;
     private final Body body;
@@ -34,25 +38,38 @@ public final class MarsObject extends Entidade {
         sprite = new Sprite(kind == Kind.ROCK
             ? assets.marsObstacleRegion(Math.abs(((int)x * 31 + (int)y * 17)) % 6)
             : assets.marsRegion(kind.column, kind.row));
-        sprite.setSize(width, height);
-        sprite.setPosition(x, y);
+        /*
+         * As celulas do atlas sao quadradas. Esticar a arte para preencher um
+         * retangulo de outra proporcao achatava a plataforma de pouso em 32% e
+         * o habitat em 20% - era isso que fazia os props parecerem deformados.
+         * Aqui a arte e encaixada sem deformar, e o retangulo resultante vira
+         * a referencia tambem da hitbox.
+         */
+        SpriteFit.fit(sprite, x, y, width, height, drawRect);
+        sprite.setSize(drawRect.width, drawRect.height);
+        sprite.setPosition(drawRect.x, drawRect.y);
         sprite.setOriginCenter();
         if (kind == Kind.ROCK && physics != null) {
-            float hitWidth = width * .68f;
-            float hitHeight = height * .27f;
-            bounds.set(x + (width - hitWidth) / 2f, y + height * .08f, hitWidth, hitHeight);
+            float hitWidth = drawRect.width * .68f;
+            float hitHeight = drawRect.height * .27f;
+            bounds.set(drawRect.x + (drawRect.width - hitWidth) / 2f,
+                drawRect.y + drawRect.height * .08f, hitWidth, hitHeight);
             body = physics.createStaticBody(bounds.x + bounds.width / 2f,
                 bounds.y + bounds.height / 2f, bounds.width, bounds.height, "MARS_ROCK");
         } else if ((isStation() || kind == Kind.HABITAT) && physics != null) {
             // O volume visual alto não bloqueia: só a sapata apoiada no solo.
-            float hitWidth = width * (kind == Kind.HABITAT ? .72f : .58f);
-            float hitHeight = height * .22f;
-            body = physics.createStaticBody(x + width / 2f, y + hitHeight / 2f + height * .05f,
+            float hitWidth = drawRect.width * (kind == Kind.HABITAT ? .72f : .58f);
+            float hitHeight = drawRect.height * .22f;
+            body = physics.createStaticBody(drawRect.x + drawRect.width / 2f,
+                drawRect.y + hitHeight / 2f + drawRect.height * .05f,
                 hitWidth, hitHeight, "MARS_STRUCTURE");
-            bounds.set(x - 24f, y - 18f, width + 48f, height * .72f + 36f);
+            // Area de interacao: o volume desenhado com uma folga de alcance.
+            bounds.set(drawRect.x - 24f, drawRect.y - 18f,
+                drawRect.width + 48f, drawRect.height * .72f + 36f);
         } else if (isCollectible()) {
             body = null;
-            bounds.set(x + width * .18f, y + height * .16f, width * .64f, height * .64f);
+            bounds.set(drawRect.x + drawRect.width * .18f, drawRect.y + drawRect.height * .16f,
+                drawRect.width * .64f, drawRect.height * .64f);
         } else {
             body = null;
         }

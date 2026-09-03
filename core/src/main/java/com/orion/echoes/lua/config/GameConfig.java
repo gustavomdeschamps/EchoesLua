@@ -120,6 +120,29 @@ public final class GameConfig {
     public static final float BASE_HEIGHT = 350f;
 
     // ==========================================
+    // CHEFE DE TITA
+    //
+    // O chefe precisa ter presenca: 340px contra os 104px do jogador, mais de
+    // tres vezes a altura dele. O ataque e telegrafado e em area, entao ele
+    // se le de longe e da tempo de sair - o oposto do dano por encostar dos
+    // hostis comuns.
+    // ==========================================
+
+    public static final float BOSS_SPRITE_SIZE = 340f;
+    public static final float BOSS_MAX_HP = 420f;
+    public static final float BOSS_SPEED = 46f;
+    public static final float BOSS_CHASE_RADIUS = 620f;
+    /** Distancia em que ele para e comeca a preparar o golpe. */
+    public static final float BOSS_ATTACK_RANGE = 250f;
+    /** Aviso antes do impacto: e a janela para o jogador escapar. */
+    public static final float BOSS_TELEGRAPH_TIME = 0.85f;
+    public static final float BOSS_SLAM_TIME = 0.30f;
+    public static final float BOSS_ATTACK_COOLDOWN = 2.4f;
+    /** Raio do impacto no chao; maior que o alcance para punir quem so recua. */
+    public static final float BOSS_SLAM_RADIUS = 210f;
+    public static final float BOSS_DAMAGE = 22f;
+
+    // ==========================================
     // LAYOUT DA TELA DE OPCOES
     //
     // A linha de dois toggles de 300px estourava a area util do painel em 4px,
