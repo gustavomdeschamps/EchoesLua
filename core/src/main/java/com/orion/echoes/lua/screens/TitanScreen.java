@@ -40,6 +40,15 @@ public final class TitanScreen implements Screen {
     private static final float WORLD_W = 2600f;
     private static final float WORLD_H = 1700f;
     private static final Color AMBER = Color.valueOf("D78A36");
+    /** Formacoes de gelo: x, y, largura, altura e qual pedra do atlas. */
+    private static final float[][] FORMACOES = {
+        {320f, 700f, 190f, 150f, 0f}, {880f, 340f, 160f, 128f, 2f},
+        {1240f, 1080f, 210f, 165f, 1f}, {1760f, 560f, 175f, 140f, 3f},
+        {2200f, 1300f, 200f, 158f, 4f}, {620f, 1240f, 165f, 132f, 5f},
+        {1520f, 1420f, 185f, 148f, 0f}, {2380f, 820f, 170f, 136f, 2f},
+        {980f, 820f, 150f, 120f, 3f}, {1900f, 1080f, 195f, 155f, 1f},
+        {460f, 420f, 155f, 124f, 4f}, {2100f, 380f, 180f, 144f, 5f}
+    };
     private final EchoesLua game;
     private final CampaignState campaign;
     private final Array<TitanEnemy> enemies = new Array<>();
@@ -140,6 +149,7 @@ public final class TitanScreen implements Screen {
         batch.setColor(.78f, .56f, .32f, 1f);
         batch.draw(assets.titanBackgroundTexture, 0f, 0f, WORLD_W, WORLD_H);
         batch.setColor(Color.WHITE);
+        desenharTerreno();
         returnPortal.render(batch);
         batch.draw(assets.missionRegion(MissionSprite.CRAFTING_TERMINAL),
             refinaria.x, refinaria.y, refinaria.width, refinaria.height);
@@ -202,6 +212,28 @@ public final class TitanScreen implements Screen {
         } else {
             feedback("Impacto desviado.");
         }
+    }
+
+    /**
+     * Relevo de Tita.
+     *
+     * O mapa era so o fundo esticado, sem nada para ler: sem referencia, o
+     * jogador nao sabia onde estava nem para onde tinha ido. Formacoes de
+     * gelo e as silhuetas do horizonte dao pontos fixos, e a posicao e fixa
+     * de proposito - marco que muda a cada partida nao serve de marco.
+     */
+    private void desenharTerreno() {
+        for (float[] pedra : FORMACOES) {
+            batch.setColor(.62f, .5f, .34f, .92f);
+            batch.draw(assets.marsObstacleRegion((int) pedra[4]),
+                pedra[0], pedra[1], pedra[2], pedra[3]);
+        }
+        // As silhuetas ficam no alto: sao horizonte, nao obstaculo.
+        batch.setColor(.5f, .38f, .26f, .8f);
+        batch.draw(assets.landmarkRegion(1, 1), 380f, 1440f, 300f, 210f);
+        batch.draw(assets.landmarkRegion(3, 1), 1240f, 1520f, 260f, 190f);
+        batch.draw(assets.landmarkRegion(0, 1), 2080f, 1470f, 280f, 200f);
+        batch.setColor(Color.WHITE);
     }
 
     /** Marca no chao o raio do golpe enquanto o chefe prepara. */
