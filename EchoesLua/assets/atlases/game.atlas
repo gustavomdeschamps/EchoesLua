@@ -1,0 +1,117 @@
+
+game.png
+size: 4058, 3774
+format: RGBA8888
+filter: MipMapLinearLinear, Linear
+repeat: none
+astronaut_combat_sheet
+  rotate: false
+  xy: 3, 2832
+  size: 1252, 939
+  orig: 1252, 939
+  offset: 0, 0
+  index: -1
+astronauta_sheet
+  rotate: false
+  xy: 2803, 2519
+  size: 1252, 1252
+  orig: 1252, 1252
+  offset: 0, 0
+  index: -1
+lunar_enemy_sheet
+  rotate: false
+  xy: 1545, 1489
+  size: 1252, 1252
+  orig: 1252, 1252
+  offset: 0, 0
+  index: -1
+mars_atlas_v4
+  rotate: false
+  xy: 3, 625
+  size: 1448, 1086
+  orig: 1448, 1086
+  offset: 0, 0
+  index: -1
+mars_crawler_sheet
+  rotate: false
+  xy: 2803, 1261
+  size: 1252, 1252
+  orig: 1252, 1252
+  offset: 0, 0
+  index: -1
+mars_drone_sheet
+  rotate: false
+  xy: 1457, 231
+  size: 1252, 1252
+  orig: 1252, 1252
+  offset: 0, 0
+  index: -1
+mars_obstacles
+  rotate: false
+  xy: 1261, 2747
+  size: 1536, 1024
+  orig: 1536, 1024
+  offset: 0, 0
+  index: -1
+mission_atlas_unified
+  rotate: false
+  xy: 2715, 3
+  size: 1252, 1252
+  orig: 1252, 1252
+  offset: 0, 0
+  index: -1
+pulse_rifle
+  rotate: false
+  xy: 3, 1717
+  size: 1536, 1024
+  orig: 1536, 1024
+  offset: 0, 0
+  index: -1
+
+game2.png
+size: 3780, 2520
+format: RGBA8888
+filter: MipMapLinearLinear, Linear
+repeat: none
+base_lunar
+  rotate: false
+  xy: 3, 1263
+  size: 1254, 1254
+  orig: 1254, 1254
+  offset: 0, 0
+  index: -1
+comida
+  rotate: false
+  xy: 3, 3
+  size: 1254, 1254
+  orig: 1254, 1254
+  offset: 0, 0
+  index: -1
+gelo
+  rotate: false
+  xy: 1263, 1263
+  size: 1254, 1254
+  orig: 1254, 1254
+  offset: 0, 0
+  index: -1
+landmarks
+  rotate: false
+  xy: 2523, 3
+  size: 1252, 1254
+  orig: 1252, 1254
+  offset: 0, 0
+  index: -1
+lunar_obstacles
+  rotate: false
+  xy: 1263, 3
+  size: 1254, 1254
+  orig: 1254, 1254
+  offset: 0, 0
+  index: -1
+oxigenio
+  rotate: false
+  xy: 2523, 1263
+  size: 1254, 1254
+  orig: 1254, 1254
+  offset: 0, 0
+  index: -1

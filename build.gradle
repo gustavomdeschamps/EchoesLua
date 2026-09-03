@@ -1,0 +1,194 @@
+buildscript {
+  repositories {
+    mavenCentral()
+    gradlePluginPortal()
+    mavenLocal()
+    google()
+    maven { url = 'https://central.sonatype.com/repository/maven-snapshots/' }
+  }
+  dependencies {
+
+
+  }
+}
+
+configurations {
+  texturePacker
+}
+
+repositories {
+  mavenCentral()
+}
+
+allprojects {
+  repositories {
+    mavenCentral()
+  }
+}
+
+dependencies {
+  texturePacker "com.badlogicgames.gdx:gdx-tools:$gdxVersion"
+}
+
+allprojects {
+  apply plugin: 'eclipse'
+  apply plugin: 'idea'
+
+  // This allows you to "Build and run using IntelliJ IDEA", an option in IDEA's Settings.
+  idea {
+    module {
+      outputDir = file('build/classes/java/main')
+      testOutputDir = file('build/classes/java/test')
+    }
+  }
+}
+
+/*
+ * QA de assets.
+ *
+ * O pipeline e escrito em Python e depende de Pillow e NumPy. Num clone
+ * limpo essas bibliotecas nao existem, e antes disso o build inteiro
+ * quebrava por causa delas - inclusive `lwjgl3:run`, que so quer abrir o
+ * jogo. Os atlas ja vem versionados, entao a validacao aqui e uma rede de
+ * seguranca, nao um pre-requisito: sem as dependencias ela avisa e sai.
+ *
+ * No CI a rigidez volta: -PstrictAssetQa=true (ou a variavel CI) faz a falta
+ * de dependencia virar erro, para ninguem publicar asset quebrado.
+ */
+tasks.register('validateVisualAssets') {
+  group = 'verification'
+  description = 'Valida dimensões, grades e paleta dos assets. Pula se o Python não estiver pronto.'
+
+  def projectRoot = rootProject.projectDir
+  def strict = project.hasProperty('strictAssetQa')
+    ? Boolean.parseBoolean(project.property('strictAssetQa').toString())
+    : System.getenv('CI') != null
+
+  doLast {
+    def interpreters = System.getProperty('os.name').toLowerCase().contains('windows')
+      ? ['python', 'py', 'python3']
+      : ['python3', 'python']
+
+    def runner = interpreters.find { candidate ->
+      try {
+        new ProcessBuilder(candidate, '-c', 'import PIL, numpy')
+          .directory(projectRoot).redirectErrorStream(true).start().waitFor() == 0
+      } catch (Exception ignored) {
+        false
+      }
+    }
+
+    if (runner == null) {
+      def message = 'QA de assets pulado: Python com Pillow e NumPy não encontrado. ' +
+        'Para habilitar: pip install pillow numpy soundfile'
+      if (strict) throw new GradleException(message)
+      logger.quiet("AVISO: $message")
+      return
+    }
+
+    def process = new ProcessBuilder(runner, 'tools/prepare_visual_assets.py', '--validate-only')
+      .directory(projectRoot).redirectErrorStream(true).start()
+    def output = process.inputStream.text
+    if (process.waitFor() != 0) {
+      throw new GradleException("QA de assets falhou:\n" + output)
+    }
+    if (!output.trim().isEmpty()) logger.quiet(output.trim())
+  }
+}
+
+def atlasGroups = [
+  game: [
+    'astronauta_sheet.png', 'astronaut_combat_sheet.png', 'pulse_rifle.png', 'base_lunar.png',
+    'oxigenio.png', 'comida.png', 'gelo.png', 'mission_atlas_unified.png',
+    'mars_atlas_v4.png', 'lunar_enemy_sheet.png', 'mars_drone_sheet.png',
+    'mars_crawler_sheet.png', 'lunar_obstacles.png', 'mars_obstacles.png',
+    'landmarks.png'
+  ],
+  ui: ['intro_keyart_v2.png', 'ui_panel_frame.png',
+    'ui/panel_hud.png', 'ui/panel_dialog.png', 'ui/panel_modal.png',
+    'ui/button_normal.png', 'ui/button_hover.png', 'ui/button_pressed.png', 'ui/button_disabled.png',
+    'ui/bar_track.png', 'ui/bar_fill.png', 'ui/resource_icons.png',
+    'ui/damage_vignette.png', 'ui/white_pixel.png',
+    'ui/objective_marker.png', 'ui/cursor_default.png', 'ui/cursor_target.png'],
+  fx: ['action_fx_sheet.png', 'energy_fx_sheet.png']
+]
+
+tasks.register('prepareAtlasInputs') {
+  dependsOn tasks.named('validateVisualAssets')
+  inputs.files(atlasGroups.values().flatten().collect { file("assets/textures/$it") })
+  inputs.file(file('tools/texturepacker/pack.json'))
+  outputs.dir(layout.buildDirectory.dir('atlas-input'))
+  doLast {
+    delete(layout.buildDirectory.dir('atlas-input'))
+    atlasGroups.each { group, names ->
+      copy {
+        from(file('tools/texturepacker/pack.json'))
+        from(names.collect { file("assets/textures/$it") })
+        into(layout.buildDirectory.dir("atlas-input/$group"))
+      }
+    }
+  }
+}
+
+def atlasTasks = atlasGroups.keySet().collect { group ->
+  tasks.register("pack${group.capitalize()}Atlas", JavaExec) {
+    dependsOn tasks.named('prepareAtlasInputs')
+    classpath = configurations.texturePacker
+    mainClass = 'com.badlogic.gdx.tools.texturepacker.TexturePacker'
+    args layout.buildDirectory.dir("atlas-input/$group").get().asFile.absolutePath,
+      file('assets/atlases').absolutePath, group
+    inputs.dir(layout.buildDirectory.dir("atlas-input/$group"))
+    outputs.file(file("assets/atlases/${group}.atlas"))
+  }
+}
+
+tasks.register('packVisualAssets') {
+  group = 'assets'
+  description = 'Empacota sprites em game.atlas, ui.atlas e fx.atlas.'
+  dependsOn atlasTasks
+}
+
+configure(subprojects) {
+  apply plugin: 'java-library'
+  java.sourceCompatibility = 17
+
+  // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
+  // The article can be helpful when using assets.txt in your project.
+  tasks.register('generateAssetList') {
+    dependsOn rootProject.tasks.named('packVisualAssets')
+    inputs.dir("${project.rootDir}/assets/")
+    // projectFolder/assets
+    File assetsFolder = new File("${project.rootDir}/assets/")
+    // projectFolder/assets/assets.txt
+    File assetsFile = new File(assetsFolder, "assets.txt")
+    // delete that file in case we've already created it
+    assetsFile.delete()
+
+    // iterate through all files inside that folder
+    // convert it to a relative path
+    // and append it to the file assets.txt
+    fileTree(assetsFolder).collect { assetsFolder.relativePath(it) }.sort().each {
+      assetsFile.append(it + "\n")
+    }
+  }
+  processResources.dependsOn 'generateAssetList'
+  processResources.dependsOn rootProject.tasks.named('validateVisualAssets')
+
+  compileJava {
+    options.incremental = true
+  }
+}
+
+subprojects {
+  version = "$projectVersion"
+  ext.appName = 'EchoesLua'
+  repositories {
+    mavenCentral()
+    // You may want to remove the following line if you have errors downloading dependencies.
+    mavenLocal()
+    maven { url = 'https://central.sonatype.com/repository/maven-snapshots/' }
+    maven { url = 'https://jitpack.io' }
+  }
+}
+
+eclipse.project.name = 'EchoesLua' + '-parent'

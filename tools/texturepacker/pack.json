@@ -1,0 +1,16 @@
+{
+  "pot": false,
+  "maxWidth": 4096,
+  "maxHeight": 4096,
+  "paddingX": 6,
+  "paddingY": 6,
+  "edgePadding": true,
+  "duplicatePadding": true,
+  "rotation": false,
+  "stripWhitespaceX": false,
+  "stripWhitespaceY": false,
+  "alias": false,
+  "filterMin": "MipMapLinearLinear",
+  "filterMag": "Linear",
+  "format": "RGBA8888"
+}

@@ -1,0 +1,20 @@
+
+fx.png
+size: 3084, 1030
+format: RGBA8888
+filter: MipMapLinearLinear, Linear
+repeat: none
+action_fx_sheet
+  rotate: false
+  xy: 3, 3
+  size: 1536, 1024
+  orig: 1536, 1024
+  offset: 0, 0
+  index: -1
+energy_fx_sheet
+  rotate: false
+  xy: 1545, 3
+  size: 1536, 1024
+  orig: 1536, 1024
+  offset: 0, 0
+  index: -1
