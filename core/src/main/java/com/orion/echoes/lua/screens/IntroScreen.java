@@ -19,6 +19,12 @@ import com.orion.echoes.lua.managers.AssetManager;
 /** Abertura curta, temporal e sempre pulável. */
 public final class IntroScreen implements Screen {
     private static final float DURATION = 5.8f;
+    /** Pulsos de radio disparados em sequencia a partir do receptor. */
+    private static final int RADIO_PULSES = 4;
+    private static final float SCANLINE_STEP = 4f;
+    /** Altura das barras de cinema: fechadas na entrada, finas durante a cena. */
+    private static final float LETTERBOX_MAX = GameConfig.WINDOW_HEIGHT / 2f;
+    private static final float LETTERBOX_MIN = 46f;
     private final EchoesLua game;
     private final SpriteBatch batch;
     private final AssetManager assets;
@@ -60,10 +66,9 @@ public final class IntroScreen implements Screen {
         float jitter = MathUtils.sin(elapsed * 91f) * signalKick * 3f;
         float artW = 1328f;
         float artH = 747f;
-        batch.setColor(.82f, .82f, .78f, 1f);
-        batch.draw(assets.introKeyArtTexture, -24f - drift * 24f + jitter,
-            -14f - drift * 12f, artW, artH);
-        batch.setColor(Color.WHITE);
+        float artX = -24f - drift * 24f + jitter;
+        float artY = -14f - drift * 12f;
+        desenharKeyArt(artX, artY, artW, artH, signalKick);
         drawAt(assets.font, "REGISTRO DE CAMPO  //  L-01", .62f, 1.05f, 3.7f, 884f, 644f,
             new Color(.82f, .49f, .28f, 1f));
         drawAt(assets.titleFont, "ECHOES", 2.05f, 3.35f, 5.8f, 882f, 596f, Color.WHITE);
@@ -71,22 +76,136 @@ public final class IntroScreen implements Screen {
             new Color(.78f, .8f, .76f, 1f));
         batch.end();
 
+        renderRadioArcs();
         renderSignalTrace(MathUtils.clamp((elapsed - 1.25f) / .65f, 0f, 1f));
+        renderScanlines();
         renderFilmGrain();
+        renderVignette();
+        renderLetterbox();
+        renderSignalFlash(signalKick);
 
-        float fadeIn = 1f - MathUtils.clamp(elapsed / .9f, 0f, 1f);
-        float fadeOut = MathUtils.clamp((elapsed - 5.15f) / .65f, 0f, 1f);
-        float veil = Math.max(fadeIn, Interpolation.pow2In.apply(fadeOut));
-        if (veil > 0f) {
-            batch.setProjectionMatrix(camera.combined);
-            batch.begin();
-            batch.setColor(0f, 0f, 0f, veil);
-            rect(0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT / 2f * veil);
-            rect(0f, GameConfig.WINDOW_HEIGHT - GameConfig.WINDOW_HEIGHT / 2f * veil,
-                GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT / 2f * veil);
+    }
+
+    /**
+     * Key art com aberracao cromatica no pico do sinal.
+     *
+     * Tres passagens deslocadas nos canais vermelho e azul: e o mesmo truque
+     * de abertura de jogo comercial, e custa duas chamadas de desenho a mais
+     * apenas durante o estalo. Fora do pico, desenha uma vez so.
+     */
+    private void desenharKeyArt(float x, float y, float width, float height, float kick) {
+        if (kick <= .01f) {
+            batch.setColor(.82f, .82f, .78f, 1f);
+            batch.draw(assets.introKeyArtTexture, x, y, width, height);
             batch.setColor(Color.WHITE);
-            batch.end();
+            return;
         }
+        float split = kick * 6f;
+        batch.setColor(.85f, .28f, .24f, .55f);
+        batch.draw(assets.introKeyArtTexture, x - split, y, width, height);
+        batch.setColor(.26f, .58f, .88f, .55f);
+        batch.draw(assets.introKeyArtTexture, x + split, y, width, height);
+        batch.setColor(.82f, .82f, .78f, 1f);
+        batch.draw(assets.introKeyArtTexture, x, y, width, height);
+        batch.setColor(Color.WHITE);
+    }
+
+    /**
+     * Arcos concentricos de radio saindo do receptor.
+     *
+     * E a assinatura da marca definida no ART_BIBLE, que ate agora so existia
+     * no documento. Os arcos sao incompletos de proposito, como manda a
+     * regra, e nascem em pulsos sucessivos a partir do momento do sinal.
+     */
+    private void renderRadioArcs() {
+        float start = 1.15f;
+        if (elapsed < start) return;
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        float originX = 470f;
+        float originY = 150f;
+        for (int pulse = 0; pulse < RADIO_PULSES; pulse++) {
+            float age = elapsed - start - pulse * .52f;
+            if (age <= 0f) continue;
+            float life = MathUtils.clamp(age / 2.2f, 0f, 1f);
+            if (life >= 1f) continue;
+            float radius = 40f + Interpolation.pow2Out.apply(life) * 320f;
+            float alpha = (1f - life) * .5f;
+            arco(originX, originY, radius, -32f, 150f, 2.5f,
+                new Color(.27f, .73f, .72f, alpha));
+        }
+        batch.setColor(Color.WHITE);
+        batch.end();
+    }
+
+    /** Arco incompleto desenhado por segmentos curtos e rotacionados. */
+    private void arco(float centerX, float centerY, float radius,
+                      float startDegrees, float sweepDegrees, float thickness, Color color) {
+        int segments = Math.max(8, (int) (sweepDegrees / 4f));
+        float step = sweepDegrees / segments;
+        float chord = 2f * radius * MathUtils.sinDeg(step / 2f) + 1f;
+        batch.setColor(color);
+        for (int index = 0; index < segments; index++) {
+            float angle = startDegrees + step * (index + .5f);
+            float x = centerX + MathUtils.cosDeg(angle) * radius;
+            float y = centerY + MathUtils.sinDeg(angle) * radius;
+            batch.draw(assets.uiWhiteTexture, x, y - thickness / 2f,
+                0f, thickness / 2f, chord, thickness, 1f, 1f, angle + 90f);
+        }
+    }
+
+    /** Linhas horizontais finas descendo devagar, como um monitor antigo. */
+    private void renderScanlines() {
+        float presence = envelope(.5f, 5.4f, .6f) * .1f;
+        if (presence <= 0f) return;
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.setColor(.62f, .78f, .82f, presence);
+        float offset = (elapsed * 22f) % SCANLINE_STEP;
+        for (float y = -SCANLINE_STEP + offset; y < GameConfig.WINDOW_HEIGHT; y += SCANLINE_STEP) {
+            rect(0f, y, GameConfig.WINDOW_WIDTH, 1f);
+        }
+        batch.setColor(Color.WHITE);
+        batch.end();
+    }
+
+    /** Escurecimento das bordas: concentra a leitura no centro da cena. */
+    private void renderVignette() {
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.setColor(.04f, .05f, .07f, .62f);
+        batch.draw(assets.uiDamageVignetteTexture, 0f, 0f,
+            GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
+        batch.setColor(Color.WHITE);
+        batch.end();
+    }
+
+    /** Barras de cinema que abrem na entrada e fecham na saida. */
+    private void renderLetterbox() {
+        float open = Interpolation.pow3Out.apply(MathUtils.clamp(elapsed / .8f, 0f, 1f));
+        float closing = Interpolation.pow2In.apply(
+            MathUtils.clamp((elapsed - 5.15f) / .65f, 0f, 1f));
+        float bar = LETTERBOX_MAX * (1f - open) + LETTERBOX_MIN * open
+            + (GameConfig.WINDOW_HEIGHT / 2f - LETTERBOX_MIN) * closing;
+        if (bar <= 0f) return;
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.setColor(0f, 0f, 0f, 1f);
+        rect(0f, 0f, GameConfig.WINDOW_WIDTH, bar);
+        rect(0f, GameConfig.WINDOW_HEIGHT - bar, GameConfig.WINDOW_WIDTH, bar);
+        batch.setColor(Color.WHITE);
+        batch.end();
+    }
+
+    /** Estalo branco curto no instante em que o sinal chega. */
+    private void renderSignalFlash(float kick) {
+        if (kick <= .02f) return;
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.setColor(.86f, .93f, 1f, kick * .18f);
+        rect(0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
+        batch.setColor(Color.WHITE);
+        batch.end();
     }
 
     /** Retangulo solido no proprio batch; evita alternar para ShapeRenderer. */
