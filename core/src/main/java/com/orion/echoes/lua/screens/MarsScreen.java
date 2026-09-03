@@ -78,7 +78,6 @@ public final class MarsScreen implements Screen {
     private MarsObject habitat;
     private Portal returnPortal;
     private TitanPortal titanPortal;
-    private MarsObject landingPad;
     private float missionTime, reveal, dustTimer, stepTimer, shotTimer;
     private float messageTimer, extractionGlow;
     private JuiceSystem juice;
@@ -142,7 +141,14 @@ public final class MarsScreen implements Screen {
         stations.add(prop(700f, 1420f, 225f, 190f, MarsObject.Kind.SOLAR_STATION));
         stations.add(prop(1550f, 1330f, 225f, 190f, MarsObject.Kind.OXYGEN_STATION));
         stations.add(prop(2440f, 1130f, 225f, 190f, MarsObject.Kind.COMMS_STATION));
-        landingPad = prop(2570f, 1530f, 250f, 190f, MarsObject.Kind.LANDING_PAD);
+        /*
+         * A plataforma de pouso saiu daqui.
+         *
+         * O portal de Tita era desenhado por cima dela - 170x108px de
+         * sobreposicao, no mesmo lote e sem z-order, entao um cobria o outro.
+         * A plataforma nunca deveria ser plataforma: ela e o segundo portal.
+         * Agora existe um portal so neste ponto, e nada disputa o espaco.
+         */
         /*
          * O portal de volta nasce ao lado do ponto de chegada e fica sempre
          * aberto: voltar a Lua para reabastecer municao e oxigenio e uma
@@ -150,7 +156,7 @@ public final class MarsScreen implements Screen {
          */
         returnPortal = new Portal(360f, 300f, assets);
         returnPortal.setUnlocked(true);
-        titanPortal = new TitanPortal(2520f, 1480f, assets);
+        titanPortal = new TitanPortal(2600f, 1520f, assets);
         titanPortal.setUnlocked(campaign.portalLiberado());
         prop(2400f, 1230f, 120f, 140f, MarsObject.Kind.BEACON);
         float[][] data = {{530,760,130},{850,420,115},{1080,930,145},{1320,580,125},
@@ -217,7 +223,7 @@ public final class MarsScreen implements Screen {
             candidate.set(x + 10f, y + 10f, 52f, 52f);
             if (Vector2.dst(x, y, 230f, 250f) < 250f) continue;
             boolean blocked = candidate.overlaps(habitat.getBounds())
-                || candidate.overlaps(landingPad.getBounds());
+                || candidate.overlaps(titanPortal.getBounds());
             for (MarsObject object : rocks) if (candidate.overlaps(object.getBounds())) { blocked = true; break; }
             if (!blocked) for (MarsObject station : stations) {
                 if (candidate.overlaps(station.getBounds())) { blocked = true; break; }

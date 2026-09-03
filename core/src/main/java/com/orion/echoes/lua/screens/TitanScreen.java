@@ -18,6 +18,7 @@ import com.orion.echoes.lua.EchoesLua;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.entities.TitanEnemy;
+import com.orion.echoes.lua.entities.TitanBoss;
 import com.orion.echoes.lua.entities.TitanPortal;
 import com.orion.echoes.lua.entities.Wall;
 import com.orion.echoes.lua.input.GameInputProcessor;
@@ -27,6 +28,7 @@ import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
 import com.orion.echoes.lua.save.SaveManager;
 import com.orion.echoes.lua.systems.CampaignState;
+import com.orion.echoes.lua.systems.CombatTarget;
 import com.orion.echoes.lua.systems.TitanCombatSystem;
 import com.orion.echoes.lua.ui.UiTheme;
 
@@ -46,6 +48,8 @@ public final class TitanScreen implements Screen {
     private PhysicsWorld physics;
     private Astronauta player;
     private TitanPortal returnPortal;
+    private TitanBoss boss;
+    private boolean vitoriaRegistrada;
     private TitanCombatSystem combat;
     private GameInputProcessor input;
     private OrthographicCamera camera;
@@ -101,6 +105,8 @@ public final class TitanScreen implements Screen {
         enemies.add(new TitanEnemy(760f, 610f, assets));
         enemies.add(new TitanEnemy(1370f, 980f, assets));
         enemies.add(new TitanEnemy(2050f, 520f, assets));
+        // O chefe guarda o fundo do mapa: o jogador o encontra depois dos comuns.
+        boss = new TitanBoss(2150f, 1150f, assets);
         campaign.setPhase(CampaignState.Phase.TITAN);
         campaign.setEntrouTita(true);
         camera.position.set(player.getPosition().x, player.getPosition().y, 0f);
@@ -119,7 +125,9 @@ public final class TitanScreen implements Screen {
         batch.draw(assets.titanBackgroundTexture, 0f, 0f, WORLD_W, WORLD_H);
         batch.setColor(Color.WHITE);
         returnPortal.render(batch);
+        desenharAvisoDoChefe();
         for (TitanEnemy enemy : enemies) enemy.render(batch);
+        boss.render(batch);
         player.render(batch);
         batch.end();
         renderHud();
@@ -145,6 +153,7 @@ public final class TitanScreen implements Screen {
                 feedback("Predador de metano atingiu o traje.");
             }
         }
+        atualizarChefe(delta);
         returnPortal.update(delta);
         if (input.consumeInteractPressed() && returnPortal.isPlayerNear(player)) returnToMars();
         if (input.consumeSavePressed()) saveTitan();
@@ -155,21 +164,57 @@ public final class TitanScreen implements Screen {
         camera.update();
     }
 
+    /**
+     * O chefe ataca de verdade.
+     *
+     * Ele para, avisa por quase um segundo e desaba num impacto em area. O
+     * dano sai no frame do impacto e alcanca quem ficou dentro do raio, nao
+     * so quem encostou - por isso o aviso importa.
+     */
+    private void atualizarChefe(float delta) {
+        if (boss == null || !boss.isAtivo()) return;
+        boss.update(delta, player, WORLD_W, WORLD_H);
+        if (!boss.consumeSlam()) return;
+
+        if (boss.slamHits(player)) {
+            player.receberDano(GameConfig.BOSS_DAMAGE, boss.centerX(), boss.centerY());
+            feedback("O impacto do chefe alcançou o traje.");
+        } else {
+            feedback("Impacto desviado.");
+        }
+    }
+
+    /** Marca no chao o raio do golpe enquanto o chefe prepara. */
+    private void desenharAvisoDoChefe() {
+        if (boss == null || !boss.isTelegraphing()) return;
+        float progresso = boss.getTelegraphProgress();
+        float raio = GameConfig.BOSS_SLAM_RADIUS * progresso;
+        batch.setColor(1f, .45f, .25f, .18f + progresso * .30f);
+        batch.draw(assets.uiWhiteTexture, boss.centerX() - raio,
+            boss.centerY() - 70f - raio * .34f, raio * 2f, raio * .68f);
+        batch.setColor(Color.WHITE);
+    }
+
     private void shoot() {
         shotOrigin.set(player.getPosition().x + GameConfig.PLAYER_WIDTH / 2f,
             player.getPosition().y + GameConfig.PLAYER_HEIGHT * .48f);
         float dirX = MathUtils.cosDeg(player.getAimAngle());
         float dirY = MathUtils.sinDeg(player.getAimAngle());
-        TitanEnemy target = null;
+        CombatTarget target = null;
         float closest = combat.getAlcance();
         for (TitanEnemy enemy : enemies) {
             if (!enemy.isAlive()) continue;
-            float dx = enemy.centerX() - shotOrigin.x;
-            float dy = enemy.centerY() - shotOrigin.y;
-            float along = dx * dirX + dy * dirY;
-            float perpendicular = Math.abs(dx * dirY - dy * dirX);
-            if (along > 0f && along < closest && perpendicular < 52f) {
+            float along = alinhamento(enemy.centerX(), enemy.centerY(), dirX, dirY, closest);
+            if (along > 0f) {
                 target = enemy;
+                closest = along;
+            }
+        }
+        // O chefe e alvo como qualquer outro, so que com corpo bem maior.
+        if (boss != null && boss.isAlive()) {
+            float along = alinhamento(boss.centerX(), boss.centerY(), dirX, dirY, closest);
+            if (along > 0f) {
+                target = boss;
                 closest = along;
             }
         }
@@ -181,6 +226,39 @@ public final class TitanScreen implements Screen {
             feedback(target == null ? "Disparo perdido na névoa de metano."
                 : !target.isAlive() ? "Predador neutralizado." : "Impacto confirmado.");
         } else if (player.getMunicao() <= 0) feedback("Sem munição.");
+
+        if (boss != null && !boss.isAlive() && !vitoriaRegistrada) {
+            vitoriaRegistrada = true;
+            concluirCampanha();
+        }
+    }
+
+    /**
+     * Projecao do alvo sobre a linha de tiro.
+     *
+     * Devolve a distancia ao longo da mira quando o alvo esta a frente,
+     * dentro do alcance e proximo do eixo; caso contrario, zero.
+     */
+    private float alinhamento(float alvoX, float alvoY, float dirX, float dirY, float limite) {
+        float dx = alvoX - shotOrigin.x;
+        float dy = alvoY - shotOrigin.y;
+        float along = dx * dirX + dy * dirY;
+        float perpendicular = Math.abs(dx * dirY - dy * dirX);
+        return along > 0f && along < limite && perpendicular < 52f ? along : 0f;
+    }
+
+    /**
+     * Fim da campanha.
+     *
+     * Derrubar o chefe encerra o jogo em vitoria - ate agora VictoryScreen
+     * existia no projeto e nunca era instanciada, entao nao havia como vencer.
+     */
+    private void concluirCampanha() {
+        campaign.setVitals(player.getOxigenio(), player.getEnergia());
+        campaign.setAmmo(player.getMunicao());
+        changingScreen = true;
+        game.setScreen(new VictoryScreen(game, player.getTempoVivo()));
+        dispose();
     }
 
     private void saveTitan() {
