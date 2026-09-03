@@ -4,7 +4,9 @@ import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.render.SpriteFit;
 import com.orion.echoes.lua.managers.MissionSprite;
 
 /** Portal em duas camadas: estrutura física e energia com abertura temporal. */
@@ -15,6 +17,8 @@ public class Portal extends Entidade {
     private float time;
     private float openTime;
     private boolean unlocked;
+    /** Retangulo realmente desenhado; a hitbox e derivada dele. */
+    private final Rectangle drawRect = new Rectangle();
 
     public Portal(float x, float y, AssetManager assets) {
         super(x, y, 150f, 170f);
@@ -23,11 +27,22 @@ public class Portal extends Entidade {
         configure(frameSprite, x, y);
         configure(energySprite, x, y);
         energySprite.setColor(1f, 1f, 1f, 0f);
+        // Hitbox tirada do desenho: a base do portal, onde o jogador entra.
+        bounds.set(drawRect.x + drawRect.width * .22f, drawRect.y + drawRect.height * .08f,
+            drawRect.width * .56f, drawRect.height * .46f);
     }
 
+    /**
+     * Encaixa a arte sem deformar.
+     *
+     * A celula do atlas e quadrada e o portal era desenhado em 176x208, o que
+     * achatava a arte em 15%. Agora a moldura cabe no mesmo espaco visual sem
+     * distorcer, e a hitbox segue o retangulo resultante.
+     */
     private void configure(Sprite sprite, float x, float y) {
-        sprite.setSize(176f, 208f);
-        sprite.setPosition(x - 13f, y - 15f);
+        SpriteFit.fit(sprite, x - 13f, y - 15f, 176f, 208f, drawRect);
+        sprite.setSize(drawRect.width, drawRect.height);
+        sprite.setPosition(drawRect.x, drawRect.y);
         sprite.setOriginCenter();
     }
 
