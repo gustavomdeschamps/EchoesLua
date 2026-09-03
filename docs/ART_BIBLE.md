@@ -64,6 +64,9 @@ qualquer pose. As fontes `astronaut_movement_candidate.png` e
 - Rochas usam fraturas e estratos geológicos coerentes, sempre organizados em
   3–5 massas legíveis; textura fina nunca pode apagar a silhueta.
 - Lua e Marte compartilham densidade de detalhe, mas Marte tem estrias de vento e Lua tem depressões secas sem atmosfera.
+- Titã usa sedimento de hidrocarboneto úmido, reflexos de metano e âmbar
+  atmosférico. Seu predador tem pés em pá e bolsas de pressão translúcidas —
+  nunca é uma aranha lunar ou um drone marciano recolorido.
 - Toda célula de atlas mantém 8% de margem mínima e pivô comum no centro da base.
 - Sprites animados preservam escala, ângulo, direção da luz e baseline entre quadros.
 - Efeitos têm ataque curto, substância e cauda; coleta, impacto e morte nunca reutilizam a mesma silhueta.

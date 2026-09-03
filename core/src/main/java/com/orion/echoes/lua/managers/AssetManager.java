@@ -17,6 +17,7 @@ public final class AssetManager implements Disposable {
     private static final String FX_ATLAS = "atlases/fx.atlas";
     private static final String LUNAR_GROUND = "textures/lunar_ground.png";
     private static final String MARS_GROUND = "textures/mars_ground.png";
+    private static final String TITAN_GROUND = "textures/titan_ground.png";
 
     private final com.badlogic.gdx.assets.AssetManager loader =
         new com.badlogic.gdx.assets.AssetManager();
@@ -38,6 +39,9 @@ public final class AssetManager implements Disposable {
     public TextureRegion lunarEnemySheetTexture;
     public TextureRegion marsDroneSheetTexture;
     public TextureRegion marsCrawlerSheetTexture;
+    public TextureRegion titanEnemySheetTexture;
+    public TextureRegion titanPortalSheetTexture;
+    public Texture titanBackgroundTexture;
     public TextureRegion lunarObstaclesTexture;
     public TextureRegion marsObstaclesTexture;
     public TextureRegion actionFxTexture;
@@ -76,6 +80,7 @@ public final class AssetManager implements Disposable {
         terrain.wrapV = Texture.TextureWrap.Repeat;
         loader.load(LUNAR_GROUND, Texture.class, terrain);
         loader.load(MARS_GROUND, Texture.class, terrain);
+        loader.load(TITAN_GROUND, Texture.class, terrain);
     }
 
     /** Avança a fila sem bloquear; retorna true somente quando tudo está pronto. */
@@ -112,6 +117,8 @@ public final class AssetManager implements Disposable {
         lunarEnemySheetTexture = required(gameAtlas, "lunar_enemy_sheet");
         marsDroneSheetTexture = required(gameAtlas, "mars_drone_sheet");
         marsCrawlerSheetTexture = required(gameAtlas, "mars_crawler_sheet");
+        titanEnemySheetTexture = required(gameAtlas, "titan_enemy_sheet");
+        titanPortalSheetTexture = required(gameAtlas, "titan_portal_sheet");
         lunarObstaclesTexture = required(gameAtlas, "lunar_obstacles");
         marsObstaclesTexture = required(gameAtlas, "mars_obstacles");
         landmarksTexture = required(gameAtlas, "landmarks");
@@ -136,6 +143,7 @@ public final class AssetManager implements Disposable {
         energyFxTexture = required(fxAtlas, "energy_fx_sheet");
         backgroundLuaTexture = loader.get(LUNAR_GROUND, Texture.class);
         marsBackgroundTexture = loader.get(MARS_GROUND, Texture.class);
+        titanBackgroundTexture = loader.get(TITAN_GROUND, Texture.class);
 
         font = generateFont("fonts/ChakraPetch-Regular.ttf", 25);
         titleFont = generateFont("fonts/ChakraPetch-SemiBold.ttf", 32);
@@ -181,6 +189,14 @@ public final class AssetManager implements Disposable {
     public TextureRegion marsEnemyFrame(boolean drone, int column, int row) {
         return gridRegion(drone ? marsDroneSheetTexture : marsCrawlerSheetTexture,
             4, 4, column, row, 2);
+    }
+
+    public TextureRegion titanEnemyFrame(int column, int row) {
+        return gridRegion(titanEnemySheetTexture, 4, 4, column, row, 2);
+    }
+
+    public TextureRegion titanPortalState(boolean unlocked) {
+        return gridRegion(titanPortalSheetTexture, 2, 1, unlocked ? 1 : 0, 0, 2);
     }
 
     public TextureRegion lunarObstacleRegion(int index) {

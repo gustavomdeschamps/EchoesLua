@@ -14,6 +14,7 @@ GROUPS = {
                  "comida.png", "gelo.png", "pulse_rifle.png"],
     "enemies_fx": ["lunar_enemy_sheet.png", "mars_drone_sheet.png",
                    "mars_crawler_sheet.png", "action_fx_sheet.png", "energy_fx_sheet.png"],
+    "titan": ["titan_ground.png", "titan_enemy_sheet.png", "titan_portal_sheet.png"],
     "ui_keyart": ["intro_keyart_v2.png", "ui_panel_frame.png", "ui/resource_icons.png",
                   "ui/button_normal.png", "ui/panel_hud.png", "ui/damage_vignette.png"],
 }

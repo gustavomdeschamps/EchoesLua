@@ -8,9 +8,10 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.systems.CombatTarget;
 
 /** Drone ou rover marciano com leitura antecipada de ataque e animação real. */
-public final class MarsEnemy extends Entidade {
+public final class MarsEnemy extends Entidade implements CombatTarget {
     private enum State { IDLE, CHASE, TELEGRAPH, ATTACK, HIT, DYING }
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
@@ -158,6 +159,11 @@ public final class MarsEnemy extends Entidade {
         change(State.HIT);
         return false;
     }
+    @Override public boolean receiveDamage(float damage) {
+        if (damage <= 0f) return false;
+        return takeHit();
+    }
+    @Override public boolean isAlive() { return ativo && state != State.DYING; }
     /** Centro do sprite, acompanhando a flutuacao: e onde a mira encosta. */
     public float centerX() { return position.x + width / 2f; }
 

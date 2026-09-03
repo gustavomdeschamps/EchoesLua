@@ -72,9 +72,9 @@ public class GameSaveData {
      * marciano. Saves da versao 2 continuam carregando: o Json apenas deixa
      * estes campos nos valores padrao.
      */
-    public static final int CURRENT_VERSION = 3;
+    public static final int CURRENT_VERSION = 4;
 
-    public String fase = "LUNAR";
+    public String fase = "LUA";
     public long semente;
     public int municao;
     public int totalHostisLunares;
@@ -83,6 +83,10 @@ public class GameSaveData {
     public int marteNucleos;
     public int marteEstacoes;
     public int marteHostis;
+    public boolean dialogoTita;
+    public boolean combateOk;
+    public boolean amostraOk;
+    public boolean entrouTita;
 
     /*
      * Construtor vazio obrigatório

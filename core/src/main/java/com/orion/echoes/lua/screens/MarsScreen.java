@@ -22,6 +22,7 @@ import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.entities.MarsEnemy;
 import com.orion.echoes.lua.entities.MarsObject;
 import com.orion.echoes.lua.entities.Portal;
+import com.orion.echoes.lua.entities.TitanPortal;
 import com.orion.echoes.lua.entities.Wall;
 import com.orion.echoes.lua.events.EventBus;
 import com.orion.echoes.lua.events.EventType;
@@ -37,6 +38,8 @@ import com.orion.echoes.lua.save.SaveManager;
 import com.orion.echoes.lua.systems.CameraDirector;
 import com.orion.echoes.lua.systems.CampaignState;
 import com.orion.echoes.lua.systems.JuiceSystem;
+import com.orion.echoes.lua.systems.DialogueController;
+import com.orion.echoes.lua.systems.TitanCombatSystem;
 import com.orion.echoes.lua.ui.UiTheme;
 
 /** Segunda missão jogável: restaura a base marciana e alcança a plataforma. */
@@ -74,6 +77,7 @@ public final class MarsScreen implements Screen {
     private Viewport uiViewport;
     private MarsObject habitat;
     private Portal returnPortal;
+    private TitanPortal titanPortal;
     private MarsObject landingPad;
     private float missionTime, reveal, dustTimer, stepTimer, shotTimer;
     private float messageTimer, extractionGlow;
@@ -83,6 +87,8 @@ public final class MarsScreen implements Screen {
     private int minerals, activeStations, hostilesDefeated;
     private boolean changingScreen;
     private boolean paused;
+    private final DialogueController titanDialogue = new DialogueController();
+    private TitanCombatSystem titanCombat;
     private String message = "A tempestade apagou a colônia. Recupere os núcleos marcianos.";
 
     public MarsScreen(EchoesLua game, CampaignState campaign) {
@@ -122,6 +128,8 @@ public final class MarsScreen implements Screen {
         player.setVitals(Math.max(45f, campaign.getOxygen()), Math.max(38f, campaign.getEnergy()));
         player.setWeaponEquipped(true);
         player.setMunicao(campaign.getAmmo());
+        titanCombat = new TitanCombatSystem(campaign);
+        titanCombat.setMunicao(player.getMunicao());
         buildColony();
         restaurarCampanha();
         camera.position.set(640f, 360f, 0f);
@@ -142,6 +150,8 @@ public final class MarsScreen implements Screen {
          */
         returnPortal = new Portal(360f, 300f, assets);
         returnPortal.setUnlocked(true);
+        titanPortal = new TitanPortal(2520f, 1480f, assets);
+        titanPortal.setUnlocked(campaign.portalLiberado());
         prop(2400f, 1230f, 120f, 140f, MarsObject.Kind.BEACON);
         float[][] data = {{530,760,130},{850,420,115},{1080,930,145},{1320,580,125},
             {1710,810,150},{1980,430,120},{2350,650,145},{2750,320,110},{610,1660,120},
@@ -230,6 +240,7 @@ public final class MarsScreen implements Screen {
         renderLandmarks();
         for (MarsObject object : props) object.render(batch);
         returnPortal.render(batch);
+        titanPortal.render(batch);
         for (MarsEnemy enemy : enemies) enemy.render(batch);
         player.render(batch);
         particles.render(batch);
@@ -277,6 +288,8 @@ public final class MarsScreen implements Screen {
                 object.isCollectible() ? UiTheme.AMBER : UiTheme.TEXT_MUTED);
         }
         hitboxDebug.box(returnPortal.getBounds(), UiTheme.GREEN);
+        hitboxDebug.box(titanPortal.getBounds(), campaign.portalLiberado()
+            ? UiTheme.CYAN : UiTheme.RED);
         for (MarsEnemy enemy : enemies) {
             if (!enemy.isAtivo()) continue;
             hitboxDebug.box(enemy.getBounds(), UiTheme.MAGENTA);
@@ -304,6 +317,7 @@ public final class MarsScreen implements Screen {
             return;
         }
         juice.update(delta);
+        titanCombat.update(delta);
         float gameplayDelta = juice.gameplayDelta(delta);
         if (gameplayDelta <= 0f) {
             particles.update(delta * .35f);
@@ -333,13 +347,15 @@ public final class MarsScreen implements Screen {
         viewport.unproject(mouseWorld);
         player.setAimTarget(mouseWorld.x, mouseWorld.y);
         if (input.consumeAttackPressed()) shoot();
-        if (input.consumeInteractPressed()) interact();
+        if (Gdx.input.isKeyJustPressed(Input.Keys.E)) handleInteraction();
         // O portal de volta troca de tela e libera fisica e particulas; seguir
         // com o resto do update depois disso seria mexer em recurso morto.
         if (changingScreen) return;
         atualizarSaveLoad();
         for (MarsObject object : props) object.update(delta);
         returnPortal.update(delta);
+        titanPortal.setUnlocked(campaign.portalLiberado());
+        titanPortal.update(delta);
         collectItems();
         for (MarsEnemy enemy : enemies) {
             enemy.update(delta, player, rocks);
@@ -357,12 +373,7 @@ public final class MarsScreen implements Screen {
         particles.update(delta);
         updateFootFx(delta, direction);
         updateCamera(delta);
-        if (missionComplete() && player.getBounds().overlaps(landingPad.getBounds())) {
-            changingScreen = true;
-            guardarCampanha();
-            game.setScreen(new VictoryScreen(game, missionTime));
-            dispose();
-        } else if (player.isMorto()) {
+        if (player.isMorto()) {
             changingScreen = true;
             game.setScreen(new GameOverScreen(game, missionTime));
             dispose();
@@ -377,7 +388,13 @@ public final class MarsScreen implements Screen {
             particles.criarEfeitoColeta(item.getPosition().x + 36f, item.getPosition().y + 36f);
             sounds.tocarColetaEspacial(item.getPosition().x + 36f, item.getPosition().y + 36f);
             switch (item.getKind()) {
-                case MINERAL -> { minerals++; feedback("Núcleo marciano recuperado  •  " + minerals); }
+                case MINERAL -> {
+                    minerals++;
+                    if (campaign.isDialogoTita() && !campaign.isAmostraOk()) {
+                        campaign.setAmostraOk(true);
+                        feedback("Amostra de metano validada. O selo do portal ficou azul.");
+                    } else feedback("Núcleo marciano recuperado  •  " + minerals);
+                }
                 case MEDKIT -> { player.recuperarOxigenio(28f); feedback("Selagem de emergência aplicada  •  O2 restaurado"); }
                 case POWER_CELL -> {
                     player.recuperarEnergia(35f);
@@ -391,7 +408,36 @@ public final class MarsScreen implements Screen {
         }
     }
 
-    private void interact() {
+    private void handleInteraction() {
+        if (titanDialogue.isOpen()) {
+            titanDialogue.next();
+            if (titanDialogue.isFinished()) {
+                campaign.setDialogoTita(true);
+                if (minerals > 0) campaign.setAmostraOk(true);
+                feedback(campaign.missaoAtual());
+            }
+            return;
+        }
+        if (titanPortal.isPlayerNear(player)) {
+            if (!campaign.isDialogoTita()) {
+                titanDialogue.start(new String[] {
+                    "O portal para Titã está instável. A autorização foi suspensa.",
+                    "Prove capacidade de combate ou entregue uma amostra de metano.",
+                    "Quando o acesso for liberado, o selo central ficará azul."
+                });
+                return;
+            }
+            if (!campaign.portalLiberado()) {
+                feedback("BLOQUEADO");
+                return;
+            }
+            enterTitan();
+            return;
+        }
+        interactWorld();
+    }
+
+    private void interactWorld() {
         for (MarsObject station : stations) {
             if (station.isEnabled() || distanceTo(station) > 135f) continue;
             if (minerals <= 0) {
@@ -416,6 +462,22 @@ public final class MarsScreen implements Screen {
             : "Nenhum sistema ao alcance.");
     }
 
+    private void enterTitan() {
+        campaign.setEntrouTita(true);
+        campaign.setPhase(CampaignState.Phase.TITAN);
+        campaign.setVitals(player.getOxigenio(), player.getEnergia());
+        campaign.setAmmo(player.getMunicao());
+        campaign.setMissionTime(missionTime);
+        GameSaveData data = player.toSaveData();
+        data.posX = 260f;
+        data.posY = 260f;
+        LunarCheckpoint.applyCampaign(data, campaign);
+        new SaveManager().save(data);
+        changingScreen = true;
+        game.setScreen(new TitanScreen(game, campaign));
+        dispose();
+    }
+
     /**
      * F5 e F9 tambem valem em Marte.
      *
@@ -437,7 +499,7 @@ public final class MarsScreen implements Screen {
             feedback("Nenhum checkpoint encontrado.");
             return;
         }
-        if (!CampaignState.Phase.MARS.name().equals(data.fase)) {
+        if (CampaignState.phaseFromToken(data.fase) != CampaignState.Phase.MARS) {
             feedback("O checkpoint salvo é da fase lunar. Carregue pelo menu.");
             return;
         }
@@ -477,7 +539,7 @@ public final class MarsScreen implements Screen {
         float dx = MathUtils.cosDeg(player.getAimAngle());
         float dy = MathUtils.sinDeg(player.getAimAngle());
         MarsEnemy target = null;
-        float closest = 480f;
+        float closest = titanCombat.getAlcance();
         for (MarsEnemy enemy : enemies) {
             if (!enemy.isAtivo()) continue;
             float ex = enemy.centerX() - x;
@@ -490,10 +552,18 @@ public final class MarsScreen implements Screen {
             }
         }
         shotStart.set(x + dx * 33f, y + dy * 33f);
-        shotEnd.set(x + dx * 480f, y + dy * 480f);
+        shotEnd.set(x + dx * titanCombat.getAlcance(), y + dy * titanCombat.getAlcance());
+        titanCombat.setMunicao(player.getMunicao());
+        boolean fired = titanCombat.tentarTiro(shotStart, target, campaign.hasWeapon());
+        player.setMunicao(titanCombat.getMunicao());
+        if (!fired) {
+            feedback(!campaign.hasWeapon() ? "Fabrique a arma antes de disparar."
+                : player.getMunicao() <= 0 ? "Sem munição." : "Rifle recarregando.");
+            return;
+        }
         if (target != null) {
             shotEnd.set(target.centerX(), target.centerY());
-            boolean killed = target.takeHit();
+            boolean killed = !target.isAlive();
             if (killed) {
                 hostilesDefeated++;
                 particles.criarMorteInimigo(target.centerX(), target.centerY());
@@ -626,11 +696,18 @@ public final class MarsScreen implements Screen {
         text("NÚCLEOS  " + minerals, .74f, UiTheme.AMBER, 944f, 84f, 1f);
         text("ESTAÇÕES  " + activeStations + "/3", .74f, UiTheme.CYAN, 1050f, 84f, 1f);
         text("HOSTIS  " + hostilesDefeated + "/" + enemies.size, .72f, UiTheme.TEXT_MUTED, 944f, 55f, 1f);
-        text(missionComplete() ? "SINAL VERDE  •  ALCANCE A PLATAFORMA DE EXTRAÇÃO"
-            : "MARTE 01  •  REATIVE 3 ESTAÇÕES E NEUTRALIZE OS HOSTIS",
-            .77f, missionComplete() ? UiTheme.GREEN : UiTheme.TEXT, 384f, 680f, 1f);
+        text(campaign.missaoAtual(), .72f,
+            campaign.portalLiberado() ? UiTheme.GREEN : UiTheme.TEXT, 354f, 680f, 1f);
+        text(campaign.statusPortal(), .62f,
+            campaign.portalLiberado() ? UiTheme.CYAN : UiTheme.RED, 955f, 680f, 1f);
         if (messageTimer > 0f) centered(message, .72f, UiTheme.TEXT, 152f,
             Math.min(1f, messageTimer * 2f));
+        if (titanDialogue.isOpen()) {
+            drawUiPanel(170f, 242f, 940f, 180f, UiTheme.AMBER, .98f);
+            text("TRANSMISSÃO · CONTROLE ORBITAL", .66f, UiTheme.AMBER, 208f, 388f, 1f);
+            text(titanDialogue.line(), .82f, UiTheme.TEXT, 208f, 330f, 1f);
+            text("E  •  CONTINUAR", .62f, UiTheme.TEXT_MUTED, 886f, 274f, 1f);
+        }
         batch.end();
     }
 

@@ -40,7 +40,7 @@ public final class LunarCheckpoint {
 
     /** Grava os campos de campanha comuns as duas fases. */
     public static void applyCampaign(GameSaveData data, CampaignState campaign) {
-        data.fase = campaign.getPhase().name();
+        data.fase = campaign.phaseToken();
         data.semente = campaign.getSeed();
         data.municao = campaign.getAmmo();
         data.totalHostisLunares = campaign.getLunarTotalEnemies();
@@ -49,14 +49,17 @@ public final class LunarCheckpoint {
         data.marteNucleos = campaign.getMinerals();
         data.marteEstacoes = campaign.getMarsStationsOnline();
         data.marteHostis = campaign.getMarsHostilesDefeated();
+        data.dialogoTita = campaign.isDialogoTita();
+        data.combateOk = campaign.isCombateOk();
+        data.amostraOk = campaign.isAmostraOk();
+        data.entrouTita = campaign.isEntrouTita();
         data.versao = GameSaveData.CURRENT_VERSION;
     }
 
     /** Reconstroi a campanha a partir de um save, sem tocar no mundo. */
     public static CampaignState toCampaign(GameSaveData data) {
         CampaignState campaign = new CampaignState(data.semente);
-        campaign.setPhase(CampaignState.Phase.MARS.name().equals(data.fase)
-            ? CampaignState.Phase.MARS : CampaignState.Phase.LUNAR);
+        campaign.setPhase(CampaignState.phaseFromToken(data.fase));
         campaign.setVitals(data.oxigenio, data.energia);
         campaign.setAmmo(data.municao);
         campaign.setMissionTime(data.tempoVivo);
@@ -72,6 +75,10 @@ public final class LunarCheckpoint {
             campaign.setMarsProgress(data.marteNucleos, data.marteEstacoes,
                 data.marteHostis, data.marteConcluido);
         }
+        campaign.setDialogoTita(data.dialogoTita);
+        campaign.setCombateOk(data.combateOk);
+        campaign.setAmostraOk(data.amostraOk);
+        campaign.setEntrouTita(data.entrouTita);
         return campaign;
     }
 

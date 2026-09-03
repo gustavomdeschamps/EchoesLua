@@ -54,6 +54,10 @@ public final class MenuScreen implements Screen {
     public MenuScreen(EchoesLua game) { this.game = game; }
 
     @Override public void show() {
+        // Telas de gameplay usam a mesma fonte com escalas temporárias.
+        // Restaurar aqui impede que os botões cresçam após pause/vitória/derrota.
+        game.getAssets().font.getData().setScale(1f);
+        game.getAssets().titleFont.getData().setScale(1f);
         stage = new Stage(new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT), game.getBatch());
         skin = UiFactory.create(game.getAssets());
         stage.addActor(new MenuBackdrop());
@@ -351,9 +355,13 @@ public final class MenuScreen implements Screen {
         if (fadeCompleted) {
             fadeCompleted = false;
             CampaignState campaign = game.getCampaign();
-            game.setScreen(campaign.getPhase() == CampaignState.Phase.MARS
-                ? new MarsScreen(game, campaign)
-                : new LunarScreen(game, game.getBatch(), game.getAssets(), campaign));
+            if (campaign.getPhase() == CampaignState.Phase.TITAN) {
+                game.setScreen(new TitanScreen(game, campaign));
+            } else if (campaign.getPhase() == CampaignState.Phase.MARS) {
+                game.setScreen(new MarsScreen(game, campaign));
+            } else {
+                game.setScreen(new LunarScreen(game, game.getBatch(), game.getAssets(), campaign));
+            }
             dispose();
             return;
         }

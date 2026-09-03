@@ -240,16 +240,11 @@ public class Astronauta extends Entidade implements Interagivel {
         // ENERGIA
         // ======================================
 
-        if (
-            dirX != 0
-                || dirY != 0
-        ) {
-
-            energia -= (sprinting ? 3.4f : .9f) * delta;
-
-            if (energia < 0) {
-                energia = 0;
-            }
+        if (dirX != 0 || dirY != 0) {
+            // Caminhar recupera o fôlego do traje; só corrida e dash drenam.
+            if (sprinting) energia -= 3.4f * delta;
+            else energia = Math.min(GameConfig.MAX_ENERGY, energia + 2.2f * delta);
+            if (energia < 0) energia = 0;
         }
     }
 
@@ -459,6 +454,9 @@ public class Astronauta extends Entidade implements Interagivel {
         float centerX = position.x + WIDTH / 2f;
         float centerY = position.y + HEIGHT * .48f;
         aimAngle = MathUtils.atan2(worldY - centerY, worldX - centerX) * MathUtils.radiansToDegrees;
+        if (weaponEquipped && Math.abs(worldX - centerX) > 3f) {
+            viradoEsquerda = worldX < centerX;
+        }
     }
 
     public float getAimAngle() { return aimAngle; }

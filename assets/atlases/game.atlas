@@ -1,111 +1,131 @@
 
 game.png
-size: 3979, 3800
+size: 3979, 3985
 format: RGBA8888
 filter: MipMapLinearLinear, Linear
 repeat: none
 astronaut_combat_sheet
   rotate: false
-  xy: 1261, 2858
+  xy: 1261, 527
   size: 1252, 939
   orig: 1252, 939
   offset: 0, 0
   index: -1
 astronauta_sheet
   rotate: false
-  xy: 3, 2545
+  xy: 3, 2730
   size: 1252, 1252
   orig: 1252, 1252
   offset: 0, 0
   index: -1
-base_lunar
-  rotate: false
-  xy: 2519, 3
-  size: 768, 640
-  orig: 768, 640
-  offset: 0, 0
-  index: -1
 comida
   rotate: false
-  xy: 2035, 1395
+  xy: 3065, 3
   size: 512, 512
   orig: 512, 512
   offset: 0, 0
   index: -1
 gelo
   rotate: false
-  xy: 3464, 763
+  xy: 3464, 635
   size: 512, 512
   orig: 512, 512
   offset: 0, 0
   index: -1
 landmarks
   rotate: false
-  xy: 2553, 1913
+  xy: 2519, 1153
   size: 1252, 626
   orig: 1252, 626
   offset: 0, 0
   index: -1
 lunar_enemy_sheet
   rotate: false
-  xy: 3, 1287
+  xy: 3, 1472
   size: 1252, 1252
   orig: 1252, 1252
   offset: 0, 0
   index: -1
 lunar_obstacles
   rotate: false
-  xy: 2553, 1281
+  xy: 2519, 521
   size: 939, 626
   orig: 939, 626
   offset: 0, 0
   index: -1
 mars_atlas_v4
   rotate: false
-  xy: 1261, 1913
+  xy: 2519, 1785
   size: 1252, 939
   orig: 1252, 939
   offset: 0, 0
   index: -1
 mars_crawler_sheet
   rotate: false
-  xy: 3, 29
+  xy: 1261, 2730
   size: 1252, 1252
   orig: 1252, 1252
   offset: 0, 0
   index: -1
 mars_drone_sheet
   rotate: false
-  xy: 1261, 29
+  xy: 3, 214
   size: 1252, 1252
   orig: 1252, 1252
-  offset: 0, 0
-  index: -1
-mars_obstacles
-  rotate: false
-  xy: 2519, 649
-  size: 939, 626
-  orig: 939, 626
   offset: 0, 0
   index: -1
 mission_atlas_unified
   rotate: false
-  xy: 2519, 2545
+  xy: 1261, 1472
   size: 1252, 1252
   orig: 1252, 1252
   offset: 0, 0
   index: -1
-oxigenio
-  rotate: false
-  xy: 3464, 245
-  size: 512, 512
-  orig: 512, 512
-  offset: 0, 0
-  index: -1
 pulse_rifle
   rotate: false
-  xy: 1261, 1395
+  xy: 2291, 3
   size: 768, 512
   orig: 768, 512
+  offset: 0, 0
+  index: -1
+titan_enemy_sheet
+  rotate: false
+  xy: 2519, 2730
+  size: 1252, 1252
+  orig: 1252, 1252
+  offset: 0, 0
+  index: -1
+titan_portal_sheet
+  rotate: false
+  xy: 1261, 9
+  size: 1024, 512
+  orig: 1024, 512
+  offset: 0, 0
+  index: -1
+
+game2.png
+size: 2237, 646
+format: RGBA8888
+filter: MipMapLinearLinear, Linear
+repeat: none
+base_lunar
+  rotate: false
+  xy: 948, 3
+  size: 768, 640
+  orig: 768, 640
+  offset: 0, 0
+  index: -1
+mars_obstacles
+  rotate: false
+  xy: 3, 17
+  size: 939, 626
+  orig: 939, 626
+  offset: 0, 0
+  index: -1
+oxigenio
+  rotate: false
+  xy: 1722, 131
+  size: 512, 512
+  orig: 512, 512
   offset: 0, 0
   index: -1

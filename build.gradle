@@ -102,7 +102,7 @@ def atlasGroups = [
     'oxigenio.png', 'comida.png', 'gelo.png', 'mission_atlas_unified.png',
     'mars_atlas_v4.png', 'lunar_enemy_sheet.png', 'mars_drone_sheet.png',
     'mars_crawler_sheet.png', 'lunar_obstacles.png', 'mars_obstacles.png',
-    'landmarks.png'
+    'landmarks.png', 'titan_enemy_sheet.png', 'titan_portal_sheet.png'
   ],
   ui: ['intro_keyart_v2.png', 'ui_panel_frame.png',
     'ui/panel_hud.png', 'ui/panel_dialog.png', 'ui/panel_modal.png',

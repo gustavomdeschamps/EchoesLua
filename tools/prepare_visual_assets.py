@@ -732,12 +732,14 @@ SHEET_GRIDS = {
     "lunar_enemy_sheet.png": (4, 4),
     "mars_drone_sheet.png": (4, 4),
     "mars_crawler_sheet.png": (4, 4),
+    "titan_enemy_sheet.png": (4, 4),
     "lunar_obstacles.png": (3, 2),
     "mars_obstacles.png": (3, 2),
     "action_fx_sheet.png": (6, 4),
     "energy_fx_sheet.png": (6, 4),
     "landmarks.png": (4, 2),
     "mars_atlas_v4.png": (4, 3),
+    "titan_portal_sheet.png": (2, 1),
 }
 
 
@@ -798,7 +800,7 @@ def validate_palette_sync() -> None:
 
 def validate_terrain_seams(maximum_mean_difference: float = 4.0) -> None:
     errors: list[str] = []
-    for name in ("lunar_ground.png", "mars_ground.png"):
+    for name in ("lunar_ground.png", "mars_ground.png", "titan_ground.png"):
         image = Image.open(TEXTURES / name).convert("RGB")
         left_right = ImageChops.difference(
             image.crop((0, 0, 1, image.height)),
@@ -890,6 +892,9 @@ def main() -> None:
     prepare_character_sheet("mars_crawler_realistic_candidate.png", "mars_crawler_sheet.png",
                             4, 4, (1252, 1252), cell_padding_scale=0.86,
                             isolate_cells=True)
+    prepare_character_sheet("titan_enemy_candidate.png", "titan_enemy_sheet.png",
+                            4, 4, (1252, 1252), cell_padding_scale=0.86,
+                            isolate_cells=True)
     split_biome_obstacles()
     prepare_grid("mission_atlas_realistic_candidate.png", "mission_atlas_unified.png",
                  4, 4, "checker-global", clean_islands=True, output_size=(1252, 1252),
@@ -907,9 +912,14 @@ def main() -> None:
     prepare_grid("landmarks_realistic_candidate.png", "landmarks.png", 4, 2,
                  "checker-global", clean_islands=True, output_size=(1252, 626),
                  clean_edge_fragments=True, edge_guard_ratio=0.075)
+    prepare_grid("titan_portal_candidate.png", "titan_portal_sheet.png", 2, 1,
+                 "checker-global", clean_islands=True, output_size=(1024, 512),
+                 clean_edge_fragments=True, normalize_cell_scale=True,
+                 edge_guard_ratio=0.06)
     extract_common_assets()
     make_tileable("lunar_ground_realistic_candidate.png", "lunar_ground.png")
     make_tileable("mars_ground_realistic_candidate.png", "mars_ground.png")
+    make_tileable("titan_ground_candidate.png", "titan_ground.png")
     generate_ui_kit()
     validate_all()
 

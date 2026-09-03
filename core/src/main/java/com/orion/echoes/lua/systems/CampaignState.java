@@ -14,7 +14,7 @@ import com.orion.echoes.lua.config.GameConfig;
 public final class CampaignState {
 
     /** Em qual fase o jogador esta agora. */
-    public enum Phase { LUNAR, MARS }
+    public enum Phase { LUNAR, MARS, TITAN }
 
     private final long seed;
     private Phase phase = Phase.LUNAR;
@@ -40,6 +40,12 @@ public final class CampaignState {
     private int marsHostilesDefeated;
     private boolean marsVisited;
     private boolean marsMissionComplete;
+
+    // Prova M07: autorização do portal para Titã.
+    private boolean dialogoTita;
+    private boolean combateOk;
+    private boolean amostraOk;
+    private boolean entrouTita;
 
     public CampaignState() {
         this(System.nanoTime());
@@ -100,7 +106,47 @@ public final class CampaignState {
 
     public void markMarsVisited() { marsVisited = true; }
 
+    public boolean isDialogoTita() { return dialogoTita; }
+    public void setDialogoTita(boolean value) { dialogoTita = value; }
+    public boolean isCombateOk() { return combateOk; }
+    public void setCombateOk(boolean value) { combateOk = value; }
+    public boolean isAmostraOk() { return amostraOk; }
+    public void setAmostraOk(boolean value) { amostraOk = value; }
+    public boolean isEntrouTita() { return entrouTita; }
+    public void setEntrouTita(boolean value) { entrouTita = value; }
+
+    public boolean portalLiberado() {
+        return dialogoTita && (combateOk || amostraOk);
+    }
+
+    public String missaoAtual() {
+        if (entrouTita) return "Explore Titã e localize o sinal de retorno.";
+        if (!dialogoTita) return "Investigue o portal instável no setor de extração.";
+        if (!combateOk && !amostraOk) return "Prove capacidade de combate ou colete uma amostra de metano.";
+        return "Portal autorizado. Atravesse para Titã.";
+    }
+
+    public String statusPortal() {
+        return portalLiberado() ? "PORTAL TITA ONLINE" : "PORTAL TITA BLOQUEADO";
+    }
+
+    /** Valores exigidos pelo save, mantendo a enum interna legível. */
+    public String phaseToken() {
+        return switch (phase) {
+            case LUNAR -> "LUA";
+            case MARS -> "MARTE";
+            case TITAN -> "TITA";
+        };
+    }
+
+    public static Phase phaseFromToken(String token) {
+        if ("TITA".equalsIgnoreCase(token) || "TITAN".equalsIgnoreCase(token)) return Phase.TITAN;
+        if ("MARTE".equalsIgnoreCase(token) || "MARS".equalsIgnoreCase(token)) return Phase.MARS;
+        return Phase.LUNAR;
+    }
+
     public int getLunarTotalEnemies() { return lunarTotalEnemies; }
+    public boolean hasWeapon() { return weaponCrafted; }
 
     // =====================================================
     // PONTE COM A MISSAO LUNAR
