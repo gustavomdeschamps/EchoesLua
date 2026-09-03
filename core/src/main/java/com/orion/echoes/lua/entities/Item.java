@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 
+import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 
@@ -106,13 +107,7 @@ public class Item extends Entidade implements Interagivel {
             y
         );
 
-        // Área de coleta fica parada.
-        bounds.set(
-            x,
-            y,
-            width,
-            height
-        );
+        sincronizarHitbox();
     }
 
     // ==========================================
@@ -159,6 +154,26 @@ public class Item extends Entidade implements Interagivel {
         sprite.setRotation(
             rotacao
         );
+
+        sincronizarHitbox();
+    }
+
+    /**
+     * A area de coleta acompanha o sprite.
+     *
+     * O comentario antigo dizia "area de coleta fica parada", mas o item sobe
+     * 12px, pulsa e gira: o jogador via o recurso no ar e coletava no chao.
+     * A caixa agora e o retangulo do proprio sprite, ja com a escala aplicada,
+     * mais uma folga curta.
+     */
+    private void sincronizarHitbox() {
+        float padding = GameConfig.PICKUP_HITBOX_PADDING;
+        float scaledWidth = sprite.getWidth() * sprite.getScaleX();
+        float scaledHeight = sprite.getHeight() * sprite.getScaleY();
+        float centerX = sprite.getX() + sprite.getWidth() / 2f;
+        float centerY = sprite.getY() + sprite.getHeight() / 2f;
+        bounds.set(centerX - scaledWidth / 2f - padding, centerY - scaledHeight / 2f - padding,
+            scaledWidth + padding * 2f, scaledHeight + padding * 2f);
     }
 
     // ==========================================

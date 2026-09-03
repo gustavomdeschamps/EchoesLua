@@ -120,6 +120,34 @@ public final class GameConfig {
     public static final float BASE_HEIGHT = 350f;
 
     // ==========================================
+    // HITBOXES
+    //
+    // A hitbox e derivada do retangulo desenhado, nunca escrita a mao: os
+    // dois divergiam e o jogador mirava no sprite enquanto o tiro passava
+    // pela caixa antiga. Aqui ficam so o recorte do sprite e a fracao do
+    // corpo que conta como colisao.
+    // ==========================================
+
+    /** Lado do sprite do hostil lunar e deslocamento em relacao a entidade. */
+    public static final float ENEMY_SPRITE_SIZE = 104f;
+    public static final float ENEMY_SPRITE_OFFSET_X = -16f;
+    public static final float ENEMY_SPRITE_OFFSET_Y = -18f;
+
+    public static final float MARS_DRONE_SPRITE_SIZE = 108f;
+    public static final float MARS_CRAWLER_SPRITE_SIZE = 116f;
+    public static final float MARS_ENEMY_SPRITE_OFFSET_Y = -18f;
+
+    /** Largura do corpo que colide, como fracao do lado do sprite. */
+    public static final float ENEMY_HITBOX_WIDTH_RATIO = 0.5f;
+    /** Altura do corpo que colide, como fracao do lado do sprite. */
+    public static final float ENEMY_HITBOX_HEIGHT_RATIO = 0.29f;
+    /** Altura da base da hitbox dentro do sprite, de baixo para cima. */
+    public static final float ENEMY_HITBOX_BASE_RATIO = 0.23f;
+
+    /** Folga que a area de coleta ganha alem do sprite do item. */
+    public static final float PICKUP_HITBOX_PADDING = 4f;
+
+    // ==========================================
     // MUNICAO
     // ==========================================
 

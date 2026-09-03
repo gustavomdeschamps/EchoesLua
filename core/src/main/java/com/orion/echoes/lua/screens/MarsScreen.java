@@ -30,6 +30,7 @@ import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.ParticleManager;
 import com.orion.echoes.lua.managers.SoundManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.render.HitboxDebugRenderer;
 import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
 import com.orion.echoes.lua.save.SaveManager;
@@ -78,6 +79,7 @@ public final class MarsScreen implements Screen {
     private float messageTimer, extractionGlow;
     private JuiceSystem juice;
     private CameraDirector cameraDirector;
+    private HitboxDebugRenderer hitboxDebug;
     private int minerals, activeStations, hostilesDefeated;
     private boolean changingScreen;
     private boolean paused;
@@ -106,6 +108,7 @@ public final class MarsScreen implements Screen {
         juice = new JuiceSystem();
         juice.setShakeEnabled(game.getSettings().isShakeEnabled());
         cameraDirector = new CameraDirector(camera, viewport, juice, WORLD_W, WORLD_H);
+        hitboxDebug = new HitboxDebugRenderer(batch, assets);
         uiCamera = new OrthographicCamera();
         uiViewport = new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, uiCamera);
         uiCamera.position.set(640f, 360f, 0f);
@@ -231,6 +234,7 @@ public final class MarsScreen implements Screen {
         player.render(batch);
         particles.render(batch);
         batch.end();
+        renderHitboxDebug();
         renderShot();
         renderEnemyHealth();
         renderHud();
@@ -265,8 +269,26 @@ public final class MarsScreen implements Screen {
         return MathUtils.clamp(1f - oxygen / GameConfig.MUSIC_URGENCY_OXYGEN, 0f, 1f);
     }
 
+    /** Mesma sobreposicao da fase lunar; ver LunarScreen.renderHitboxDebug. */
+    private void renderHitboxDebug() {
+        if (!hitboxDebug.begin(camera)) return;
+        for (MarsObject object : props) {
+            hitboxDebug.box(object.getBounds(),
+                object.isCollectible() ? UiTheme.AMBER : UiTheme.TEXT_MUTED);
+        }
+        hitboxDebug.box(returnPortal.getBounds(), UiTheme.GREEN);
+        for (MarsEnemy enemy : enemies) {
+            if (!enemy.isAtivo()) continue;
+            hitboxDebug.box(enemy.getBounds(), UiTheme.MAGENTA);
+            hitboxDebug.center(enemy.centerX(), enemy.centerY(), UiTheme.MAGENTA);
+        }
+        hitboxDebug.box(player.getBounds(), UiTheme.CYAN);
+        hitboxDebug.end();
+    }
+
     private void update(float delta) {
         if (changingScreen) return;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) hitboxDebug.toggle();
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
             || paused && Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             paused = !paused;

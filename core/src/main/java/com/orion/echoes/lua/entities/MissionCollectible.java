@@ -3,6 +3,7 @@ package com.orion.echoes.lua.entities;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
+import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.MissionSprite;
 import com.orion.echoes.lua.systems.MissionState;
@@ -20,6 +21,8 @@ public class MissionCollectible extends Entidade {
         sprite = new Sprite(assets.missionRegion(spriteFor(type)));
         sprite.setSize(62f, 62f);
         sprite.setOriginCenter();
+        sprite.setPosition(x, y);
+        sincronizarHitbox();
     }
 
     private MissionSprite spriteFor(MissionState.PartType type) {
@@ -41,6 +44,21 @@ public class MissionCollectible extends Entidade {
         float y = baseY + MathUtils.sin(time * 2.5f + position.x * .01f) * 9f;
         sprite.setPosition(position.x, y);
         sprite.setRotation(MathUtils.sin(time * 1.7f) * 5f);
+        sincronizarHitbox();
+    }
+
+    /**
+     * A area de coleta acompanha o sprite.
+     *
+     * Antes ela ficava presa ao chao enquanto a peca flutuava ate 9px acima,
+     * e ainda era 8px menor que o desenho: dava para ver a peca e nao
+     * conseguir pega-la. Agora a caixa e o proprio retangulo do sprite, com
+     * uma folga curta para a coleta nao exigir precisao de pixel.
+     */
+    private void sincronizarHitbox() {
+        float padding = GameConfig.PICKUP_HITBOX_PADDING;
+        bounds.set(sprite.getX() - padding, sprite.getY() - padding,
+            sprite.getWidth() + padding * 2f, sprite.getHeight() + padding * 2f);
     }
 
     @Override

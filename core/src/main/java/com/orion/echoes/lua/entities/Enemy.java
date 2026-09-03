@@ -65,7 +65,7 @@ public class Enemy extends Entidade {
 
     public Enemy(float x, float y, Behavior behavior, AssetManager assets) {
         super(x, y, 72f, 58f);
-        bounds.set(x + 10f, y + 6f, 52f, 30f);
+        sincronizarHitbox();
         spawnX = x;
         spawnY = y;
         this.behavior = behavior;
@@ -161,11 +161,40 @@ public class Enemy extends Entidade {
         if (isFree(nextX, position.y, obstacles)) position.x = nextX;
         float nextY = MathUtils.clamp(position.y + dy * speed * delta, 0f, GameConfig.WORLD_HEIGHT - height);
         if (isFree(position.x, nextY, obstacles)) position.y = nextY;
-        bounds.setPosition(position.x + 10f, position.y + 6f);
+        sincronizarHitbox();
+    }
+
+    /**
+     * Recalcula a hitbox a partir do sprite desenhado.
+     *
+     * A caixa e o corpo do bicho dentro do quadro: centrada na largura do
+     * sprite e apoiada na altura em que os pes encostam no chao. Como os dois
+     * saem do mesmo retangulo, nao ha como um sair de lugar sem o outro.
+     */
+    private void sincronizarHitbox() {
+        bounds.set(hitboxX(position.x), hitboxY(position.y), hitboxWidth(), hitboxHeight());
+    }
+
+    private static float hitboxWidth() {
+        return GameConfig.ENEMY_SPRITE_SIZE * GameConfig.ENEMY_HITBOX_WIDTH_RATIO;
+    }
+
+    private static float hitboxHeight() {
+        return GameConfig.ENEMY_SPRITE_SIZE * GameConfig.ENEMY_HITBOX_HEIGHT_RATIO;
+    }
+
+    private static float hitboxX(float originX) {
+        float spriteX = originX + GameConfig.ENEMY_SPRITE_OFFSET_X;
+        return spriteX + (GameConfig.ENEMY_SPRITE_SIZE - hitboxWidth()) / 2f;
+    }
+
+    private static float hitboxY(float originY) {
+        float spriteY = originY + GameConfig.ENEMY_SPRITE_OFFSET_Y;
+        return spriteY + GameConfig.ENEMY_SPRITE_SIZE * GameConfig.ENEMY_HITBOX_BASE_RATIO;
     }
 
     private boolean isFree(float x, float y, Array<Obstacle> obstacles) {
-        movementBounds.set(x + 10f, y + 6f, 52f, 30f);
+        movementBounds.set(hitboxX(x), hitboxY(y), hitboxWidth(), hitboxHeight());
         for (Obstacle obstacle : obstacles) if (movementBounds.overlaps(obstacle.getBounds())) return false;
         return true;
     }
@@ -202,7 +231,10 @@ public class Enemy extends Entidade {
         if (state == State.HIT) batch.setColor(1f, .45f, .62f, alpha);
         else batch.setColor(behavior.tint.r, behavior.tint.g, behavior.tint.b, alpha);
         float pulse = state == State.TELEGRAPH ? MathUtils.sin(stateTime * 26f) * 2f : 0f;
-        batch.draw(currentFrame(), position.x - 16f, position.y - 18f + pulse, 104f, 104f);
+        batch.draw(currentFrame(),
+            position.x + GameConfig.ENEMY_SPRITE_OFFSET_X,
+            position.y + GameConfig.ENEMY_SPRITE_OFFSET_Y + pulse,
+            GameConfig.ENEMY_SPRITE_SIZE, GameConfig.ENEMY_SPRITE_SIZE);
         batch.setColor(1f, 1f, 1f, 1f);
     }
 
@@ -233,8 +265,14 @@ public class Enemy extends Entidade {
         changeState(State.HIT);
         return false;
     }
-    public float centerX() { return position.x + width / 2f; }
-    public float centerY() { return position.y + height / 2f; }
+    /** Centro do sprite, e nao da entidade: e nele que a mira e a barra ficam. */
+    public float centerX() {
+        return position.x + GameConfig.ENEMY_SPRITE_OFFSET_X + GameConfig.ENEMY_SPRITE_SIZE / 2f;
+    }
+
+    public float centerY() {
+        return position.y + GameConfig.ENEMY_SPRITE_OFFSET_Y + GameConfig.ENEMY_SPRITE_SIZE / 2f;
+    }
     public float getHealthRatio() { return hp / GameConfig.ENEMY_BASE_HP; }
     public boolean isDefeated() { return defeated; }
     public boolean consumeTelegraphStarted() {
