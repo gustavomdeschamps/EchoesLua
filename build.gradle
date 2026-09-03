@@ -43,12 +43,57 @@ allprojects {
   }
 }
 
-tasks.register('validateVisualAssets', Exec) {
+/*
+ * QA de assets.
+ *
+ * O pipeline e escrito em Python e depende de Pillow e NumPy. Num clone
+ * limpo essas bibliotecas nao existem, e antes disso o build inteiro
+ * quebrava por causa delas - inclusive `lwjgl3:run`, que so quer abrir o
+ * jogo. Os atlas ja vem versionados, entao a validacao aqui e uma rede de
+ * seguranca, nao um pre-requisito: sem as dependencias ela avisa e sai.
+ *
+ * No CI a rigidez volta: -PstrictAssetQa=true (ou a variavel CI) faz a falta
+ * de dependencia virar erro, para ninguem publicar asset quebrado.
+ */
+tasks.register('validateVisualAssets') {
   group = 'verification'
-  description = 'Valida dimensões e grades dos spritesheets antes do build.'
-  workingDir rootProject.projectDir
-  def pythonExecutable = System.getProperty('os.name').toLowerCase().contains('windows') ? 'python' : 'python3'
-  commandLine pythonExecutable, 'tools/prepare_visual_assets.py', '--validate-only'
+  description = 'Valida dimensões, grades e paleta dos assets. Pula se o Python não estiver pronto.'
+
+  def projectRoot = rootProject.projectDir
+  def strict = project.hasProperty('strictAssetQa')
+    ? Boolean.parseBoolean(project.property('strictAssetQa').toString())
+    : System.getenv('CI') != null
+
+  doLast {
+    def interpreters = System.getProperty('os.name').toLowerCase().contains('windows')
+      ? ['python', 'py', 'python3']
+      : ['python3', 'python']
+
+    def runner = interpreters.find { candidate ->
+      try {
+        new ProcessBuilder(candidate, '-c', 'import PIL, numpy')
+          .directory(projectRoot).redirectErrorStream(true).start().waitFor() == 0
+      } catch (Exception ignored) {
+        false
+      }
+    }
+
+    if (runner == null) {
+      def message = 'QA de assets pulado: Python com Pillow e NumPy não encontrado. ' +
+        'Para habilitar: pip install pillow numpy soundfile'
+      if (strict) throw new GradleException(message)
+      logger.quiet("AVISO: $message")
+      return
+    }
+
+    def process = new ProcessBuilder(runner, 'tools/prepare_visual_assets.py', '--validate-only')
+      .directory(projectRoot).redirectErrorStream(true).start()
+    def output = process.inputStream.text
+    if (process.waitFor() != 0) {
+      throw new GradleException("QA de assets falhou:\n" + output)
+    }
+    if (!output.trim().isEmpty()) logger.quiet(output.trim())
+  }
 }
 
 def atlasGroups = [

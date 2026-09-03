@@ -54,10 +54,18 @@ barra, que ficam vermelhos quando a carga está baixa.
 
 ## Build e execução
 
-Requer **JDK 17** e **Python 3.11+** (o build valida os assets antes de compilar).
+Requer apenas **JDK 17**. Basta clonar e rodar.
+
+```bash
+./gradlew lwjgl3:run
+```
+
+O QA de assets é escrito em Python e é **opcional**: sem as bibliotecas ele
+avisa e é pulado, sem quebrar o build. Para habilitá-lo (e é o que o CI faz):
 
 ```bash
 pip install pillow numpy soundfile
+./gradlew validateVisualAssets -PstrictAssetQa=true
 ```
 
 **Linux e macOS**
