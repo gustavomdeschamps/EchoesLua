@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -26,6 +27,27 @@ public final class Hud implements Disposable {
     private final NinePatch panelPatch;
     private final com.badlogic.gdx.graphics.g2d.TextureRegion barTrack;
     private final com.badlogic.gdx.graphics.g2d.TextureRegion barFill;
+    /*
+     * Caixa de mensagem.
+     *
+     * As medidas saem do texto ja renderizado, entao a caixa acompanha o
+     * conteudo em vez de tentar adivinha-lo.
+     */
+    private static final float TOAST_SCALE = .82f;
+    private static final float TOAST_MAX_TEXT_WIDTH = 560f;
+    private static final float TOAST_MIN_WIDTH = 260f;
+    private static final float TOAST_PADDING_X = 26f;
+    private static final float TOAST_PADDING_Y = 16f;
+    private static final float TOAST_Y = 104f;
+
+    /** Reaproveitada a cada sombra para nao alocar Color por frame. */
+    private final Color shadowColor = new Color();
+
+    private static final float SHADOW_SPREAD = 6f;
+    private static final float SHADOW_OFFSET = 3f;
+
+    private float toastWidth;
+    private float toastHeight;
     private String previousMessage = "";
     private float entrance;
     private float toastLife;
@@ -48,9 +70,40 @@ public final class Hud implements Disposable {
             previousMessage = safe;
             toastLife = safe.isBlank() ? 0f : 1f;
             toastKick = safe.isBlank() ? 0f : 1f;
+            medirMensagem(safe);
         }
         toastLife = Math.max(0f, toastLife - delta / 3.2f);
         toastKick = Math.max(0f, toastKick - delta / .22f);
+    }
+
+    /**
+     * Mede a mensagem com a fonte real, quebrando linha se preciso.
+     *
+     * A largura da caixa era estimada por contagem de caracteres
+     * (message.length() * 9.2f), mas Chakra Petch e proporcional: uma frase
+     * com letras largas estourava a caixa, e o teto fixo cortava qualquer
+     * mensagem mais longa. Agora a caixa e dimensionada pelo texto, e nao o
+     * contrario.
+     */
+    private void medirMensagem(String value) {
+        if (value.isBlank()) {
+            toastWidth = 0f;
+            toastHeight = 0f;
+            return;
+        }
+        font.getData().setScale(TOAST_SCALE);
+        // Primeiro sem quebra, para saber se cabe numa linha so.
+        layout.setText(font, value);
+        if (layout.width <= TOAST_MAX_TEXT_WIDTH) {
+            toastWidth = Math.max(TOAST_MIN_WIDTH, layout.width + TOAST_PADDING_X * 2f);
+            toastHeight = layout.height + TOAST_PADDING_Y * 2f;
+        } else {
+            // Nao cabe: quebra dentro da largura maxima e a caixa cresce em altura.
+            layout.setText(font, value, font.getColor(), TOAST_MAX_TEXT_WIDTH, Align.center, true);
+            toastWidth = TOAST_MAX_TEXT_WIDTH + TOAST_PADDING_X * 2f;
+            toastHeight = layout.height + TOAST_PADDING_Y * 2f;
+        }
+        font.getData().setScale(1f);
     }
 
     public void render(SpriteBatch batch, Astronauta player, MissionState mission, String message,
@@ -70,9 +123,11 @@ public final class Hud implements Disposable {
         panel(batch, 18f, lowerY, 246f, 88f, vitalsAlpha, UiTheme.CYAN);
         panel(batch, 940f, lowerY, 322f, 52f, inventoryAlpha, UiTheme.CYAN_DIM);
         if (toastVisible) {
-            float width = Math.min(590f, Math.max(250f, message.length() * 9.2f));
-            float height = 44f + Interpolation.swingOut.apply(toastKick) * 4f;
-            panel(batch, 640f - width / 2f, 108f, width, height, .92f * toastAlpha, UiTheme.GREEN);
+            float kick = Interpolation.swingOut.apply(toastKick) * 4f;
+            float width = toastWidth;
+            float height = toastHeight + kick;
+            panel(batch, 640f - width / 2f, TOAST_Y - kick / 2f, width, height,
+                .92f * toastAlpha, UiTheme.GREEN);
         }
         bar(batch, 78f, lowerY + 59f, 132f, 9f, player.getOxigenio() / 100f,
             player.getOxigenio() <= 25f ? UiTheme.RED : UiTheme.CYAN, vitalsAlpha);
@@ -104,20 +159,50 @@ public final class Hud implements Disposable {
         text(batch, "COMIDA  " + player.getComidaColetada(), .8f, UiTheme.AMBER, 1035f, lowerY + 33f, inventoryAlpha);
         text(batch, "GELO  " + player.getGeloColetado(), .8f, UiTheme.TEXT, 1163f, lowerY + 33f, inventoryAlpha);
         if (toastVisible) {
-            centered(batch, message, .82f, UiTheme.TEXT, 640f, 137f, toastAlpha);
+            desenharToast(batch, message, toastAlpha);
         }
         batch.end();
+    }
+
+    /** Desenha a mensagem centralizada na caixa, em uma ou duas linhas. */
+    private void desenharToast(SpriteBatch batch, String value, float alpha) {
+        font.getData().setScale(TOAST_SCALE);
+        font.setColor(UiTheme.TEXT.r, UiTheme.TEXT.g, UiTheme.TEXT.b, alpha);
+        float textWidth = Math.min(toastWidth - TOAST_PADDING_X * 2f, TOAST_MAX_TEXT_WIDTH);
+        layout.setText(font, value, font.getColor(), textWidth, Align.center, true);
+        float kick = Interpolation.swingOut.apply(toastKick) * 4f;
+        float baseline = TOAST_Y - kick / 2f + toastHeight + kick - TOAST_PADDING_Y;
+        font.draw(batch, layout, 640f - textWidth / 2f, baseline);
+        font.getData().setScale(1f);
     }
 
     private boolean near(float px, float py, float x, float y, float width, float height) {
         return px > x - 46f && px < x + width + 46f && py > y - 44f && py < y + height + 44f;
     }
 
+    /**
+     * Painel do HUD com sombra de mesma silhueta.
+     *
+     * A sombra usa o proprio 9-patch, em duas camadas, para acompanhar os
+     * cantos arredondados; e escala com o alpha do painel, senao ficaria uma
+     * mancha escura sob um painel que esta esmaecendo.
+     */
     private void panel(SpriteBatch batch, float x, float y, float width, float height,
                        float alpha, Color accent) {
+        sombra(batch, x, y, width, height, SHADOW_SPREAD, SHADOW_OFFSET, .16f * alpha);
+        sombra(batch, x, y, width, height, SHADOW_SPREAD * .45f, SHADOW_OFFSET * .55f, .24f * alpha);
         panelPatch.setColor(new Color(accent.r * .42f + .58f, accent.g * .42f + .58f,
             accent.b * .42f + .58f, alpha));
         panelPatch.draw(batch, x, y, width, height);
+        panelPatch.setColor(Color.WHITE);
+    }
+
+    private void sombra(SpriteBatch batch, float x, float y, float width, float height,
+                        float spread, float offset, float alpha) {
+        shadowColor.set(0f, 0f, 0f, alpha);
+        panelPatch.setColor(shadowColor);
+        panelPatch.draw(batch, x - spread + offset, y - spread - offset,
+            width + spread * 2f, height + spread * 2f);
         panelPatch.setColor(Color.WHITE);
     }
 

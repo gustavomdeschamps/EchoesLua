@@ -208,6 +208,18 @@ public final class AssetManager implements Disposable {
     }
 
     public NinePatch uiDialogPatch() { return new NinePatch(uiPanelDialogTexture, 24, 24, 24, 24); }
+
+    /*
+     * Botoes fora do Scene2D.
+     *
+     * As telas de resultado desenham direto no batch e nao tinham como usar as
+     * texturas de botao, entao acabavam desenhando uma linha de 1px no lugar.
+     */
+    public NinePatch uiButtonPatch() { return new NinePatch(uiButtonNormalTexture, 18, 18, 18, 18); }
+
+    public NinePatch uiButtonHoverPatch() { return new NinePatch(uiButtonHoverTexture, 18, 18, 18, 18); }
+
+    public NinePatch uiButtonPressedPatch() { return new NinePatch(uiButtonPressedTexture, 18, 18, 18, 18); }
     public NinePatch uiModalPatch() { return new NinePatch(uiPanelModalTexture, 24, 24, 24, 24); }
 
     public TextureRegion resourceIcon(int index) {
