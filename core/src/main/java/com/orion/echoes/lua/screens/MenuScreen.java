@@ -36,6 +36,21 @@ public final class MenuScreen implements Screen {
     private boolean leaving;
     private boolean fadeCompleted;
 
+    /*
+     * As medidas da tela de opcoes vivem em GameConfig porque sao uma conta
+     * que ja estourou uma vez: duas colunas mais o intervalo tem de caber na
+     * area util do painel. HitboxGeometryTest guarda o equivalente para as
+     * caixas de colisao; SettingsLayoutTest guarda esta.
+     */
+    private static final float SETTINGS_WIDTH = GameConfig.SETTINGS_PANEL_WIDTH;
+    private static final float SETTINGS_HEIGHT = GameConfig.SETTINGS_PANEL_HEIGHT;
+    private static final float COLUMN_WIDTH = GameConfig.SETTINGS_COLUMN_WIDTH;
+    private static final float COLUMN_GAP = GameConfig.SETTINGS_COLUMN_GAP;
+    private static final float LABEL_WIDTH = GameConfig.SETTINGS_LABEL_WIDTH;
+    private static final float CONTROL_WIDTH = GameConfig.SETTINGS_CONTROL_WIDTH;
+    private static final float VALUE_WIDTH = GameConfig.SETTINGS_VALUE_WIDTH;
+    private static final float ROW_GAP = GameConfig.SETTINGS_ROW_GAP;
+
     public MenuScreen(EchoesLua game) { this.game = game; }
 
     @Override public void show() {
@@ -76,39 +91,146 @@ public final class MenuScreen implements Screen {
         swap(content, animate);
     }
 
+    /**
+     * Configuracoes em duas colunas.
+     *
+     * Antes eram oito controles empilhados numa coluna so, e a linha de dois
+     * toggles de 300px estourava a area util do painel em 4px. Agora audio
+     * fica a esquerda e o resto a direita, agrupado por secao, com todas as
+     * linhas no mesmo ritmo: rotulo, controle, valor.
+     */
     private void showSettings(boolean animate) {
         AppSettings settings = game.getSettings();
-        Table content = basePage();
-        content.add(title("CONFIGURAÇÕES", 1.15f)).left().colspan(2).padBottom(18f).row();
-        addSlider(content, "MÚSICA", settings.getMusicVolume(), value -> {
+        Table content = basePage(SETTINGS_WIDTH, SETTINGS_HEIGHT);
+        content.add(title("CONFIGURAÇÕES", 1.15f)).left().colspan(2).padBottom(22f).row();
+
+        Table audio = column();
+        section(audio, "ÁUDIO");
+        slider(audio, "Música", settings.getMusicVolume(), value -> {
             settings.setMusicVolume(value);
             game.aplicarPreferenciasDeAudio();
         });
-        addSlider(content, "EFEITOS", settings.getSfxVolume(), value -> {
+        slider(audio, "Efeitos", settings.getSfxVolume(), value -> {
             settings.setSfxVolume(value);
             game.aplicarPreferenciasDeAudio();
         });
-        addSlider(content, "INTERFACE", settings.getUiVolume(), value -> {
+        slider(audio, "Interface", settings.getUiVolume(), value -> {
             settings.setUiVolume(value);
             game.aplicarPreferenciasDeAudio();
             game.getSounds().tocarHoverUi();
         });
-        addSlider(content, "ESCALA DO HUD", (settings.getHudScale() - .85f) / .35f,
+
+        Table system = column();
+        section(system, "VÍDEO");
+        toggle(system, "Tela cheia", settings.isFullscreen(), this::setFullscreen);
+        section(system, "INTERFACE");
+        slider(system, "Escala do HUD", (settings.getHudScale() - .85f) / .35f,
             value -> settings.setHudScale(.85f + value * .35f));
-        content.add(toggle("SHAKE DE CÂMERA", settings.isShakeEnabled(), settings::setShakeEnabled)).width(300f).height(50f).pad(7f);
-        content.add(toggle("MODO DALTÔNICO", settings.isColorblindEnabled(), settings::setColorblindEnabled)).width(300f).height(50f).pad(7f).row();
-        content.add(toggle("TELA CHEIA", settings.isFullscreen(), this::setFullscreen)).width(300f).height(50f).pad(7f);
-        content.add(toggle("MOVIMENTO POR SETAS", settings.isArrowMovement(), settings::setArrowMovement)).width(300f).height(50f).pad(7f).row();
-        content.add(button("VOLTAR", () -> showMain(true))).width(210f).height(52f).left().colspan(2).padTop(12f).row();
+        section(system, "ACESSIBILIDADE");
+        toggle(system, "Tremor de câmera", settings.isShakeEnabled(), value -> {
+            settings.setShakeEnabled(value);
+        });
+        toggle(system, "Modo daltônico", settings.isColorblindEnabled(),
+            settings::setColorblindEnabled);
+        section(system, "CONTROLES");
+        toggle(system, "Mover pelas setas", settings.isArrowMovement(),
+            settings::setArrowMovement);
+
+        content.add(audio).width(COLUMN_WIDTH).top().padRight(COLUMN_GAP);
+        content.add(system).width(COLUMN_WIDTH).top().row();
+        content.add(button("VOLTAR", () -> showMain(true)))
+            .width(210f).height(52f).left().colspan(2).padTop(26f).row();
         swap(content, animate);
     }
 
+    /** Coluna de configuracoes: uma linha por controle, todas do mesmo tamanho. */
+    private Table column() {
+        Table column = new Table();
+        column.align(Align.topLeft);
+        return column;
+    }
+
+    /** Cabecalho de secao: separa audio, video, acessibilidade e controles. */
+    private void section(Table column, String text) {
+        Label heading = label(text, UiTheme.AMBER);
+        heading.setFontScale(.62f);
+        boolean first = column.getCells().size == 0;
+        column.add(heading).left().colspan(3).padTop(first ? 0f : 18f).padBottom(6f).row();
+    }
+
+    /**
+     * Linha de slider com o valor a direita.
+     *
+     * Sem o numero o jogador arrastava sem saber onde parou; o rotulo de
+     * porcentagem acompanha o arrasto em tempo real.
+     */
+    private void slider(Table column, String text, float value, FloatChange change) {
+        Slider control = new Slider(0f, 1f, .05f, false, skin);
+        control.setValue(value);
+        Label readout = label(percent(value), UiTheme.TEXT);
+        readout.setFontScale(.7f);
+        readout.setAlignment(Align.right);
+        control.addListener(new ChangeListener() {
+            @Override public void changed(ChangeEvent event, Actor actor) {
+                change.set(control.getValue());
+                readout.setText(percent(control.getValue()));
+            }
+        });
+        column.add(rowLabel(text)).width(LABEL_WIDTH).left().padBottom(ROW_GAP);
+        column.add(control).width(CONTROL_WIDTH).height(28f).padBottom(ROW_GAP);
+        column.add(readout).width(VALUE_WIDTH).right().padLeft(GameConfig.SETTINGS_VALUE_PADDING).padBottom(ROW_GAP).row();
+    }
+
+    /**
+     * Linha de liga/desliga.
+     *
+     * O estado deixou de ser a palavra "LIGADO" no meio do botao: agora e um
+     * marcador colorido, verde quando ativo e apagado quando nao, na mesma
+     * altura de linha dos sliders.
+     */
+    private void toggle(Table column, String text, boolean initial, BoolChange change) {
+        final boolean[] value = {initial};
+        TextButton control = new TextButton(toggleText(initial), skin);
+        control.getLabel().setFontScale(.72f);
+        control.getLabel().setColor(initial ? UiTheme.GREEN : UiTheme.TEXT_MUTED);
+        control.addListener(new ChangeListener() {
+            @Override public void changed(ChangeEvent event, Actor actor) {
+                value[0] = !value[0];
+                control.setText(toggleText(value[0]));
+                control.getLabel().setColor(value[0] ? UiTheme.GREEN : UiTheme.TEXT_MUTED);
+                change.set(value[0]);
+                game.getSounds().tocarHoverUi();
+            }
+        });
+        column.add(rowLabel(text)).width(LABEL_WIDTH).left().padBottom(ROW_GAP);
+        column.add(control).width(CONTROL_WIDTH).height(38f).padBottom(ROW_GAP);
+        column.add(label("", UiTheme.TEXT)).width(VALUE_WIDTH).padLeft(GameConfig.SETTINGS_VALUE_PADDING).padBottom(ROW_GAP).row();
+    }
+
+    private Label rowLabel(String text) {
+        Label item = label(text, UiTheme.TEXT_MUTED);
+        item.setFontScale(.78f);
+        return item;
+    }
+
+    private static String toggleText(boolean on) {
+        return on ? "●  LIGADO" : "○  DESLIGADO";
+    }
+
+    private static String percent(float value) {
+        return Math.round(value * 100f) + "%";
+    }
+
     private Table basePage() {
+        return basePage(700f, 640f);
+    }
+
+    private Table basePage(float width, float height) {
         Table content = new Table();
-        content.setSize(700f, 640f);
+        content.setSize(width, height);
         content.setPosition(52f, 38f);
         content.align(Align.topLeft);
-        content.pad(38f);
+        content.pad(GameConfig.SETTINGS_PANEL_PADDING);
         content.setBackground(new NinePatchDrawable(game.getAssets().uiDialogPatch()));
         return content;
     }

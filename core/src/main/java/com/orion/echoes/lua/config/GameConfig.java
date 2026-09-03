@@ -120,6 +120,26 @@ public final class GameConfig {
     public static final float BASE_HEIGHT = 350f;
 
     // ==========================================
+    // LAYOUT DA TELA DE OPCOES
+    //
+    // A linha de dois toggles de 300px estourava a area util do painel em 4px,
+    // e era isso que deixava a tela com aparencia de quebrada. Estas medidas
+    // ficam aqui para o teste de layout poder conferir a conta.
+    // ==========================================
+
+    public static final float SETTINGS_PANEL_WIDTH = 920f;
+    public static final float SETTINGS_PANEL_HEIGHT = 600f;
+    /** Recuo interno do painel, aplicado dos dois lados. */
+    public static final float SETTINGS_PANEL_PADDING = 38f;
+    public static final float SETTINGS_COLUMN_WIDTH = 360f;
+    public static final float SETTINGS_COLUMN_GAP = 56f;
+    public static final float SETTINGS_LABEL_WIDTH = 144f;
+    public static final float SETTINGS_CONTROL_WIDTH = 156f;
+    public static final float SETTINGS_VALUE_WIDTH = 42f;
+    public static final float SETTINGS_VALUE_PADDING = 10f;
+    public static final float SETTINGS_ROW_GAP = 9f;
+
+    // ==========================================
     // HITBOXES
     //
     // A hitbox e derivada do retangulo desenhado, nunca escrita a mao: os
