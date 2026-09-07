@@ -1,16 +1,16 @@
-# Echoes — Integração Lua → Marte
+# Echoes — Integração Lua → Marte → Titã
 
 Jogo 2D em Java 17 com LibGDX 1.14.2. A missão começa na Lua: o astronauta
 administra oxigênio e energia, restaura os sistemas da colônia e atravessa o
-portal para Marte.
+portal para Marte e, depois, para Titã.
 
 ```
-Menu → Intro → Fase Lunar ⇄ Portal ⇄ Fase Marciana → Vitória
+Menu → Intro → Fase Lunar ⇄ Portal ⇄ Fase Marciana ⇄ Portal ⇄ Titã → Chefão → Vitória
 ```
 
-O portal é **bidirecional**: dá para voltar à Lua a qualquer momento para
-reabastecer oxigênio e munição. A Lua é reconstruída pela mesma semente, com o
-progresso preservado.
+Os portais são **bidirecionais**: dá para retornar de Marte à Lua e de Titã a
+Marte para reabastecer oxigênio e munição. A campanha preserva o progresso e a
+Lua é reconstruída pela mesma semente.
 
 ## Como jogar
 
@@ -28,10 +28,13 @@ progresso preservado.
    - **atirador** (âmbar) recua e dispara pulsos — dá para desviar.
 5. O portal abre com 3 sistemas online, arma montada, hostis eliminados e O2
    acima de 25%.
-6. Em Marte, reative as três estações com núcleos marcianos, neutralize os
-   hostis e alcance a plataforma de extração.
-7. Ficou sem munição ou oxigênio? Use o portal ao lado do ponto de chegada
-   para voltar à Lua, processar gelo na base e retornar.
+6. Em Marte, encontre o oficial da colônia e converse com `E`. Prove capacidade
+   de combate ou recupere uma amostra de metano para autorizar o novo portal.
+7. Atravesse para Titã, use a refinaria de campo para converter gelo em munição
+   e derrote o **Soberano do Metano**. O golpe no chão é telegrafado: saia do
+   círculo de impacto antes da queda.
+8. Ficou sem munição ou oxigênio? Use os portais de retorno, refine gelo e volte
+   à luta sem perder o progresso da campanha.
 
 ### Munição
 
@@ -49,7 +52,7 @@ barra, que ficam vermelhos quando a carga está baixa.
 | `Espaço` | dash (gasta energia) |
 | Mouse | mirar · botão esquerdo dispara |
 | `E` | reparar, montar, processar gelo, usar o portal |
-| `F5` / `F9` | salvar e carregar a campanha (nas duas fases) |
+| `F5` / `F9` | salvar e carregar a campanha (nas três fases) |
 | `Esc` | pausar · `M` volta ao menu |
 | `F3` | sobrepor hitboxes (depuração visual) |
 

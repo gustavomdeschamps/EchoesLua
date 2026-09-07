@@ -74,6 +74,12 @@ public final class IntroScreen implements Screen {
         drawAt(assets.titleFont, "ECHOES", 2.05f, 3.35f, 5.8f, 882f, 596f, Color.WHITE);
         drawAt(assets.titleFont, "FASE LUNAR", .68f, 3.55f, 5.8f, 888f, 538f,
             new Color(.78f, .8f, .76f, 1f));
+        drawAt(assets.font, "SINAL RECUPERADO  //  ORIGEM DESCONHECIDA", .64f,
+            1.52f, 4.95f, 80f, 92f, new Color(.38f, .78f, .77f, 1f));
+        drawAt(assets.font, "RECONSTRUA  •  ATRAVESSE  •  SOBREVIVA", .72f,
+            2.15f, 5.3f, 80f, 68f, new Color(.9f, .91f, .86f, 1f));
+        drawAt(assets.font, "ESPAÇO / ENTER  PULAR", .56f,
+            .55f, 5.45f, 1044f, 68f, new Color(.72f, .76f, .75f, 1f));
         batch.end();
 
         renderRadioArcs();

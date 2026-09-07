@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.math.Interpolation;
@@ -15,6 +16,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.orion.echoes.lua.EchoesLua;
 import com.orion.echoes.lua.config.GameConfig;
+import com.orion.echoes.lua.managers.AssetManager;
 
 /**
  * Abertura sobre a imagem de apresentacao.
@@ -31,7 +33,7 @@ public final class LoadingScreen implements Screen {
     private final SpriteBatch batch;
     private final Texture pixel = solidPixel();
     private final Texture keyArt = carregarKeyArt();
-    private final BitmapFont font = new BitmapFont();
+    private final BitmapFont font = carregarFonte();
     private final GlyphLayout layout = new GlyphLayout();
     private final OrthographicCamera camera = new OrthographicCamera();
     private final FitViewport viewport = new FitViewport(
@@ -118,6 +120,21 @@ public final class LoadingScreen implements Screen {
         Texture texture = new Texture(Gdx.files.internal("textures/intro_keyart_v2.png"));
         texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         return texture;
+    }
+
+    /** A abertura também usa a tipografia e todos os glifos do restante do jogo. */
+    private static BitmapFont carregarFonte() {
+        FreeTypeFontGenerator generator = new FreeTypeFontGenerator(
+            Gdx.files.internal("fonts/ChakraPetch-SemiBold.ttf"));
+        FreeTypeFontGenerator.FreeTypeFontParameter parameter =
+            new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parameter.size = 20;
+        parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS + AssetManager.GAME_GLYPHS;
+        parameter.minFilter = Texture.TextureFilter.Linear;
+        parameter.magFilter = Texture.TextureFilter.Linear;
+        BitmapFont generated = generator.generateFont(parameter);
+        generator.dispose();
+        return generated;
     }
 
     @Override

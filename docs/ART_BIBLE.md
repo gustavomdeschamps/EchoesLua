@@ -132,6 +132,10 @@ cor e de distância de reação, não de arte nova.
   encostar, então avança rápido com telegraph curto.
 - **Atirador** — desvio âmbar (`energy-amber`). Recua para manter distância e
   ataca com pulsos desviáveis; não causa dano por contato.
+- **Soberano do Metano** — chefe de Titã com folha 4×4 exclusiva. A carapaça
+  grafite, as placas de gelo e as fissuras âmbar criam uma silhueta muito mais
+  larga que a dos predadores comuns; a terceira linha da folha é reservada ao
+  aviso e ao impacto do golpe no chão, e a quarta à reação e à queda.
 
 ## Layout por semente
 

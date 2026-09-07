@@ -63,4 +63,15 @@ class HitboxGeometryTest {
         assertTrue(GameConfig.PICKUP_HITBOX_PADDING <= 12f,
             "folga grande demais transformaria coleta em ima");
     }
+
+    @Test
+    @DisplayName("A hitbox do chefe permanece dentro da sprite ampliada")
+    void bossHitboxFitsInsideSprite() {
+        assertTrue(GameConfig.BOSS_HITBOX_WIDTH_RATIO > 0f
+            && GameConfig.BOSS_HITBOX_WIDTH_RATIO <= 1f);
+        assertTrue(GameConfig.BOSS_HITBOX_HEIGHT_RATIO > 0f);
+        assertTrue(GameConfig.BOSS_HITBOX_BASE_RATIO >= 0f);
+        assertTrue(GameConfig.BOSS_HITBOX_BASE_RATIO
+            + GameConfig.BOSS_HITBOX_HEIGHT_RATIO <= 1f);
+    }
 }

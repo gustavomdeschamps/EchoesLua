@@ -65,9 +65,12 @@ tasks.register('validateVisualAssets') {
     : System.getenv('CI') != null
 
   doLast {
+    def configuredPython = project.findProperty('assetQaPython')?.toString()
+      ?: System.getenv('ASSET_QA_PYTHON')
     def interpreters = System.getProperty('os.name').toLowerCase().contains('windows')
       ? ['python', 'py', 'python3']
       : ['python3', 'python']
+    if (configuredPython) interpreters.add(0, configuredPython)
 
     def runner = interpreters.find { candidate ->
       try {
@@ -102,7 +105,7 @@ def atlasGroups = [
     'oxigenio.png', 'comida.png', 'gelo.png', 'mission_atlas_unified.png',
     'mars_atlas_v4.png', 'lunar_enemy_sheet.png', 'mars_drone_sheet.png',
     'mars_crawler_sheet.png', 'lunar_obstacles.png', 'mars_obstacles.png',
-    'landmarks.png', 'titan_enemy_sheet.png', 'titan_portal_sheet.png'
+    'landmarks.png', 'titan_enemy_sheet.png', 'titan_boss_sheet.png', 'titan_portal_sheet.png'
   ],
   ui: ['intro_keyart_v2.png', 'ui_panel_frame.png',
     'ui/panel_hud.png', 'ui/panel_dialog.png', 'ui/panel_modal.png',

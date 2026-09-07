@@ -141,6 +141,11 @@ public final class GameConfig {
     /** Raio do impacto no chao; maior que o alcance para punir quem so recua. */
     public static final float BOSS_SLAM_RADIUS = 210f;
     public static final float BOSS_DAMAGE = 22f;
+    /** Geometria proporcional ao quadro desenhado do chefe. */
+    public static final float BOSS_SPRITE_OFFSET_Y_RATIO = -0.10f;
+    public static final float BOSS_HITBOX_WIDTH_RATIO = 0.40f;
+    public static final float BOSS_HITBOX_HEIGHT_RATIO = 0.26f;
+    public static final float BOSS_HITBOX_BASE_RATIO = 0.12f;
 
     // ==========================================
     // LAYOUT DA TELA DE OPCOES

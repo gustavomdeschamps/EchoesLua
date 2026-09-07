@@ -6,12 +6,12 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -27,6 +27,7 @@ import com.orion.echoes.lua.input.GameInputProcessor;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.MissionSprite;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.render.HitboxDebugRenderer;
 import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
 import com.orion.echoes.lua.save.SaveManager;
@@ -57,7 +58,6 @@ public final class TitanScreen implements Screen {
     private final Rectangle refinaria = new Rectangle(430f, 150f, 148f, 132f);
     private final Vector2 mouseWorld = new Vector2();
     private final Vector2 shotOrigin = new Vector2();
-    private final GlyphLayout layout = new GlyphLayout();
     private AssetManager assets;
     private SpriteBatch batch;
     private PhysicsWorld physics;
@@ -72,8 +72,11 @@ public final class TitanScreen implements Screen {
     private Viewport viewport;
     private Viewport uiViewport;
     private NinePatch panel;
+    private NinePatch modal;
+    private HitboxDebugRenderer hitboxDebug;
     private String message = "A atmosfera abafa o sinal. Explore com cautela.";
     private float messageTimer = 4f;
+    private float missionTime;
     private boolean paused;
     private boolean changingScreen;
 
@@ -86,6 +89,8 @@ public final class TitanScreen implements Screen {
         assets = game.getAssets();
         batch = game.getBatch();
         panel = assets.uiPanelPatch();
+        modal = assets.uiModalPatch();
+        hitboxDebug = new HitboxDebugRenderer(batch, assets);
         physics = new PhysicsWorld();
         input = new GameInputProcessor();
         Gdx.input.setInputProcessor(input);
@@ -134,6 +139,7 @@ public final class TitanScreen implements Screen {
         }
         campaign.setPhase(CampaignState.Phase.TITAN);
         campaign.setEntrouTita(true);
+        missionTime = campaign.getMissionTime();
         camera.position.set(player.getPosition().x, player.getPosition().y, 0f);
         camera.update();
     }
@@ -159,15 +165,33 @@ public final class TitanScreen implements Screen {
         boss.render(batch);
         player.render(batch);
         batch.end();
+        renderHitboxes();
         renderHud();
+        if (paused) renderPause();
     }
 
     private void update(float delta) {
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) paused = !paused;
-        if (paused || changingScreen) return;
+        if (changingScreen) return;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) hitboxDebug.toggle();
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
+            || paused && Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            paused = !paused;
+            player.getBody().setLinearVelocity(0f, 0f);
+            return;
+        }
+        if (paused) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+                changingScreen = true;
+                game.setScreen(new MenuScreen(game));
+                dispose();
+            }
+            return;
+        }
+        missionTime += delta;
         combat.update(delta);
         messageTimer = Math.max(0f, messageTimer - delta);
         Vector2 direction = input.getDirection();
+        if (input.consumeDashPressed()) player.tryDash(direction.x, direction.y);
         player.move(direction.x, direction.y, input.isRunning(), delta);
         physics.update(delta);
         player.update(delta);
@@ -187,11 +211,17 @@ public final class TitanScreen implements Screen {
         coletarSuprimentos(delta);
         if (input.consumeInteractPressed()) interagir();
         if (input.consumeSavePressed()) saveTitan();
+        if (input.consumeLoadPressed()) loadTitan();
         camera.position.x = MathUtils.clamp(player.getPosition().x,
             GameConfig.WINDOW_WIDTH / 2f, WORLD_W - GameConfig.WINDOW_WIDTH / 2f);
         camera.position.y = MathUtils.clamp(player.getPosition().y,
             GameConfig.WINDOW_HEIGHT / 2f, WORLD_H - GameConfig.WINDOW_HEIGHT / 2f);
         camera.update();
+        if (player.isMorto()) {
+            changingScreen = true;
+            game.setScreen(new GameOverScreen(game, missionTime));
+            dispose();
+        }
     }
 
     /**
@@ -204,6 +234,11 @@ public final class TitanScreen implements Screen {
     private void atualizarChefe(float delta) {
         if (boss == null || !boss.isAtivo()) return;
         boss.update(delta, player, WORLD_W, WORLD_H);
+        if (!boss.isAtivo() && !vitoriaRegistrada) {
+            vitoriaRegistrada = true;
+            concluirCampanha();
+            return;
+        }
         if (!boss.consumeSlam()) return;
 
         if (boss.slamHits(player)) {
@@ -256,7 +291,7 @@ public final class TitanScreen implements Screen {
         float closest = combat.getAlcance();
         for (TitanEnemy enemy : enemies) {
             if (!enemy.isAlive()) continue;
-            float along = alinhamento(enemy.centerX(), enemy.centerY(), dirX, dirY, closest);
+            float along = alinhamento(enemy.centerX(), enemy.centerY(), dirX, dirY, closest, 48f);
             if (along > 0f) {
                 target = enemy;
                 closest = along;
@@ -264,7 +299,7 @@ public final class TitanScreen implements Screen {
         }
         // O chefe e alvo como qualquer outro, so que com corpo bem maior.
         if (boss != null && boss.isAlive()) {
-            float along = alinhamento(boss.centerX(), boss.centerY(), dirX, dirY, closest);
+            float along = alinhamento(boss.centerX(), boss.centerY(), dirX, dirY, closest, 92f);
             if (along > 0f) {
                 target = boss;
                 closest = along;
@@ -279,10 +314,6 @@ public final class TitanScreen implements Screen {
                 : !target.isAlive() ? "Predador neutralizado." : "Impacto confirmado.");
         } else if (player.getMunicao() <= 0) feedback("Sem munição.");
 
-        if (boss != null && !boss.isAlive() && !vitoriaRegistrada) {
-            vitoriaRegistrada = true;
-            concluirCampanha();
-        }
     }
 
     /**
@@ -291,12 +322,13 @@ public final class TitanScreen implements Screen {
      * Devolve a distancia ao longo da mira quando o alvo esta a frente,
      * dentro do alcance e proximo do eixo; caso contrario, zero.
      */
-    private float alinhamento(float alvoX, float alvoY, float dirX, float dirY, float limite) {
+    private float alinhamento(float alvoX, float alvoY, float dirX, float dirY,
+                              float limite, float raioDaMira) {
         float dx = alvoX - shotOrigin.x;
         float dy = alvoY - shotOrigin.y;
         float along = dx * dirX + dy * dirY;
         float perpendicular = Math.abs(dx * dirY - dy * dirX);
-        return along > 0f && along < limite && perpendicular < 52f ? along : 0f;
+        return along > 0f && along < limite && perpendicular < raioDaMira ? along : 0f;
     }
 
     /**
@@ -308,14 +340,16 @@ public final class TitanScreen implements Screen {
     private void concluirCampanha() {
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
         campaign.setAmmo(player.getMunicao());
+        campaign.setMissionTime(missionTime);
         changingScreen = true;
-        game.setScreen(new VictoryScreen(game, player.getTempoVivo()));
+        game.setScreen(new VictoryScreen(game, missionTime));
         dispose();
     }
 
     private void saveTitan() {
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
         campaign.setAmmo(player.getMunicao());
+        campaign.setMissionTime(missionTime);
         campaign.setPhase(CampaignState.Phase.TITAN);
         GameSaveData data = player.toSaveData();
         LunarCheckpoint.applyCampaign(data, campaign);
@@ -323,9 +357,27 @@ public final class TitanScreen implements Screen {
         feedback("Exploração de Titã salva.");
     }
 
+    private void loadTitan() {
+        GameSaveData data = new SaveManager().load();
+        if (data == null) {
+            feedback("Nenhum checkpoint encontrado.");
+            return;
+        }
+        if (CampaignState.phaseFromToken(data.fase) != CampaignState.Phase.TITAN) {
+            feedback("O checkpoint é de outra fase. Carregue pelo menu.");
+            return;
+        }
+        player.fromSaveData(data);
+        player.setMunicao(data.municao);
+        combat.setMunicao(data.municao);
+        missionTime = data.tempoVivo;
+        feedback("Checkpoint de Titã carregado.");
+    }
+
     private void returnToMars() {
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
         campaign.setAmmo(player.getMunicao());
+        campaign.setMissionTime(missionTime);
         campaign.setPhase(CampaignState.Phase.MARS);
         GameSaveData data = player.toSaveData();
         // Ao continuar depois da viagem de volta, a campanha deve reabrir em Marte.
@@ -385,16 +437,71 @@ public final class TitanScreen implements Screen {
         if (messageTimer > 0f) panel.draw(batch, 430f, 130f, 420f, 48f);
         panel.setColor(Color.WHITE);
         text("TITÃ  •  LAGOS DE METANO", .78f, AMBER, 444f, 681f);
+        text("SOBERANO DO METANO", .62f, UiTheme.TEXT_MUTED, 738f, 681f);
+        batch.setColor(Color.WHITE);
+        batch.draw(assets.uiBarTrackTexture, 956f, 669f, 250f, 8f);
+        batch.setColor(boss != null && boss.isTelegraphing() ? UiTheme.RED : AMBER);
+        batch.draw(assets.uiBarFillTexture, 956f, 669f,
+            250f * (boss == null ? 0f : boss.getHealthRatio()), 8f);
+        batch.setColor(Color.WHITE);
         text(String.format("O2  %.0f%%     ENERGIA  %.0f%%     MUNIÇÃO  %d",
             player.getOxigenio(), player.getEnergia(), player.getMunicao()), .74f,
             UiTheme.TEXT, 58f, 88f);
         text(String.format("GELO  %d     E: refinaria vira munição  •  portal retorna a Marte",
             player.getGelo()), .65f, UiTheme.TEXT_MUTED, 58f, 55f);
         if (messageTimer > 0f) {
-            layout.setText(assets.font, message);
-            text(message, .68f, UiTheme.TEXT, 455f, 160f);
+            assets.font.getData().setScale(.68f);
+            assets.font.setColor(UiTheme.TEXT);
+            assets.font.draw(batch, message, 455f, 160f, 370f, Align.center, true);
         }
         batch.end();
+        assets.font.getData().setScale(1f);
+        assets.font.setColor(Color.WHITE);
+    }
+
+    private void renderHitboxes() {
+        if (!hitboxDebug.begin(camera)) return;
+        hitboxDebug.box(player.getBounds(), UiTheme.CYAN);
+        hitboxDebug.box(returnPortal.getBounds(), UiTheme.GREEN);
+        hitboxDebug.box(refinaria, UiTheme.GREEN);
+        for (Pickup pickup : suprimentos) hitboxDebug.box(pickup.getBounds(), UiTheme.AMBER);
+        for (TitanEnemy enemy : enemies) {
+            if (!enemy.isAtivo()) continue;
+            hitboxDebug.box(enemy.getBounds(), UiTheme.RED);
+            hitboxDebug.center(enemy.centerX(), enemy.centerY(), UiTheme.RED);
+        }
+        if (boss != null && boss.isAtivo()) {
+            hitboxDebug.sprite(boss.centerX() - GameConfig.BOSS_SPRITE_SIZE / 2f,
+                boss.getPosition().y
+                    + GameConfig.BOSS_SPRITE_SIZE * GameConfig.BOSS_SPRITE_OFFSET_Y_RATIO,
+                GameConfig.BOSS_SPRITE_SIZE, GameConfig.BOSS_SPRITE_SIZE);
+            hitboxDebug.box(boss.getBounds(), UiTheme.RED);
+            hitboxDebug.center(boss.centerX(), boss.centerY(), UiTheme.RED);
+        }
+        hitboxDebug.end();
+    }
+
+    private void renderPause() {
+        batch.setProjectionMatrix(uiCamera.combined);
+        batch.begin();
+        batch.setColor(.025f, .013f, .008f, .92f);
+        batch.draw(assets.uiWhiteTexture, 0f, 0f,
+            GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
+        modal.setColor(new Color(1f, .82f, .58f, .98f));
+        modal.draw(batch, 132f, 118f, 1016f, 484f);
+        modal.setColor(Color.WHITE);
+        batch.setColor(Color.WHITE);
+        text("REGISTRO T-01  •  TRANSMISSÃO SUSPENSA", .72f, AMBER, 168f, 558f);
+        text("PAUSA", 2.3f, UiTheme.TEXT, 166f, 482f);
+        text("O soberano aguarda. Seus recursos estão congelados.", .82f,
+            UiTheme.TEXT_MUTED, 168f, 423f);
+        text("RETOMAR", 1.02f, UiTheme.TEXT, 202f, 292f);
+        text("ESC ou ENTER", .72f, AMBER, 850f, 292f);
+        text("VOLTAR AO MENU", .86f, UiTheme.TEXT_MUTED, 168f, 190f);
+        text("M", .78f, AMBER, 1034f, 190f);
+        batch.end();
+        assets.font.getData().setScale(1f);
+        assets.font.setColor(Color.WHITE);
     }
 
     private void text(String value, float scale, Color color, float x, float y) {

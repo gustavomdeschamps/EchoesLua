@@ -12,6 +12,9 @@ import com.badlogic.gdx.utils.Disposable;
 
 /** Catálogo visual carregado de modo incremental pela LoadingScreen. */
 public final class AssetManager implements Disposable {
+    /** Glifos usados por HUD, diálogos e telas; evita quadrados em símbolos do próprio jogo. */
+    public static final String GAME_GLYPHS =
+        "áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇºª–—○●→←·•";
     private static final String GAME_ATLAS = "atlases/game.atlas";
     private static final String UI_ATLAS = "atlases/ui.atlas";
     private static final String FX_ATLAS = "atlases/fx.atlas";
@@ -40,6 +43,7 @@ public final class AssetManager implements Disposable {
     public TextureRegion marsDroneSheetTexture;
     public TextureRegion marsCrawlerSheetTexture;
     public TextureRegion titanEnemySheetTexture;
+    public TextureRegion titanBossSheetTexture;
     public TextureRegion titanPortalSheetTexture;
     public Texture titanBackgroundTexture;
     public TextureRegion lunarObstaclesTexture;
@@ -118,6 +122,7 @@ public final class AssetManager implements Disposable {
         marsDroneSheetTexture = required(gameAtlas, "mars_drone_sheet");
         marsCrawlerSheetTexture = required(gameAtlas, "mars_crawler_sheet");
         titanEnemySheetTexture = required(gameAtlas, "titan_enemy_sheet");
+        titanBossSheetTexture = required(gameAtlas, "titan_boss_sheet");
         titanPortalSheetTexture = required(gameAtlas, "titan_portal_sheet");
         lunarObstaclesTexture = required(gameAtlas, "lunar_obstacles");
         marsObstaclesTexture = required(gameAtlas, "mars_obstacles");
@@ -161,8 +166,7 @@ public final class AssetManager implements Disposable {
         FreeTypeFontGenerator.FreeTypeFontParameter parameter =
             new FreeTypeFontGenerator.FreeTypeFontParameter();
         parameter.size = size;
-        parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS
-            + "áàâãäéèêëíìîïóòôõöúùûüçÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇºª–—";
+        parameter.characters = FreeTypeFontGenerator.DEFAULT_CHARS + GAME_GLYPHS;
         parameter.minFilter = Texture.TextureFilter.Linear;
         parameter.magFilter = Texture.TextureFilter.Linear;
         BitmapFont generated = generator.generateFont(parameter);
@@ -193,6 +197,10 @@ public final class AssetManager implements Disposable {
 
     public TextureRegion titanEnemyFrame(int column, int row) {
         return gridRegion(titanEnemySheetTexture, 4, 4, column, row, 2);
+    }
+
+    public TextureRegion titanBossFrame(int column, int row) {
+        return gridRegion(titanBossSheetTexture, 4, 4, column, row, 2);
     }
 
     public TextureRegion titanPortalState(boolean unlocked) {

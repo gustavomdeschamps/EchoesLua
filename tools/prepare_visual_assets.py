@@ -733,6 +733,7 @@ SHEET_GRIDS = {
     "mars_drone_sheet.png": (4, 4),
     "mars_crawler_sheet.png": (4, 4),
     "titan_enemy_sheet.png": (4, 4),
+    "titan_boss_sheet.png": (4, 4),
     "lunar_obstacles.png": (3, 2),
     "mars_obstacles.png": (3, 2),
     "action_fx_sheet.png": (6, 4),
@@ -766,6 +767,7 @@ def validate_character_motion(minimum_mean_difference: float = 5.0) -> None:
     for name, (columns, rows) in {
         "astronauta_sheet.png": (4, 4),
         "astronaut_combat_sheet.png": (4, 3),
+        "titan_boss_sheet.png": (4, 4),
     }.items():
         image = Image.open(TEXTURES / name).convert("RGBA")
         cell_w, cell_h = image.width // columns, image.height // rows

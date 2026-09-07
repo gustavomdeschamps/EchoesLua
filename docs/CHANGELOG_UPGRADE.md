@@ -3,6 +3,18 @@
 Registro do que mudou por fase, com antes e depois. Cada item aponta o arquivo
 onde a mudança pode ser verificada.
 
+## Fase 9 — Titã e acabamento da campanha
+
+| Antes | Depois |
+|---|---|
+| Chefe reutilizava a sprite do predador comum ampliada | `titan_boss_sheet.png`: folha 4×4 exclusiva com idle, avanço, impacto e queda |
+| Morte do jogador em Titã não encerrava a partida | Fluxo de derrota ligado à `GameOverScreen` |
+| Pausa invisível e sem retorno ao menu | Modal próprio com atalhos `ESC`, `ENTER` e `M` |
+| Sem dash, F9 ou depuração de colisão na terceira fase | Paridade de entrada e hitboxes com Lua e Marte |
+| HUD sem vida do chefe e mensagens longas vazando | Barra do Soberano e texto centralizado com quebra de linha |
+| Fonte não incluía `•`, `·`, setas e marcadores usados pelo HUD | Catálogo único de glifos aplicado também ao carregamento |
+| Configuração do daemon exigia JDK 21 apesar do alvo Java 17 | Build volta a respeitar o `JAVA_HOME` documentado |
+
 ---
 
 ## Fase 1 — Fundação técnica

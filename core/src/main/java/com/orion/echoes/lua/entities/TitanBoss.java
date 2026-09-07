@@ -42,7 +42,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         super(x, y, GameConfig.BOSS_SPRITE_SIZE * .42f, GameConfig.BOSS_SPRITE_SIZE * .30f);
         for (int row = 0; row < 4; row++) {
             for (int column = 0; column < 4; column++) {
-                frames[row][column] = assets.titanEnemyFrame(column, row);
+                frames[row][column] = assets.titanBossFrame(column, row);
             }
         }
         syncBounds();
@@ -120,10 +120,11 @@ public final class TitanBoss extends Entidade implements CombatTarget {
     private void syncBounds() {
         float size = GameConfig.BOSS_SPRITE_SIZE;
         float spriteX = centerX() - size / 2f;
-        float spriteY = position.y - size * .10f;
-        float boxWidth = size * .40f;
-        float boxHeight = size * .26f;
-        bounds.set(spriteX + (size - boxWidth) / 2f, spriteY + size * .12f, boxWidth, boxHeight);
+        float spriteY = position.y + size * GameConfig.BOSS_SPRITE_OFFSET_Y_RATIO;
+        float boxWidth = size * GameConfig.BOSS_HITBOX_WIDTH_RATIO;
+        float boxHeight = size * GameConfig.BOSS_HITBOX_HEIGHT_RATIO;
+        bounds.set(spriteX + (size - boxWidth) / 2f,
+            spriteY + size * GameConfig.BOSS_HITBOX_BASE_RATIO, boxWidth, boxHeight);
     }
 
     // =====================================================
@@ -198,7 +199,8 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         int column = (int) (time / .2f) % 4;
         TextureRegion frame = frames[row][column];
         if (frame.isFlipX() != facingLeft) frame.flip(true, false);
-        batch.draw(frame, centerX() - size / 2f, position.y - size * .10f + lunge, size, size);
+        batch.draw(frame, centerX() - size / 2f,
+            position.y + size * GameConfig.BOSS_SPRITE_OFFSET_Y_RATIO + lunge, size, size);
         batch.setColor(Color.WHITE);
     }
 
@@ -209,7 +211,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
     public float centerX() { return position.x + width / 2f; }
 
     public float centerY() {
-        return position.y - GameConfig.BOSS_SPRITE_SIZE * .10f
+        return position.y + GameConfig.BOSS_SPRITE_SIZE * GameConfig.BOSS_SPRITE_OFFSET_Y_RATIO
             + GameConfig.BOSS_SPRITE_SIZE / 2f;
     }
 
