@@ -21,6 +21,8 @@ import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.entities.MarsEnemy;
 import com.orion.echoes.lua.entities.MarsObject;
+import com.orion.echoes.lua.entities.Npc;
+import com.orion.echoes.lua.entities.Pickup;
 import com.orion.echoes.lua.entities.Portal;
 import com.orion.echoes.lua.entities.TitanPortal;
 import com.orion.echoes.lua.entities.Wall;
@@ -31,6 +33,7 @@ import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.ParticleManager;
 import com.orion.echoes.lua.managers.SoundManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.render.DialogBox;
 import com.orion.echoes.lua.render.HitboxDebugRenderer;
 import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
@@ -78,7 +81,6 @@ public final class MarsScreen implements Screen {
     private MarsObject habitat;
     private Portal returnPortal;
     private TitanPortal titanPortal;
-    private MarsObject landingPad;
     private float missionTime, reveal, dustTimer, stepTimer, shotTimer;
     private float messageTimer, extractionGlow;
     private JuiceSystem juice;
@@ -88,6 +90,9 @@ public final class MarsScreen implements Screen {
     private boolean changingScreen;
     private boolean paused;
     private final DialogueController titanDialogue = new DialogueController();
+    private Npc oficial;
+    private final Array<Pickup> suprimentos = new Array<>();
+    private DialogBox dialogBox;
     private TitanCombatSystem titanCombat;
     private String message = "A tempestade apagou a colônia. Recupere os núcleos marcianos.";
 
@@ -139,10 +144,20 @@ public final class MarsScreen implements Screen {
 
     private void buildColony() {
         habitat = prop(160f, 1020f, 330f, 275f, MarsObject.Kind.HABITAT);
+        // Alguem de carne e osso para conversar, em vez de uma voz no radio.
+        oficial = new Npc(548f, 1060f, "OFICIAL DA COLÔNIA",
+            new Color(.72f, .86f, 1f, 1f), assets);
         stations.add(prop(700f, 1420f, 225f, 190f, MarsObject.Kind.SOLAR_STATION));
         stations.add(prop(1550f, 1330f, 225f, 190f, MarsObject.Kind.OXYGEN_STATION));
         stations.add(prop(2440f, 1130f, 225f, 190f, MarsObject.Kind.COMMS_STATION));
-        landingPad = prop(2570f, 1530f, 250f, 190f, MarsObject.Kind.LANDING_PAD);
+        /*
+         * A plataforma de pouso saiu daqui.
+         *
+         * O portal de Tita era desenhado por cima dela - 170x108px de
+         * sobreposicao, no mesmo lote e sem z-order, entao um cobria o outro.
+         * A plataforma nunca deveria ser plataforma: ela e o segundo portal.
+         * Agora existe um portal so neste ponto, e nada disputa o espaco.
+         */
         /*
          * O portal de volta nasce ao lado do ponto de chegada e fica sempre
          * aberto: voltar a Lua para reabastecer municao e oxigenio e uma
@@ -150,7 +165,8 @@ public final class MarsScreen implements Screen {
          */
         returnPortal = new Portal(360f, 300f, assets);
         returnPortal.setUnlocked(true);
-        titanPortal = new TitanPortal(2520f, 1480f, assets);
+        titanPortal = new TitanPortal(2600f, 1520f, assets);
+        dialogBox = new DialogBox(batch, assets);
         titanPortal.setUnlocked(campaign.portalLiberado());
         prop(2400f, 1230f, 120f, 140f, MarsObject.Kind.BEACON);
         float[][] data = {{530,760,130},{850,420,115},{1080,930,145},{1320,580,125},
@@ -161,6 +177,22 @@ public final class MarsScreen implements Screen {
                 MarsObject.Kind.ROCK, assets, physics);
             props.add(rock);
             rocks.add(rock);
+        }
+        /*
+         * Suprimentos espalhados pelo mapa.
+         *
+         * O oxigenio cobre a travessia entre os polos da colonia, e o gelo e
+         * a fonte renovavel de municao: sem ele o jogador podia ficar sem bala
+         * e sem como recuperar, travando a fase.
+         */
+        float[][] oxigenio = {{420,620},{980,1240},{1680,760},{2260,1380},
+            {1240,420},{2020,1080},{620,1560}};
+        for (float[] ponto : oxigenio) {
+            suprimentos.add(new Pickup(ponto[0], ponto[1], Pickup.Kind.OXIGENIO, assets));
+        }
+        float[][] gelo = {{760,980},{1460,1180},{2140,700},{880,1620},{1900,1480}};
+        for (float[] ponto : gelo) {
+            suprimentos.add(new Pickup(ponto[0], ponto[1], Pickup.Kind.GELO, assets));
         }
         for (int i = 0; i < 4; i++) addRandomItem(MarsObject.Kind.MINERAL);
         addRandomItem(MarsObject.Kind.MEDKIT);
@@ -217,7 +249,7 @@ public final class MarsScreen implements Screen {
             candidate.set(x + 10f, y + 10f, 52f, 52f);
             if (Vector2.dst(x, y, 230f, 250f) < 250f) continue;
             boolean blocked = candidate.overlaps(habitat.getBounds())
-                || candidate.overlaps(landingPad.getBounds());
+                || candidate.overlaps(titanPortal.getBounds());
             for (MarsObject object : rocks) if (candidate.overlaps(object.getBounds())) { blocked = true; break; }
             if (!blocked) for (MarsObject station : stations) {
                 if (candidate.overlaps(station.getBounds())) { blocked = true; break; }
@@ -241,6 +273,10 @@ public final class MarsScreen implements Screen {
         for (MarsObject object : props) object.render(batch);
         returnPortal.render(batch);
         titanPortal.render(batch);
+        for (Pickup suprimento : suprimentos) suprimento.render(batch);
+        oficial.update(Gdx.graphics.getDeltaTime());
+        oficial.render(batch);
+        oficial.renderIndicador(batch, assets.uiObjectiveMarkerTexture, player);
         for (MarsEnemy enemy : enemies) enemy.render(batch);
         player.render(batch);
         particles.render(batch);
@@ -302,6 +338,30 @@ public final class MarsScreen implements Screen {
     private void update(float delta) {
         if (changingScreen) return;
         if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) hitboxDebug.toggle();
+
+        /*
+         * Avanco da fala.
+         *
+         * isKeyJustPressed e obrigatorio: com isKeyPressed a tecla segue
+         * pressionada nos frames seguintes e as tres falas queimam num piscar.
+         * Chamar next() depois do fim tambem e seguro - o controlador ja esta
+         * fechado e ignora a chamada.
+         */
+        if (titanDialogue.isOpen()) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+                titanDialogue.next();
+                sounds.tocarHoverUi();
+                if (titanDialogue.isFinished()) {
+                    campaign.setDialogoTita(true);
+                    oficial.marcarConversado();
+                    feedback(campaign.missaoAtual());
+                }
+            }
+            dialogBox.update(delta, true);
+            // Mundo congelado enquanto le: nada de tomar dano no meio da fala.
+            return;
+        }
+        dialogBox.update(delta, false);
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
             || paused && Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             paused = !paused;
@@ -357,6 +417,7 @@ public final class MarsScreen implements Screen {
         titanPortal.setUnlocked(campaign.portalLiberado());
         titanPortal.update(delta);
         collectItems();
+        coletarSuprimentos(delta);
         for (MarsEnemy enemy : enemies) {
             enemy.update(delta, player, rocks);
             if (enemy.consumeTelegraphStarted()) {
@@ -408,14 +469,54 @@ public final class MarsScreen implements Screen {
         }
     }
 
+    /** Coleta de oxigenio e gelo, com aviso no HUD. */
+    private void coletarSuprimentos(float delta) {
+        for (Pickup suprimento : suprimentos) {
+            suprimento.update(delta);
+            if (!suprimento.coletar(player)) continue;
+            particles.criarEfeitoColeta(suprimento.centerX(), suprimento.centerY());
+            sounds.tocarColetaEspacial(suprimento.centerX(), suprimento.centerY());
+            feedback(suprimento.getKind() == Pickup.Kind.OXIGENIO
+                ? "Cilindro de oxigênio  •  O2 restaurado"
+                : "Gelo recolhido  •  refine no habitat para gerar munição");
+        }
+    }
+
+    /**
+     * Refino no habitat: gelo vira municao.
+     *
+     * E o que garante que a municao nunca fique zerada em definitivo - o
+     * jogador sempre tem como voltar ao habitat e converter o que recolheu.
+     */
+    private void refinarNoHabitat() {
+        if (!player.getBounds().overlaps(habitat.getBounds())) return;
+        if (!player.removerGelo()) {
+            feedback("Sem gelo para refinar. Recolha gelo pelo mapa.");
+            sounds.tocarSemGelo();
+            return;
+        }
+        int celulas = player.adicionarMunicao(GameConfig.AMMO_PER_ICE);
+        player.recuperarOxigenio(GameConfig.OXYGEN_ITEM_VALUE * .5f);
+        sounds.tocarProcessarGelo();
+        feedback(celulas > 0
+            ? "Gelo refinado  •  +" + celulas + " de munição"
+            : "Munição já está no limite.");
+    }
+
     private void handleInteraction() {
-        if (titanDialogue.isOpen()) {
-            titanDialogue.next();
-            if (titanDialogue.isFinished()) {
-                campaign.setDialogoTita(true);
-                if (minerals > 0) campaign.setAmostraOk(true);
-                feedback(campaign.missaoAtual());
-            }
+        // Conversa com o oficial: e ele quem autoriza o salto para Tita.
+        if (!titanDialogue.isOpen() && oficial.isPlayerNear(player)
+            && !campaign.isDialogoTita()) {
+            titanDialogue.start(new String[] {
+                "O portal para Titã está instável. Saturno não perdoa improviso.",
+                "Traga prova de combate ou uma amostra de metano — qualquer uma serve.",
+                "Quando o selo central ficar azul, pode entrar."
+            });
+            sounds.tocarHoverUi();
+            return;
+        }
+        if (player.getBounds().overlaps(habitat.getBounds())) {
+            refinarNoHabitat();
             return;
         }
         if (titanPortal.isPlayerNear(player)) {
@@ -696,6 +797,9 @@ public final class MarsScreen implements Screen {
         text("NÚCLEOS  " + minerals, .74f, UiTheme.AMBER, 944f, 84f, 1f);
         text("ESTAÇÕES  " + activeStations + "/3", .74f, UiTheme.CYAN, 1050f, 84f, 1f);
         text("HOSTIS  " + hostilesDefeated + "/" + enemies.size, .72f, UiTheme.TEXT_MUTED, 944f, 55f, 1f);
+        // Gelo fica ao lado dos hostis: e o insumo que vira municao no habitat.
+        text("GELO  " + player.getGelo(), .72f,
+            player.getGelo() > 0 ? UiTheme.CYAN : UiTheme.TEXT_MUTED, 1108f, 55f, 1f);
         text(campaign.missaoAtual(), .72f,
             campaign.portalLiberado() ? UiTheme.GREEN : UiTheme.TEXT, 354f, 680f, 1f);
         text(campaign.statusPortal(), .62f,
@@ -703,10 +807,8 @@ public final class MarsScreen implements Screen {
         if (messageTimer > 0f) centered(message, .72f, UiTheme.TEXT, 152f,
             Math.min(1f, messageTimer * 2f));
         if (titanDialogue.isOpen()) {
-            drawUiPanel(170f, 242f, 940f, 180f, UiTheme.AMBER, .98f);
-            text("TRANSMISSÃO · CONTROLE ORBITAL", .66f, UiTheme.AMBER, 208f, 388f, 1f);
-            text(titanDialogue.line(), .82f, UiTheme.TEXT, 208f, 330f, 1f);
-            text("E  •  CONTINUAR", .62f, UiTheme.TEXT_MUTED, 886f, 274f, 1f);
+            dialogBox.render(titanDialogue,
+                oficial != null ? oficial.getNome() : "CONTROLE ORBITAL");
         }
         batch.end();
     }
