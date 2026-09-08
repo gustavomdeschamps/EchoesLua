@@ -71,8 +71,13 @@ public class GameSaveData {
      * parou, a semente que reproduz o layout da Lua, a municao e o progresso
      * marciano. Saves da versao 2 continuam carregando: o Json apenas deixa
      * estes campos nos valores padrao.
+     *
+     * Versao 5: flags de abertura por mundo (WorldIntroScreen). Saves salvos
+     * antes disso (versao < 5) não têm esses campos gravados — LunarCheckpoint
+     * detecta a versão antiga e deriva um default seguro do progresso já
+     * registrado, em vez de reapresentar a cinematic completa.
      */
-    public static final int CURRENT_VERSION = 4;
+    public static final int CURRENT_VERSION = 5;
 
     public String fase = "LUA";
     public long semente;
@@ -89,6 +94,9 @@ public class GameSaveData {
     public boolean combateOk;
     public boolean amostraOk;
     public boolean entrouTita;
+    public boolean lunarIntroShown;
+    public boolean marsIntroShown;
+    public boolean titanIntroShown;
 
     /*
      * Construtor vazio obrigatório

@@ -357,11 +357,11 @@ public final class MenuScreen implements Screen {
             fadeCompleted = false;
             CampaignState campaign = game.getCampaign();
             if (campaign.getPhase() == CampaignState.Phase.TITAN) {
-                game.setScreen(new TitanScreen(game, campaign));
+                game.setScreen(WorldIntroScreen.routeToTitan(game, campaign));
             } else if (campaign.getPhase() == CampaignState.Phase.MARS) {
-                game.setScreen(new MarsScreen(game, campaign));
+                game.setScreen(WorldIntroScreen.routeToMars(game, campaign));
             } else {
-                game.setScreen(new LunarScreen(game, game.getBatch(), game.getAssets(), campaign));
+                game.setScreen(WorldIntroScreen.routeToLunar(game, campaign));
             }
             dispose();
             return;

@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
@@ -29,6 +30,7 @@ import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.MissionSprite;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 import com.orion.echoes.lua.render.HitboxDebugRenderer;
+import com.orion.echoes.lua.render.PauseOverlay;
 import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
 import com.orion.echoes.lua.save.SaveManager;
@@ -76,7 +78,7 @@ public final class TitanScreen implements Screen {
     private Viewport viewport;
     private Viewport uiViewport;
     private NinePatch panel;
-    private NinePatch modal;
+    private PauseOverlay pauseOverlay;
     private com.orion.echoes.lua.systems.NpcConversation conversation;
     private com.orion.echoes.lua.managers.ParticleManager particles;
     private float footstepTimer;
@@ -85,6 +87,19 @@ public final class TitanScreen implements Screen {
     private float messageTimer = 4f;
     private float missionTime;
     private float shotTimer;
+    /*
+     * Animação da refinaria.
+     *
+     * Contrato de docs/NEW_VISUAL_ASSETS.md: 0 idle, 1 boot, 2/3 processamento.
+     * refineryActivity conta regressivamente a partir do refino bem-sucedido;
+     * enquanto positivo, a refinaria mostra o boot e depois alterna os dois
+     * quadros de processamento antes de voltar ao idle. Sem a folha dedicada
+     * ainda fornecida, cai na região estática que já existia.
+     */
+    private static final float REFINERY_BOOT_TIME = .18f;
+    private static final float REFINERY_ACTIVITY_TIME = 1.1f;
+    private static final float REFINERY_PROCESS_FRAME_INTERVAL = .22f;
+    private float refineryActivity;
     private boolean paused;
     private boolean changingScreen;
     private boolean portalTraveling;
@@ -102,7 +117,7 @@ public final class TitanScreen implements Screen {
         game.getSounds().tocarMusicaTita();
         particles = new com.orion.echoes.lua.managers.ParticleManager(assets);
         panel = assets.uiPanelPatch();
-        modal = assets.uiModalPatch();
+        pauseOverlay = new PauseOverlay(batch, assets);
         hitboxDebug = new HitboxDebugRenderer(batch, assets);
         physics = new PhysicsWorld();
         input = new GameInputProcessor();
@@ -148,7 +163,7 @@ public final class TitanScreen implements Screen {
         }
         conversation = new com.orion.echoes.lua.systems.NpcConversation(
             new com.orion.echoes.lua.entities.Npc(650f, 210f, "PESQUISADORA LIRA",
-                Color.WHITE, assets),
+                Color.WHITE, assets, com.orion.echoes.lua.entities.Npc.Visual.LIRA),
             new String[] {
                 "Os lagos daqui são de metano líquido. Nossa equipe perdeu contato quando o Soberano ocupou o vale a nordeste.",
                 "O gelo abastece esta refinaria. Guarde munição para o chefe e aproveite os cilindros de oxigênio entre as formações.",
@@ -194,8 +209,7 @@ public final class TitanScreen implements Screen {
         batch.setColor(Color.WHITE);
         desenharTerreno();
         returnPortal.render(batch);
-        batch.draw(assets.missionRegion(MissionSprite.CRAFTING_TERMINAL),
-            refinaria.x, refinaria.y, refinaria.width, refinaria.height);
+        desenharRefinaria();
         for (Pickup suprimento : suprimentos) suprimento.render(batch);
         desenharAvisoDoChefe();
         for (TitanEnemy enemy : enemies) enemy.render(batch);
@@ -225,6 +239,7 @@ public final class TitanScreen implements Screen {
             || paused && Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             paused = !paused;
             player.getBody().setLinearVelocity(0f, 0f);
+            if (paused) pauseOverlay.open();
             return;
         }
         if (paused) {
@@ -258,6 +273,7 @@ public final class TitanScreen implements Screen {
         combat.update(delta);
         messageTimer = Math.max(0f, messageTimer - delta);
         shotTimer = Math.max(0f, shotTimer - delta);
+        refineryActivity = Math.max(0f, refineryActivity - delta);
         Vector2 direction = input.getDirection();
         if (input.consumeDashPressed()) player.tryDash(direction.x, direction.y);
         player.move(direction.x, direction.y, input.isRunning(), delta);
@@ -347,6 +363,32 @@ public final class TitanScreen implements Screen {
         batch.draw(assets.landmarkRegion(3, 1), 1240f, 1520f, 260f, 190f);
         batch.draw(assets.landmarkRegion(0, 1), 2080f, 1470f, 280f, 200f);
         batch.setColor(Color.WHITE);
+    }
+
+    /**
+     * Refinaria de campo.
+     *
+     * Tecnologia humana adaptada a Titã, não uma estação lunar recolorida:
+     * quando a folha dedicada existir, idle/boot/processamento vêm de quadros
+     * reais; até lá, a região estática antiga evita quebrar a cena.
+     */
+    private void desenharRefinaria() {
+        TextureRegion frame = refineryFrame();
+        if (frame != null) {
+            batch.draw(frame, refinaria.x, refinaria.y, refinaria.width, refinaria.height);
+        } else {
+            batch.draw(assets.missionRegion(MissionSprite.CRAFTING_TERMINAL),
+                refinaria.x, refinaria.y, refinaria.width, refinaria.height);
+        }
+    }
+
+    private TextureRegion refineryFrame() {
+        int index;
+        if (refineryActivity <= 0f) index = 0;
+        else if (refineryActivity > REFINERY_ACTIVITY_TIME - REFINERY_BOOT_TIME) index = 1;
+        else index = 2 + (int) ((REFINERY_ACTIVITY_TIME - REFINERY_BOOT_TIME - refineryActivity)
+            / REFINERY_PROCESS_FRAME_INTERVAL) % 2;
+        return assets.titanRefineryFrame(index);
     }
 
     /** Marca no chao o raio do golpe enquanto o chefe prepara. */
@@ -591,6 +633,7 @@ public final class TitanScreen implements Screen {
         int celulas = player.adicionarMunicao(GameConfig.AMMO_PER_ICE);
         player.recuperarOxigenio(GameConfig.OXYGEN_ITEM_VALUE * .5f);
         combat.setMunicao(player.getMunicao());
+        refineryActivity = REFINERY_ACTIVITY_TIME;
         feedback(celulas > 0
             ? "Gelo refinado  •  +" + celulas + " de munição"
             : "Munição já está no limite.");
@@ -656,26 +699,16 @@ public final class TitanScreen implements Screen {
     }
 
     private void renderPause() {
-        batch.setProjectionMatrix(uiCamera.combined);
-        batch.begin();
-        batch.setColor(.025f, .013f, .008f, .92f);
-        batch.draw(assets.uiWhiteTexture, 0f, 0f,
-            GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
-        modal.setColor(new Color(1f, .82f, .58f, .98f));
-        modal.draw(batch, 132f, 118f, 1016f, 484f);
-        modal.setColor(Color.WHITE);
-        batch.setColor(Color.WHITE);
-        text("REGISTRO T-01  •  TRANSMISSÃO SUSPENSA", .72f, AMBER, 168f, 558f);
-        text("PAUSA", 2.3f, UiTheme.TEXT, 166f, 482f);
-        text("O soberano aguarda. Seus recursos estão congelados.", .82f,
-            UiTheme.TEXT_MUTED, 168f, 423f);
-        text("RETOMAR", 1.02f, UiTheme.TEXT, 202f, 292f);
-        text("ESC ou ENTER", .72f, AMBER, 850f, 292f);
-        text("VOLTAR AO MENU", .86f, UiTheme.TEXT_MUTED, 168f, 190f);
-        text("M", .78f, AMBER, 1034f, 190f);
-        batch.end();
-        assets.font.getData().setScale(1f);
-        assets.font.setColor(Color.WHITE);
+        pauseOverlay.render(AMBER, "ECHOES · TITÃ", campaign.missaoAtual(),
+            "O soberano aguarda. Seus recursos estão congelados.",
+            new String[] {"OXIGÊNIO", "ENERGIA", "MUNIÇÃO", "GELO", "CHEFE"},
+            new String[] {
+                String.format("%.0f%%", player.getOxigenio()),
+                String.format("%.0f%%", player.getEnergia()),
+                String.valueOf(player.getMunicao()),
+                String.valueOf(player.getGelo()),
+                boss != null && boss.isAtivo() ? String.format("%.0f%%", boss.getHealthRatio() * 100f) : "ABATIDO"
+            });
     }
 
     private void text(String value, float scale, Color color, float x, float y) {
@@ -687,6 +720,7 @@ public final class TitanScreen implements Screen {
     @Override public void resize(int width, int height) {
         viewport.update(width, height, false);
         uiViewport.update(width, height, true);
+        if (pauseOverlay != null) pauseOverlay.resize(width, height);
     }
     @Override public void pause() { }
     @Override public void resume() { }
@@ -694,6 +728,7 @@ public final class TitanScreen implements Screen {
     @Override public void dispose() {
         if (particles != null) { particles.dispose(); particles = null; }
         if (physics != null) { physics.dispose(); physics = null; }
+        if (pauseOverlay != null) pauseOverlay.dispose();
         // SpriteBatch e AssetManager pertencem ao EchoesLua e não são descartados aqui.
     }
 }

@@ -72,6 +72,9 @@ public final class LunarCheckpoint {
         data.combateOk = campaign.isCombateOk();
         data.amostraOk = campaign.isAmostraOk();
         data.entrouTita = campaign.isEntrouTita();
+        data.lunarIntroShown = campaign.isLunarIntroShown();
+        data.marsIntroShown = campaign.isMarsIntroShown();
+        data.titanIntroShown = campaign.isTitanIntroShown();
         data.versao = GameSaveData.CURRENT_VERSION;
     }
 
@@ -100,6 +103,16 @@ public final class LunarCheckpoint {
         campaign.setCombateOk(data.combateOk);
         campaign.setAmostraOk(data.amostraOk);
         campaign.setEntrouTita(data.entrouTita);
+        /*
+         * Saves anteriores à versão 5 nunca gravaram estas flags: viriam todas
+         * false do Json e reapresentariam a abertura completa de cada mundo já
+         * visitado. Em vez disso, um save antigo herda "já apresentado" para
+         * todo mundo cujo progresso prova que o jogador já esteve lá.
+         */
+        boolean legacy = data.versao < 5;
+        campaign.setLunarIntroShown(legacy ? true : data.lunarIntroShown);
+        campaign.setMarsIntroShown(legacy ? data.marteVisitado : data.marsIntroShown);
+        campaign.setTitanIntroShown(legacy ? data.entrouTita : data.titanIntroShown);
         return campaign;
     }
 

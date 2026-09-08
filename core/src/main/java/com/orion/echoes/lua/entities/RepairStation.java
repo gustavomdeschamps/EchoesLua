@@ -8,12 +8,29 @@ import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.systems.MissionState;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 
+/**
+ * Estação de reparo lunar.
+ *
+ * A folha tem contrato fixo por coluna: 0 offline, 1 ativando/boot, 2 e 3
+ * alternam em operação. A animação é uma máquina de estados simples — nunca
+ * troca de coluna por acaso, e o piscar rápido de meio segundo que existia
+ * antes (um flicker de 0.16s a cada 2.4s) saiu por parecer bug em vez de
+ * indicador de sistema offline.
+ */
 public class RepairStation extends Entidade {
+
+    private enum VisualState { OFFLINE_IDLE, ACTIVATING, ONLINE_LOOP }
+
+    /** Duração da transição offline → online, visível na coluna 1 da folha. */
+    private static final float ACTIVATION_DURATION = .8f;
+    /** Cadência do loop A/B em operação; rápido o bastante para ler como vivo. */
+    private static final float ONLINE_FRAME_INTERVAL = .5f;
+
     private final MissionState.SystemType type;
     private final TextureRegion[] frames = new TextureRegion[4];
     private boolean online;
-    private float elapsed;
-    private float activation;
+    private VisualState state = VisualState.OFFLINE_IDLE;
+    private float stateTime;
     private final Body body;
 
     public RepairStation(float x, float y, MissionState.SystemType type, AssetManager assets,
@@ -36,15 +53,24 @@ public class RepairStation extends Entidade {
 
     @Override
     public void update(float delta) {
-        elapsed += delta;
-        activation = Math.max(0f, activation - delta);
+        stateTime += delta;
+        if (state == VisualState.ACTIVATING && stateTime >= ACTIVATION_DURATION) {
+            state = VisualState.ONLINE_LOOP;
+            stateTime = 0f;
+        }
     }
 
     @Override
     public void render(SpriteBatch batch) {
-        int frame = !online ? (elapsed % 2.4f < .16f ? 1 : 0)
-            : (activation > 0f ? 1 : 2 + (int)(elapsed / .24f) % 2);
-        float pulse = online ? 1f + MathUtils.sin(elapsed * 3.6f) * .012f : 1f;
+        int frame = switch (state) {
+            case OFFLINE_IDLE -> 0;
+            case ACTIVATING -> 1;
+            case ONLINE_LOOP -> 2 + (int) (stateTime / ONLINE_FRAME_INTERVAL) % 2;
+        };
+        // Pulso mínimo de energia, só em operação: a animação principal vem
+        // dos quadros, não de escalar o sprite inteiro.
+        float pulse = state == VisualState.ONLINE_LOOP
+            ? 1f + MathUtils.sin(stateTime * 3.6f) * .012f : 1f;
         float size = 190f * pulse;
         batch.draw(frames[frame], position.x - 18f + (190f - size) / 2f,
             position.y - 18f + (190f - size) / 2f, size, size);
@@ -58,17 +84,19 @@ public class RepairStation extends Entidade {
         boolean repaired = mission.repair(type);
         if (repaired) {
             online = true;
-            activation = 1f;
+            state = VisualState.ACTIVATING;
+            stateTime = 0f;
         }
         return repaired;
     }
 
+    /** Restaura o estado visual a partir de um save/portal, sem reproduzir a ativação. */
     public void sync(MissionState mission) {
-        if (mission.isRepaired(type)) {
-            online = true;
-        } else {
-            online = false;
-        }
+        boolean repaired = mission.isRepaired(type);
+        if (repaired == online) return;
+        online = repaired;
+        state = online ? VisualState.ONLINE_LOOP : VisualState.OFFLINE_IDLE;
+        stateTime = 0f;
     }
 
     public MissionState.SystemType getType() {

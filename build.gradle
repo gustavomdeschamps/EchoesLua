@@ -117,6 +117,22 @@ def atlasGroups = [
   fx: ['action_fx_sheet.png', 'energy_fx_sheet.png']
 ]
 
+/*
+ * Assets do manifesto (docs/NEW_VISUAL_ASSETS.md) ainda não fornecidos.
+ *
+ * Ficam fora de atlasGroups de propósito: um nome ali que não existe em disco
+ * quebraria `inputs.files` e o `copy` do TexturePacker. Aqui, em vez disso,
+ * cada nome é anexado ao grupo 'game' somente se o PNG já existir - assim que
+ * alguém colocar o arquivo definitivo no lugar certo e rodar
+ * `packVisualAssets`, ele entra no atlas sem precisar editar este arquivo.
+ */
+def optionalGameAssets = [
+  'mars_station_sheet_v2.png', 'titan_refinery_sheet_v2.png', 'npc_researcher_lira_sheet_v2.png'
+]
+optionalGameAssets.each { name ->
+  if (file("assets/textures/$name").exists()) atlasGroups.game.add(name)
+}
+
 tasks.register('prepareAtlasInputs') {
   dependsOn tasks.named('validateVisualAssets')
   inputs.files(atlasGroups.values().flatten().collect { file("assets/textures/$it") })

@@ -10,34 +10,72 @@ import com.orion.echoes.lua.managers.AssetManager;
  * Personagem com quem o jogador conversa.
  *
  * O diálogo de Titã era uma transmissão de rádio sem ninguém do outro lado —
- * na prática, um monólogo. Aqui existe alguém em cena: o oficial da colônia,
- * com corpo, animação de espera e um indicador que aparece quando o jogador
- * chega perto, para a conversa ser encontrável sem precisar de tutorial.
+ * na prática, um monólogo. Aqui existe alguém em cena, com corpo, animação de
+ * espera e um indicador que aparece quando o jogador chega perto, para a
+ * conversa ser encontrável sem precisar de tutorial.
  *
- * Possui identidade e gestos próprios, derivados da referência do oficial.
+ * Cada mundo apresenta uma pessoa diferente. A identidade visual é tipada por
+ * {@link Visual} em vez de um boolean "ayla" — um boolean não escala para um
+ * terceiro, quarto personagem, e não deixa claro no call site quem está sendo
+ * desenhado.
  */
 public final class Npc extends Entidade {
+
+    /**
+     * Identidade visual de um NPC.
+     *
+     * {@code sheetKey} é o nome da região no atlas de jogo. {@code fallbackKey}
+     * é usado quando a folha definitiva ainda não foi fornecida — o jogo nunca
+     * deixa de compilar ou de rodar por falta de um PNG que será adicionado
+     * depois pelo pipeline de arte (ver docs/NEW_VISUAL_ASSETS.md).
+     */
+    public enum Visual {
+        /** Comandante Ayla — Lua. Folha própria, sempre presente. */
+        AYLA("npc_commander_ayla_sheet", null, 0),
+        /** Oficial da colônia — Marte. Folha própria, sempre presente. */
+        MARS_OFFICER("npc_colony_officer_sheet_v2", null, 2),
+        /**
+         * Pesquisadora Lira — Titã. Folha própria ainda não fornecida: até
+         * chegar, usa a folha do oficial marciano como fallback seguro. Assim
+         * que {@code npc_researcher_lira_sheet_v2.png} existir e o pipeline
+         * rodar, Lira passa a ter identidade visual própria sem mudança de
+         * código.
+         */
+        LIRA("npc_researcher_lira_sheet_v2", "npc_colony_officer_sheet_v2", 2);
+
+        private final String sheetKey;
+        private final String fallbackKey;
+        private final int inset;
+
+        Visual(String sheetKey, String fallbackKey, int inset) {
+            this.sheetKey = sheetKey;
+            this.fallbackKey = fallbackKey;
+            this.inset = inset;
+        }
+
+        public String sheetKey() { return sheetKey; }
+        public String fallbackKey() { return fallbackKey; }
+        /** Recuo em pixels usado ao recortar a grade 4x4 desta folha. */
+        public int inset() { return inset; }
+    }
 
     private static final float SPRITE_SIZE = 104f;
     private static final float INTERACT_RADIUS = 132f;
 
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final String nome;
+    private final Visual visual;
     private float time;
     private boolean jaConversou;
     private boolean talking;
 
-    public Npc(float x, float y, String nome, Color tint, AssetManager assets) {
-        this(x, y, nome, tint, assets, false);
-    }
-
-    public Npc(float x, float y, String nome, Color tint, AssetManager assets, boolean ayla) {
+    public Npc(float x, float y, String nome, Color tint, AssetManager assets, Visual visual) {
         super(x, y, 54f, 76f);
         this.nome = nome;
+        this.visual = visual;
         for (int row = 0; row < frames.length; row++) {
             for (int column = 0; column < frames[row].length; column++) {
-                frames[row][column] = ayla ? assets.npcAylaFrame(column, row)
-                    : assets.npcCommanderFrame(column, row);
+                frames[row][column] = assets.npcVisualFrame(visual, column, row);
             }
         }
         // Hitbox derivada do desenho: os pés, como no resto do jogo.
@@ -64,6 +102,7 @@ public final class Npc extends Entidade {
     public boolean jaConversou() { return jaConversou; }
 
     public String getNome() { return nome; }
+    public Visual getVisual() { return visual; }
     public void setTalking(boolean value) { talking = value; }
 
     @Override

@@ -53,6 +53,25 @@ public final class CampaignState {
     public boolean isDialogoExplorador() { return dialogoExplorador; }
     public void setDialogoExplorador(boolean value) { dialogoExplorador = value; }
 
+    /*
+     * Aberturas por mundo (WorldIntroScreen).
+     *
+     * O portal e bidirecional: sem essas flags, voltar de Titã para Marte e
+     * depois avançar de novo reapresentaria a cinematic inteira. Cada flag
+     * marca "este mundo já foi apresentado nesta campanha" e nunca volta a
+     * false. Saves antigos (sem estes campos) recebem um default seguro em
+     * LunarCheckpoint, derivado do progresso já registrado.
+     */
+    private boolean lunarIntroShown;
+    private boolean marsIntroShown;
+    private boolean titanIntroShown;
+    public boolean isLunarIntroShown() { return lunarIntroShown; }
+    public void setLunarIntroShown(boolean value) { lunarIntroShown = value; }
+    public boolean isMarsIntroShown() { return marsIntroShown; }
+    public void setMarsIntroShown(boolean value) { marsIntroShown = value; }
+    public boolean isTitanIntroShown() { return titanIntroShown; }
+    public void setTitanIntroShown(boolean value) { titanIntroShown = value; }
+
     public CampaignState() {
         this(System.nanoTime());
     }

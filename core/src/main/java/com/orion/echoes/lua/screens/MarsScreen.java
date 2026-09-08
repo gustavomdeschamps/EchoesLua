@@ -35,6 +35,7 @@ import com.orion.echoes.lua.managers.SoundManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 import com.orion.echoes.lua.render.DialogBox;
 import com.orion.echoes.lua.render.HitboxDebugRenderer;
+import com.orion.echoes.lua.render.PauseOverlay;
 import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
 import com.orion.echoes.lua.save.SaveManager;
@@ -68,7 +69,7 @@ public final class MarsScreen implements Screen {
     private AssetManager assets;
     private SpriteBatch batch;
     private NinePatch panelPatch;
-    private NinePatch modalPatch;
+    private PauseOverlay pauseOverlay;
     private PhysicsWorld physics;
     private ParticleManager particles;
     private SoundManager sounds;
@@ -107,7 +108,7 @@ public final class MarsScreen implements Screen {
         assets = game.getAssets();
         batch = game.getBatch();
         panelPatch = assets.uiPanelPatch();
-        modalPatch = assets.uiModalPatch();
+        pauseOverlay = new PauseOverlay(batch, assets);
         physics = new PhysicsWorld();
         particles = new ParticleManager(assets);
         sounds = SoundManager.getInstance();
@@ -150,7 +151,7 @@ public final class MarsScreen implements Screen {
         habitat = prop(160f, 1020f, 330f, 275f, MarsObject.Kind.HABITAT);
         // Alguem de carne e osso para conversar, em vez de uma voz no radio.
         oficial = new Npc(548f, 1060f, "OFICIAL DA COLÔNIA",
-            new Color(.72f, .86f, 1f, 1f), assets);
+            new Color(.72f, .86f, 1f, 1f), assets, Npc.Visual.MARS_OFFICER);
         stations.add(prop(700f, 1420f, 225f, 190f, MarsObject.Kind.SOLAR_STATION));
         stations.add(prop(1550f, 1330f, 225f, 190f, MarsObject.Kind.OXYGEN_STATION));
         stations.add(prop(2440f, 1130f, 225f, 190f, MarsObject.Kind.COMMS_STATION));
@@ -222,7 +223,7 @@ public final class MarsScreen implements Screen {
         hostilesDefeated = Math.min(campaign.getMarsHostilesDefeated(), enemies.size);
         for (int index = 0; index < hostilesDefeated; index++) enemies.get(index).setAtivo(false);
         int online = Math.min(campaign.getMarsStationsOnline(), stations.size);
-        for (int index = 0; index < online; index++) stations.get(index).activate();
+        for (int index = 0; index < online; index++) stations.get(index).restoreOnline();
         activeStations = online;
     }
 
@@ -373,6 +374,7 @@ public final class MarsScreen implements Screen {
             || paused && Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             paused = !paused;
             player.getBody().setLinearVelocity(0f, 0f);
+            if (paused) pauseOverlay.open();
             return;
         }
         if (paused) {
@@ -608,7 +610,7 @@ public final class MarsScreen implements Screen {
         LunarCheckpoint.applyCampaign(data, campaign);
         new SaveManager().save(data);
         changingScreen = true;
-        game.setScreen(new TitanScreen(game, campaign));
+        game.setScreen(WorldIntroScreen.routeToTitan(game, campaign));
         dispose();
     }
 
@@ -641,7 +643,7 @@ public final class MarsScreen implements Screen {
         player.setMunicao(data.municao);
         minerals = data.marteNucleos;
         for (int index = activeStations; index < Math.min(data.marteEstacoes, stations.size); index++) {
-            stations.get(index).activate();
+            stations.get(index).restoreOnline();
         }
         activeStations = Math.min(data.marteEstacoes, stations.size);
         hostilesDefeated = Math.min(data.marteHostis, enemies.size);
@@ -847,8 +849,7 @@ public final class MarsScreen implements Screen {
         if (messageTimer > 0f) centered(message, .72f, UiTheme.TEXT, 152f,
             Math.min(1f, messageTimer * 2f));
         if (titanDialogue.isOpen()) {
-            dialogBox.render(titanDialogue,
-                oficial != null ? oficial.getNome() : "CONTROLE ORBITAL");
+            dialogBox.render(titanDialogue, oficial.getNome(), oficial.getPortraitFrame());
         }
         batch.end();
     }
@@ -874,26 +875,16 @@ public final class MarsScreen implements Screen {
     }
 
     private void renderPause() {
-        batch.setProjectionMatrix(uiCamera.combined);
-        batch.begin();
-        batch.setColor(.055f, .016f, .012f, .91f);
-        batch.draw(assets.uiWhiteTexture, 0f, 0f, 1280f, 720f);
-        modalPatch.setColor(new Color(1f, .84f, .76f, .98f));
-        modalPatch.draw(batch, 54f, 106f, 790f, 500f);
-        modalPatch.draw(batch, 872f, 106f, 354f, 500f);
-        modalPatch.setColor(Color.WHITE);
-        batch.setColor(Color.WHITE);
-        text("REGISTRO MARCIANO · EM ESPERA", .75f, MARS, 74f, 616f, 1f);
-        text("PAUSA", 2.25f, UiTheme.TEXT, 68f, 540f, 1f);
-        text("A poeira parou. A telemetria também.", .88f, UiTheme.TEXT_MUTED, 74f, 475f, 1f);
-        text("RETOMAR", 1.02f, UiTheme.TEXT, 104f, 278f, 1f);
-        text("ESC ou ENTER", .68f, MARS, 610f, 278f, 1f);
-        text("VOLTAR AO MENU", .82f, UiTheme.TEXT_MUTED, 74f, 150f, 1f);
-        text("M", .74f, MARS, 610f, 150f, 1f);
-        text(String.format("O2 %.0f%%\nESTAÇÕES %d/3\nHOSTIS %d/%d",
-            player.getOxigenio(), activeStations, hostilesDefeated, enemies.size),
-            .82f, UiTheme.TEXT, 934f, 520f, 1f);
-        batch.end();
+        pauseOverlay.render(MARS, "ECHOES · MARTE", campaign.missaoAtual(),
+            "A poeira parou. A telemetria também.",
+            new String[] {"OXIGÊNIO", "ENERGIA", "MUNIÇÃO", "ESTAÇÕES", "HOSTIS"},
+            new String[] {
+                String.format("%.0f%%", player.getOxigenio()),
+                String.format("%.0f%%", player.getEnergia()),
+                player.getMunicao() + "/" + GameConfig.AMMO_MAX,
+                activeStations + "/3",
+                hostilesDefeated + "/" + enemies.size
+            });
     }
 
     private void renderTransition() {
@@ -938,6 +929,7 @@ public final class MarsScreen implements Screen {
     @Override public void resize(int width, int height) {
         viewport.update(width, height, false);
         uiViewport.update(width, height, true);
+        if (pauseOverlay != null) pauseOverlay.resize(width, height);
     }
     @Override public void pause() { }
     @Override public void resume() { }
@@ -945,5 +937,6 @@ public final class MarsScreen implements Screen {
     @Override public void dispose() {
         if (particles != null) { particles.dispose(); particles = null; }
         if (physics != null) { physics.dispose(); physics = null; }
+        if (pauseOverlay != null) pauseOverlay.dispose();
     }
 }

@@ -1,1678 +1,1678 @@
 
 game.png
-size: 3966, 3525
+size: 4049, 3244
 format: RGBA8888
 filter: Linear, Linear
 repeat: none
 astronaut_combat_sheet
   rotate: false
-  xy: 3743, 3362
+  xy: 3, 3
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 0
 astronaut_combat_sheet
   rotate: false
-  xy: 3743, 3196
+  xy: 169, 3
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 1
 astronaut_combat_sheet
   rotate: false
-  xy: 3743, 3030
+  xy: 335, 3
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 2
 astronaut_combat_sheet
   rotate: false
-  xy: 3743, 2864
+  xy: 501, 3
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 3
 astronaut_combat_sheet
   rotate: false
-  xy: 3785, 2379
+  xy: 777, 2124
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 4
 astronaut_combat_sheet
   rotate: false
-  xy: 3785, 2213
+  xy: 943, 2124
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 5
 astronaut_combat_sheet
   rotate: false
-  xy: 1313, 953
+  xy: 1096, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 6
 astronaut_combat_sheet
   rotate: false
-  xy: 1479, 953
+  xy: 667, 26
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 7
 astronaut_combat_sheet
   rotate: false
-  xy: 1645, 953
+  xy: 833, 26
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 8
 astronaut_combat_sheet
   rotate: false
-  xy: 1811, 953
+  xy: 1109, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 9
 astronaut_combat_sheet
   rotate: false
-  xy: 1977, 953
+  xy: 1262, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 10
 astronaut_combat_sheet
   rotate: false
-  xy: 2143, 953
+  xy: 999, 26
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 11
 astronauta_sheet
   rotate: false
-  xy: 2309, 953
+  xy: 1165, 26
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 0
 astronauta_sheet
   rotate: false
-  xy: 2475, 953
+  xy: 1275, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 1
 astronauta_sheet
   rotate: false
-  xy: 2641, 953
+  xy: 1428, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 2
 astronauta_sheet
   rotate: false
-  xy: 2807, 833
+  xy: 1441, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 3
 astronauta_sheet
   rotate: false
-  xy: 2973, 833
+  xy: 1594, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 4
 astronauta_sheet
   rotate: false
-  xy: 3139, 833
+  xy: 1607, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 5
 astronauta_sheet
   rotate: false
-  xy: 3305, 807
+  xy: 1760, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 6
 astronauta_sheet
   rotate: false
-  xy: 3471, 807
+  xy: 1773, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 7
 astronauta_sheet
   rotate: false
-  xy: 3637, 737
+  xy: 1926, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 8
 astronauta_sheet
   rotate: false
-  xy: 3803, 737
+  xy: 1939, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 9
 astronauta_sheet
   rotate: false
-  xy: 3803, 571
+  xy: 2092, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 10
 astronauta_sheet
   rotate: false
-  xy: 1313, 787
+  xy: 2105, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 11
 astronauta_sheet
   rotate: false
-  xy: 527, 691
+  xy: 2258, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 12
 astronauta_sheet
   rotate: false
-  xy: 3, 563
+  xy: 2271, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 13
 astronauta_sheet
   rotate: false
-  xy: 169, 563
+  xy: 2424, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 14
 astronauta_sheet
   rotate: false
-  xy: 335, 563
+  xy: 2437, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 15
 base_lunar
   rotate: false
-  xy: 3, 2882
+  xy: 3, 2601
   size: 768, 640
   orig: 768, 640
   offset: 0, 0
   index: -1
 campaign_portal_sheet_v2
   rotate: false
-  xy: 641, 2429
+  xy: 1096, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 0
 campaign_portal_sheet_v2
   rotate: false
-  xy: 3, 2301
+  xy: 1096, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 1
 campaign_portal_sheet_v2
   rotate: false
-  xy: 265, 2301
+  xy: 1096, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 2
 campaign_portal_sheet_v2
   rotate: false
-  xy: 903, 2429
+  xy: 641, 1502
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 3
 campaign_portal_sheet_v2
   rotate: false
-  xy: 1165, 2429
+  xy: 641, 1240
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 4
 campaign_portal_sheet_v2
   rotate: false
-  xy: 1427, 2429
+  xy: 641, 978
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 5
 campaign_portal_sheet_v2
   rotate: false
-  xy: 1689, 2429
+  xy: 641, 716
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 6
 campaign_portal_sheet_v2
   rotate: false
-  xy: 1951, 2429
+  xy: 641, 454
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 7
 campaign_portal_sheet_v2
   rotate: false
-  xy: 2213, 2429
+  xy: 641, 192
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 8
 campaign_portal_sheet_v2
   rotate: false
-  xy: 2475, 2429
+  xy: 903, 1502
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 9
 campaign_portal_sheet_v2
   rotate: false
-  xy: 2737, 2429
+  xy: 960, 1862
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 10
 campaign_portal_sheet_v2
   rotate: false
-  xy: 2999, 2309
+  xy: 1358, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 11
 campaign_portal_sheet_v2
   rotate: false
-  xy: 3261, 2309
+  xy: 1358, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 12
 campaign_portal_sheet_v2
   rotate: false
-  xy: 3523, 2283
+  xy: 1358, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 13
 campaign_portal_sheet_v2
   rotate: false
-  xy: 527, 2167
+  xy: 903, 1240
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 14
 campaign_portal_sheet_v2
   rotate: false
-  xy: 3, 2039
+  xy: 903, 978
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 15
 comida
   rotate: false
-  xy: 1551, 3010
-  size: 512, 512
-  orig: 512, 512
+  xy: 3899, 940
+  size: 128, 117
+  orig: 128, 117
   offset: 0, 0
   index: -1
 gelo
   rotate: false
-  xy: 2069, 3010
-  size: 512, 512
-  orig: 512, 512
+  xy: 3899, 822
+  size: 128, 112
+  orig: 128, 112
   offset: 0, 0
   index: -1
 landmarks
   rotate: false
-  xy: 265, 2039
+  xy: 903, 716
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 0
 landmarks
   rotate: false
-  xy: 789, 2167
+  xy: 903, 454
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 1
 landmarks
   rotate: false
-  xy: 1051, 2167
+  xy: 903, 192
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 2
 landmarks
   rotate: false
-  xy: 1313, 2167
+  xy: 1165, 1600
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 3
 landmarks
   rotate: false
-  xy: 1575, 2167
+  xy: 1222, 1867
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 4
 landmarks
   rotate: false
-  xy: 1837, 2167
+  xy: 1620, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 5
 landmarks
   rotate: false
-  xy: 2099, 2167
+  xy: 1620, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 6
 landmarks
   rotate: false
-  xy: 2361, 2167
+  xy: 1620, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 7
 lunar_enemy_sheet
   rotate: false
-  xy: 693, 691
+  xy: 2590, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 0
 lunar_enemy_sheet
   rotate: false
-  xy: 859, 691
+  xy: 2603, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 1
 lunar_enemy_sheet
   rotate: false
-  xy: 1025, 691
+  xy: 2756, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 2
 lunar_enemy_sheet
   rotate: false
-  xy: 1479, 787
+  xy: 2769, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 3
 lunar_enemy_sheet
   rotate: false
-  xy: 1645, 787
+  xy: 2922, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 4
 lunar_enemy_sheet
   rotate: false
-  xy: 1811, 787
+  xy: 2935, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 5
 lunar_enemy_sheet
   rotate: false
-  xy: 1977, 787
+  xy: 3088, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 6
 lunar_enemy_sheet
   rotate: false
-  xy: 2143, 787
+  xy: 3716, 2557
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 7
 lunar_enemy_sheet
   rotate: false
-  xy: 2309, 787
+  xy: 3882, 2557
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 8
 lunar_enemy_sheet
   rotate: false
-  xy: 2475, 787
+  xy: 3882, 2391
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 9
 lunar_enemy_sheet
   rotate: false
-  xy: 2641, 787
+  xy: 3716, 2391
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 10
 lunar_enemy_sheet
   rotate: false
-  xy: 2807, 667
+  xy: 3254, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 11
 lunar_enemy_sheet
   rotate: false
-  xy: 2973, 667
+  xy: 3420, 2295
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 12
 lunar_enemy_sheet
   rotate: false
-  xy: 3139, 667
+  xy: 3665, 2225
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 13
 lunar_enemy_sheet
   rotate: false
-  xy: 3305, 641
+  xy: 3831, 2225
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 14
 lunar_enemy_sheet
   rotate: false
-  xy: 3471, 641
+  xy: 3831, 2059
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 15
 lunar_obstacles
   rotate: false
-  xy: 2623, 2167
+  xy: 1165, 1338
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 0
 lunar_obstacles
   rotate: false
-  xy: 2885, 2047
+  xy: 1165, 1076
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 1
 lunar_obstacles
   rotate: false
-  xy: 3147, 2047
+  xy: 1165, 814
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 2
 lunar_obstacles
   rotate: false
-  xy: 3409, 2021
+  xy: 1165, 552
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 3
 lunar_obstacles
   rotate: false
-  xy: 3671, 1951
+  xy: 1165, 290
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 4
 lunar_obstacles
   rotate: false
-  xy: 527, 1905
+  xy: 1331, 28
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 5
 lunar_repair_stations_v2
   rotate: false
-  xy: 3, 1777
+  xy: 1427, 1605
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 0
 lunar_repair_stations_v2
   rotate: false
-  xy: 265, 1777
+  xy: 1484, 1867
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 1
 lunar_repair_stations_v2
   rotate: false
-  xy: 789, 1905
+  xy: 1882, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 2
 lunar_repair_stations_v2
   rotate: false
-  xy: 1051, 1905
+  xy: 1882, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 3
 lunar_repair_stations_v2
   rotate: false
-  xy: 1313, 1905
+  xy: 1882, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 4
 lunar_repair_stations_v2
   rotate: false
-  xy: 1575, 1905
+  xy: 1427, 1343
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 5
 lunar_repair_stations_v2
   rotate: false
-  xy: 1837, 1905
+  xy: 1427, 1081
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 6
 lunar_repair_stations_v2
   rotate: false
-  xy: 2099, 1905
+  xy: 1427, 819
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 7
 lunar_repair_stations_v2
   rotate: false
-  xy: 2361, 1905
+  xy: 1427, 557
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 8
 lunar_repair_stations_v2
   rotate: false
-  xy: 2623, 1905
+  xy: 1427, 295
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 9
 lunar_repair_stations_v2
   rotate: false
-  xy: 2885, 1785
+  xy: 1593, 33
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 10
 lunar_repair_stations_v2
   rotate: false
-  xy: 3147, 1785
+  xy: 1689, 1605
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 11
 lunar_repair_stations_v2
   rotate: false
-  xy: 3409, 1759
+  xy: 1746, 1867
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 12
 lunar_repair_stations_v2
   rotate: false
-  xy: 3671, 1689
+  xy: 2144, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 13
 lunar_repair_stations_v2
   rotate: false
-  xy: 527, 1643
+  xy: 2144, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 14
 lunar_repair_stations_v2
   rotate: false
-  xy: 3, 1515
+  xy: 2144, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 15
 mars_atlas_v4
   rotate: false
-  xy: 265, 1515
+  xy: 1689, 1343
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 0
 mars_atlas_v4
   rotate: false
-  xy: 789, 1643
+  xy: 1689, 1081
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 1
 mars_atlas_v4
   rotate: false
-  xy: 1051, 1643
+  xy: 1689, 819
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 2
 mars_atlas_v4
   rotate: false
-  xy: 1313, 1643
+  xy: 1689, 557
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 3
 mars_atlas_v4
   rotate: false
-  xy: 1575, 1643
+  xy: 1689, 295
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 4
 mars_atlas_v4
   rotate: false
-  xy: 1837, 1643
+  xy: 1855, 33
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 5
 mars_atlas_v4
   rotate: false
-  xy: 2099, 1643
+  xy: 1951, 1605
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 6
 mars_atlas_v4
   rotate: false
-  xy: 2361, 1643
+  xy: 2008, 1867
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 7
 mars_atlas_v4
   rotate: false
-  xy: 2623, 1643
+  xy: 2406, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 8
 mars_atlas_v4
   rotate: false
-  xy: 2885, 1523
+  xy: 2406, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 9
 mars_atlas_v4
   rotate: false
-  xy: 3147, 1523
+  xy: 2406, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 10
 mars_atlas_v4
   rotate: false
-  xy: 3409, 1497
+  xy: 1951, 1343
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 11
 mars_crawler_sheet
   rotate: false
-  xy: 3637, 571
+  xy: 3101, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 0
 mars_crawler_sheet
   rotate: false
-  xy: 1191, 621
+  xy: 3267, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 1
 mars_crawler_sheet
   rotate: false
-  xy: 501, 525
+  xy: 3433, 2129
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 2
 mars_crawler_sheet
   rotate: false
-  xy: 3, 397
+  xy: 3599, 2059
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 3
 mars_crawler_sheet
   rotate: false
-  xy: 169, 397
+  xy: 3056, 1963
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 4
 mars_crawler_sheet
   rotate: false
-  xy: 335, 397
+  xy: 3222, 1963
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 5
 mars_crawler_sheet
   rotate: false
-  xy: 667, 525
+  xy: 3388, 1963
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 6
 mars_crawler_sheet
   rotate: false
-  xy: 833, 525
+  xy: 3554, 1893
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 7
 mars_crawler_sheet
   rotate: false
-  xy: 999, 525
+  xy: 3720, 1893
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 8
 mars_crawler_sheet
   rotate: false
-  xy: 1357, 621
+  xy: 3886, 1893
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 9
 mars_crawler_sheet
   rotate: false
-  xy: 1523, 621
+  xy: 3886, 1727
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 10
 mars_crawler_sheet
   rotate: false
-  xy: 1689, 621
+  xy: 3056, 1797
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 11
 mars_crawler_sheet
   rotate: false
-  xy: 1855, 621
+  xy: 3222, 1797
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 12
 mars_crawler_sheet
   rotate: false
-  xy: 2021, 621
+  xy: 3388, 1797
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 13
 mars_crawler_sheet
   rotate: false
-  xy: 2187, 621
+  xy: 3554, 1727
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 14
 mars_crawler_sheet
   rotate: false
-  xy: 2353, 621
+  xy: 3720, 1727
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 15
 mars_drone_sheet
   rotate: false
-  xy: 2519, 621
+  xy: 3720, 1561
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 0
 mars_drone_sheet
   rotate: false
-  xy: 2685, 501
+  xy: 3886, 1561
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 1
 mars_drone_sheet
   rotate: false
-  xy: 2851, 501
+  xy: 3886, 1395
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 2
 mars_drone_sheet
   rotate: false
-  xy: 3017, 501
+  xy: 2999, 1631
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 3
 mars_drone_sheet
   rotate: false
-  xy: 3183, 475
+  xy: 3165, 1631
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 4
 mars_drone_sheet
   rotate: false
-  xy: 3349, 475
+  xy: 3331, 1631
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 5
 mars_drone_sheet
   rotate: false
-  xy: 3515, 405
+  xy: 3331, 1465
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 6
 mars_drone_sheet
   rotate: false
-  xy: 3681, 405
+  xy: 3497, 1439
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 7
 mars_drone_sheet
   rotate: false
-  xy: 3681, 239
+  xy: 3663, 1395
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 8
 mars_drone_sheet
   rotate: false
-  xy: 1165, 455
+  xy: 2999, 1465
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 9
 mars_drone_sheet
   rotate: false
-  xy: 501, 359
+  xy: 3165, 1465
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 10
 mars_drone_sheet
   rotate: false
-  xy: 3, 231
+  xy: 3165, 1299
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 11
 mars_drone_sheet
   rotate: false
-  xy: 169, 231
+  xy: 3331, 1299
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 12
 mars_drone_sheet
   rotate: false
-  xy: 335, 231
+  xy: 3497, 1273
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 13
 mars_drone_sheet
   rotate: false
-  xy: 667, 359
+  xy: 2737, 1439
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 14
 mars_drone_sheet
   rotate: false
-  xy: 833, 359
+  xy: 2737, 1273
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 15
 mars_obstacles
   rotate: false
-  xy: 3671, 1427
+  xy: 1951, 1081
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 0
 mars_obstacles
   rotate: false
-  xy: 527, 1381
+  xy: 1951, 819
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 1
 mars_obstacles
   rotate: false
-  xy: 3, 1253
+  xy: 1951, 557
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 2
 mars_obstacles
   rotate: false
-  xy: 265, 1253
+  xy: 1951, 295
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 3
 mars_obstacles
   rotate: false
-  xy: 789, 1381
+  xy: 2117, 33
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 4
 mars_obstacles
   rotate: false
-  xy: 1051, 1381
+  xy: 2213, 1605
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 5
 mission_atlas_unified
   rotate: false
-  xy: 1313, 1381
+  xy: 2270, 1867
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 0
 mission_atlas_unified
   rotate: false
-  xy: 1575, 1381
+  xy: 2668, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 1
 mission_atlas_unified
   rotate: false
-  xy: 1837, 1381
+  xy: 2668, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 2
 mission_atlas_unified
   rotate: false
-  xy: 2099, 1381
+  xy: 2668, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 3
 mission_atlas_unified
   rotate: false
-  xy: 2361, 1381
+  xy: 2213, 1343
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 4
 mission_atlas_unified
   rotate: false
-  xy: 2623, 1381
+  xy: 2213, 1081
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 5
 mission_atlas_unified
   rotate: false
-  xy: 2885, 1261
+  xy: 2213, 819
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 6
 mission_atlas_unified
   rotate: false
-  xy: 3147, 1261
+  xy: 2213, 557
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 7
 mission_atlas_unified
   rotate: false
-  xy: 3409, 1235
+  xy: 2213, 295
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 8
 mission_atlas_unified
   rotate: false
-  xy: 3671, 1165
+  xy: 2379, 33
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 9
 mission_atlas_unified
   rotate: false
-  xy: 527, 1119
+  xy: 2475, 1605
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 10
 mission_atlas_unified
   rotate: false
-  xy: 3, 991
+  xy: 2532, 1867
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 11
 mission_atlas_unified
   rotate: false
-  xy: 265, 991
+  xy: 2930, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 12
 mission_atlas_unified
   rotate: false
-  xy: 789, 1119
+  xy: 2930, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 13
 mission_atlas_unified
   rotate: false
-  xy: 1051, 1119
+  xy: 2930, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 14
 mission_atlas_unified
   rotate: false
-  xy: 1313, 1119
+  xy: 2475, 1343
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 15
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 999, 359
+  xy: 3663, 1229
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 0
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 501, 73
+  xy: 3829, 1229
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 1
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 3, 65
+  xy: 3829, 1063
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 2
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 169, 65
+  xy: 2903, 1133
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 3
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 335, 65
+  xy: 2737, 1107
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 4
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 667, 73
+  xy: 3069, 1133
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 5
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 833, 73
+  xy: 3235, 1133
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 6
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 999, 73
+  xy: 3401, 1107
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 7
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 1165, 73
+  xy: 3567, 1063
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 8
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 1165, 239
+  xy: 2903, 967
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 9
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 1331, 239
+  xy: 2737, 941
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 10
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 1331, 455
+  xy: 3069, 967
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 11
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 1497, 455
+  xy: 3235, 967
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 12
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 1331, 73
+  xy: 3401, 941
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 13
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 1497, 73
+  xy: 2903, 801
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 14
 npc_colony_officer_sheet_v2
   rotate: false
-  xy: 1497, 239
+  xy: 2737, 775
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 15
 npc_commander_ayla_sheet
   rotate: false
-  xy: 1663, 239
+  xy: 3069, 801
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 0
 npc_commander_ayla_sheet
   rotate: false
-  xy: 1663, 455
+  xy: 3235, 801
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 1
 npc_commander_ayla_sheet
   rotate: false
-  xy: 1829, 455
+  xy: 3567, 897
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 2
 npc_commander_ayla_sheet
   rotate: false
-  xy: 1995, 455
+  xy: 3401, 775
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 3
 npc_commander_ayla_sheet
   rotate: false
-  xy: 2161, 455
+  xy: 3733, 897
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 4
 npc_commander_ayla_sheet
   rotate: false
-  xy: 2327, 455
+  xy: 3567, 731
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 5
 npc_commander_ayla_sheet
   rotate: false
-  xy: 2493, 455
+  xy: 3733, 731
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 6
 npc_commander_ayla_sheet
   rotate: false
-  xy: 2659, 335
+  xy: 3733, 565
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 7
 npc_commander_ayla_sheet
   rotate: false
-  xy: 2825, 335
+  xy: 2737, 399
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 8
 npc_commander_ayla_sheet
   rotate: false
-  xy: 2991, 335
+  xy: 2737, 565
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 9
 npc_commander_ayla_sheet
   rotate: false
-  xy: 3157, 309
+  xy: 2903, 565
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 10
 npc_commander_ayla_sheet
   rotate: false
-  xy: 3323, 309
+  xy: 3069, 635
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 11
 npc_commander_ayla_sheet
   rotate: false
-  xy: 3489, 239
+  xy: 3235, 635
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 12
 npc_commander_ayla_sheet
   rotate: false
-  xy: 1829, 289
+  xy: 3401, 609
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 13
 npc_commander_ayla_sheet
   rotate: false
-  xy: 1995, 289
+  xy: 3567, 565
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 14
 npc_commander_ayla_sheet
   rotate: false
-  xy: 2161, 289
+  xy: 3069, 469
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 15
 oxigenio
   rotate: false
-  xy: 2587, 3010
-  size: 512, 512
-  orig: 512, 512
+  xy: 3586, 2327
+  size: 73, 128
+  orig: 73, 128
   offset: 0, 0
   index: -1
 pulse_rifle
   rotate: false
-  xy: 777, 3010
+  xy: 3, 2083
   size: 768, 512
   orig: 768, 512
   offset: 0, 0
   index: -1
 titan_boss_sheet_v3
   rotate: false
-  xy: 3105, 3209
+  xy: 3, 1764
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 0
 titan_boss_sheet_v3
   rotate: false
-  xy: 3424, 3209
+  xy: 3, 1445
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 1
 titan_boss_sheet_v3
   rotate: false
-  xy: 3105, 2890
+  xy: 3, 1126
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 2
 titan_boss_sheet_v3
   rotate: false
-  xy: 3424, 2890
+  xy: 3, 807
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 3
 titan_boss_sheet_v3
   rotate: false
-  xy: 777, 2691
+  xy: 3, 488
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 4
 titan_boss_sheet_v3
   rotate: false
-  xy: 3, 2563
+  xy: 3, 169
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 5
 titan_boss_sheet_v3
   rotate: false
-  xy: 322, 2563
+  xy: 322, 1764
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 6
 titan_boss_sheet_v3
   rotate: false
-  xy: 1096, 2691
+  xy: 322, 1445
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 7
 titan_boss_sheet_v3
   rotate: false
-  xy: 1415, 2691
+  xy: 322, 1126
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 8
 titan_boss_sheet_v3
   rotate: false
-  xy: 1734, 2691
+  xy: 322, 807
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 9
 titan_boss_sheet_v3
   rotate: false
-  xy: 2053, 2691
+  xy: 322, 488
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 10
 titan_boss_sheet_v3
   rotate: false
-  xy: 2372, 2691
+  xy: 322, 169
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 11
 titan_boss_sheet_v3
   rotate: false
-  xy: 2691, 2691
+  xy: 641, 1764
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 12
 titan_boss_sheet_v3
   rotate: false
-  xy: 3010, 2571
+  xy: 777, 2928
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 13
 titan_boss_sheet_v3
   rotate: false
-  xy: 3329, 2571
+  xy: 777, 2609
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 14
 titan_boss_sheet_v3
   rotate: false
-  xy: 3648, 2545
+  xy: 777, 2290
   size: 313, 313
   orig: 313, 313
   offset: 0, 0
   index: 15
 titan_formations_v2
   rotate: false
-  xy: 1575, 1119
+  xy: 2475, 1081
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 0
 titan_formations_v2
   rotate: false
-  xy: 1837, 1119
+  xy: 2475, 819
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 1
 titan_formations_v2
   rotate: false
-  xy: 2099, 1119
+  xy: 2475, 557
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 2
 titan_formations_v2
   rotate: false
-  xy: 2361, 1119
+  xy: 2475, 295
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 3
 titan_formations_v2
   rotate: false
-  xy: 2623, 1119
+  xy: 2641, 33
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 4
 titan_formations_v2
   rotate: false
-  xy: 2885, 999
+  xy: 2737, 1605
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 5
 titan_hunter_sheet_v3
   rotate: false
-  xy: 2327, 289
+  xy: 3235, 469
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 0
 titan_hunter_sheet_v3
   rotate: false
-  xy: 2493, 289
+  xy: 3401, 443
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 1
 titan_hunter_sheet_v3
   rotate: false
-  xy: 2659, 169
+  xy: 2903, 303
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 2
 titan_hunter_sheet_v3
   rotate: false
-  xy: 2825, 169
+  xy: 3069, 303
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 3
 titan_hunter_sheet_v3
   rotate: false
-  xy: 2991, 169
+  xy: 3235, 303
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 4
 titan_hunter_sheet_v3
   rotate: false
-  xy: 3157, 143
+  xy: 3235, 137
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 5
 titan_hunter_sheet_v3
   rotate: false
-  xy: 3323, 143
+  xy: 2903, 137
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 6
 titan_hunter_sheet_v3
   rotate: false
-  xy: 3489, 73
+  xy: 3069, 137
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 7
 titan_hunter_sheet_v3
   rotate: false
-  xy: 3655, 73
+  xy: 3567, 399
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 8
 titan_hunter_sheet_v3
   rotate: false
-  xy: 1829, 123
+  xy: 3401, 277
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 9
 titan_hunter_sheet_v3
   rotate: false
-  xy: 1663, 3
+  xy: 3733, 399
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 10
 titan_hunter_sheet_v3
   rotate: false
-  xy: 1995, 123
+  xy: 3733, 233
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 11
 titan_hunter_sheet_v3
   rotate: false
-  xy: 2161, 123
+  xy: 3567, 233
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 12
 titan_hunter_sheet_v3
   rotate: false
-  xy: 2327, 123
+  xy: 3401, 111
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 13
 titan_hunter_sheet_v3
   rotate: false
-  xy: 2493, 123
+  xy: 3567, 67
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 14
 titan_hunter_sheet_v3
   rotate: false
-  xy: 2659, 3
+  xy: 3733, 67
   size: 160, 160
   orig: 160, 160
   offset: 0, 0
   index: 15
 titan_portal_vertical_v2
   rotate: false
-  xy: 3147, 999
+  xy: 2794, 1867
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 0
 titan_portal_vertical_v2
   rotate: false
-  xy: 3409, 973
+  xy: 3192, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 1
 titan_portal_vertical_v2
   rotate: false
-  xy: 3671, 903
+  xy: 3192, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 2
 titan_portal_vertical_v2
   rotate: false
-  xy: 527, 857
+  xy: 3192, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 3
 titan_portal_vertical_v2
   rotate: false
-  xy: 3, 729
+  xy: 3454, 2461
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 4
 titan_portal_vertical_v2
   rotate: false
-  xy: 265, 729
+  xy: 3454, 2985
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 5
 titan_portal_vertical_v2
   rotate: false
-  xy: 789, 857
+  xy: 3454, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0
   index: 6
 titan_portal_vertical_v2
   rotate: false
-  xy: 1051, 857
+  xy: 3716, 2723
   size: 256, 256
   orig: 256, 256
   offset: 0, 0

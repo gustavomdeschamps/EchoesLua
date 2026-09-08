@@ -178,6 +178,19 @@ public class TerminalUi implements Disposable {
         titleFont.draw(batch, value, x, y);
     }
 
+    /** Texto quebrado dentro de uma largura máxima — para blocos de objetivo/descrição. */
+    public void textWrapped(String value, float scale, Color color, float x, float y, float maxWidth) {
+        font.getData().setScale(scale);
+        font.setColor(color);
+        font.draw(batch, value, x, y, maxWidth, com.badlogic.gdx.utils.Align.left, true);
+    }
+
+    /** Restaura escala e cor da fonte de corpo — chamada ao final de uma composição. */
+    public void resetFontScale() {
+        font.getData().setScale(1f);
+        font.setColor(Color.WHITE);
+    }
+
     public void centeredTitle(String value, float scale, Color color, float centerX, float y) {
         titleFont.getData().setScale(scale);
         titleFont.setColor(color);

@@ -9,6 +9,10 @@ import com.badlogic.gdx.graphics.g2d.TextureAtlas;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.utils.Disposable;
+import com.orion.echoes.lua.entities.MarsObject;
+import com.orion.echoes.lua.entities.Npc;
+import java.util.EnumMap;
+import java.util.Map;
 
 /** Catálogo visual carregado de modo incremental pela LoadingScreen. */
 public final class AssetManager implements Disposable {
@@ -21,6 +25,18 @@ public final class AssetManager implements Disposable {
     private static final String LUNAR_GROUND = "textures/lunar_ground.png";
     private static final String MARS_GROUND = "textures/mars_ground.png";
     private static final String TITAN_GROUND = "textures/titan_ground_v2.png";
+    /*
+     * Key art das aberturas por mundo (docs/NEW_VISUAL_ASSETS.md).
+     *
+     * Ainda não foram fornecidas. Carregadas como Texture solta (como o
+     * terreno) em vez de via atlas, porque isso permite checar a existência do
+     * arquivo em disco e simplesmente não carregar nada quando falta — um
+     * findRegion() nulo no atlas exigiria que o TexturePacker já soubesse da
+     * imagem, que ainda não existe.
+     */
+    private static final String WORLD_INTRO_LUNAR = "textures/world_intro_lunar_v1.png";
+    private static final String WORLD_INTRO_MARS = "textures/world_intro_mars_v1.png";
+    private static final String WORLD_INTRO_TITAN = "textures/world_intro_titan_v1.png";
 
     private final com.badlogic.gdx.assets.AssetManager loader =
         new com.badlogic.gdx.assets.AssetManager();
@@ -31,6 +47,14 @@ public final class AssetManager implements Disposable {
         new java.util.IdentityHashMap<>();
     private TextureRegion npcAyla;
     private TextureRegion titanVerticalPortal;
+    /** Folha de cada identidade de NPC, resolvida com fallback em bindLoadedAssets(). */
+    private final Map<Npc.Visual, TextureRegion> npcVisualSheets = new EnumMap<>(Npc.Visual.class);
+    /** Nulo enquanto o PNG dedicado (docs/NEW_VISUAL_ASSETS.md) não for fornecido. */
+    private TextureRegion marsStationSheetTexture;
+    private TextureRegion titanRefinerySheetTexture;
+    private Texture worldIntroLunarTexture;
+    private Texture worldIntroMarsTexture;
+    private Texture worldIntroTitanTexture;
 
     public TextureRegion astronautaSheetTexture;
     public TextureRegion astronautCombatSheetTexture;
@@ -91,6 +115,13 @@ public final class AssetManager implements Disposable {
         loader.load(LUNAR_GROUND, Texture.class, terrain);
         loader.load(MARS_GROUND, Texture.class, terrain);
         loader.load(TITAN_GROUND, Texture.class, terrain);
+
+        TextureLoader.TextureParameter keyArt = new TextureLoader.TextureParameter();
+        keyArt.minFilter = Texture.TextureFilter.Linear;
+        keyArt.magFilter = Texture.TextureFilter.Linear;
+        if (Gdx.files.internal(WORLD_INTRO_LUNAR).exists()) loader.load(WORLD_INTRO_LUNAR, Texture.class, keyArt);
+        if (Gdx.files.internal(WORLD_INTRO_MARS).exists()) loader.load(WORLD_INTRO_MARS, Texture.class, keyArt);
+        if (Gdx.files.internal(WORLD_INTRO_TITAN).exists()) loader.load(WORLD_INTRO_TITAN, Texture.class, keyArt);
     }
 
     /** Avança a fila sem bloquear; retorna true somente quando tudo está pronto. */
@@ -158,6 +189,20 @@ public final class AssetManager implements Disposable {
         backgroundLuaTexture = loader.get(LUNAR_GROUND, Texture.class);
         marsBackgroundTexture = loader.get(MARS_GROUND, Texture.class);
         titanBackgroundTexture = loader.get(TITAN_GROUND, Texture.class);
+        worldIntroLunarTexture = loader.isLoaded(WORLD_INTRO_LUNAR) ? loader.get(WORLD_INTRO_LUNAR, Texture.class) : null;
+        worldIntroMarsTexture = loader.isLoaded(WORLD_INTRO_MARS) ? loader.get(WORLD_INTRO_MARS, Texture.class) : null;
+        worldIntroTitanTexture = loader.isLoaded(WORLD_INTRO_TITAN) ? loader.get(WORLD_INTRO_TITAN, Texture.class) : null;
+
+        for (Npc.Visual visual : Npc.Visual.values()) {
+            TextureRegion sheet = optional(gameAtlas, visual.sheetKey());
+            if (sheet == null && visual.fallbackKey() != null) sheet = optional(gameAtlas, visual.fallbackKey());
+            if (sheet == null) throw new IllegalStateException("Nenhuma folha disponível para NPC: " + visual);
+            npcVisualSheets.put(visual, sheet);
+        }
+        // Ainda não fornecidos (docs/NEW_VISUAL_ASSETS.md): null é um estado válido,
+        // resolvido com fallback procedural em tempo de uso, não aqui.
+        marsStationSheetTexture = optional(gameAtlas, "mars_station_sheet_v2");
+        titanRefinerySheetTexture = optional(gameAtlas, "titan_refinery_sheet_v2");
 
         font = generateFont("fonts/ChakraPetch-Regular.ttf", 25);
         titleFont = generateFont("fonts/ChakraPetch-SemiBold.ttf", 32);
@@ -174,6 +219,23 @@ public final class AssetManager implements Disposable {
         TextureRegion region = atlas.findRegion(name);
         if (region == null) throw new IllegalStateException("Região obrigatória ausente no atlas: " + name);
         return region;
+    }
+
+    /**
+     * Como {@link #required}, mas devolve {@code null} em vez de lançar.
+     *
+     * Usado para assets do manifesto (docs/NEW_VISUAL_ASSETS.md) ainda não
+     * fornecidos: o nome simplesmente não existe no atlas empacotado, e quem
+     * chama decide o fallback visual em vez do carregamento falhar.
+     */
+    private TextureRegion optional(TextureAtlas atlas, String name) {
+        com.badlogic.gdx.utils.Array<TextureAtlas.AtlasRegion> frames = atlas.findRegions(name);
+        if (frames.size > 1) {
+            TextureRegion handle = frames.first();
+            frameGroups.put(handle, frames);
+            return handle;
+        }
+        return atlas.findRegion(name);
     }
 
     private BitmapFont generateFont(String path, int size) {
@@ -230,6 +292,62 @@ public final class AssetManager implements Disposable {
 
     public TextureRegion npcAylaFrame(int column, int row) {
         return gridRegion(npcAyla, 4, 4, column, row, 0);
+    }
+
+    /** Resolve o quadro de um NPC pela identidade tipada, com fallback já embutido. */
+    public TextureRegion npcVisualFrame(Npc.Visual visual, int column, int row) {
+        TextureRegion sheet = npcVisualSheets.get(visual);
+        if (sheet == null) throw new IllegalStateException("Folha não carregada para " + visual);
+        return gridRegion(sheet, 4, 4, column, row, visual.inset());
+    }
+
+    /** True quando a folha dedicada de {@code visual} já foi fornecida (não é fallback). */
+    public boolean hasDedicatedSheet(Npc.Visual visual) {
+        return loader.get(GAME_ATLAS, TextureAtlas.class).findRegion(visual.sheetKey()) != null;
+    }
+
+    /**
+     * Quadro animado de uma estação marciana, ou {@code null} enquanto
+     * {@code mars_station_sheet_v2.png} não tiver sido fornecido — quem chama
+     * decide o fallback (hoje, a região estática já existente do prop).
+     *
+     * Contrato de frame: 0 offline, 1 ativando, 2 e 3 alternam em operação
+     * (ver docs/NEW_VISUAL_ASSETS.md).
+     */
+    public TextureRegion marsStationFrame(MarsObject.Kind kind, int frame) {
+        if (marsStationSheetTexture == null) return null;
+        int row = switch (kind) {
+            case SOLAR_STATION -> 0;
+            case OXYGEN_STATION -> 1;
+            case COMMS_STATION -> 2;
+            default -> throw new IllegalArgumentException(kind + " não é uma estação marciana.");
+        };
+        return gridRegion(marsStationSheetTexture, 4, 3, frame, row, 2);
+    }
+
+    public boolean hasMarsStationSheet() { return marsStationSheetTexture != null; }
+
+    /**
+     * Quadro animado da refinaria de Titã, ou {@code null} enquanto
+     * {@code titan_refinery_sheet_v2.png} não tiver sido fornecido.
+     *
+     * Contrato: 0 idle, 1 boot/interação, 2 e 3 processamento (ver
+     * docs/NEW_VISUAL_ASSETS.md).
+     */
+    public TextureRegion titanRefineryFrame(int frame) {
+        if (titanRefinerySheetTexture == null) return null;
+        return gridRegion(titanRefinerySheetTexture, 4, 1, frame, 0, 2);
+    }
+
+    public boolean hasTitanRefinerySheet() { return titanRefinerySheetTexture != null; }
+
+    /** Nulo enquanto a key art dedicada não existir; quem chama usa o fallback do terreno. */
+    public Texture worldIntroTexture(com.orion.echoes.lua.systems.CampaignState.Phase world) {
+        return switch (world) {
+            case LUNAR -> worldIntroLunarTexture;
+            case MARS -> worldIntroMarsTexture;
+            case TITAN -> worldIntroTitanTexture;
+        };
     }
 
     public TextureRegion portalFrame(int column, int row) {

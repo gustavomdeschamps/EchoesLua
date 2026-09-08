@@ -735,6 +735,7 @@ SHEET_GRIDS = {
     "titan_hunter_sheet_v3.png": (4, 4),
     "titan_boss_sheet_v3.png": (4, 4),
     "npc_colony_officer_sheet_v2.png": (4, 4),
+    "npc_commander_ayla_sheet.png": (4, 4),
     "lunar_repair_stations_v2.png": (4, 4),
     "lunar_obstacles.png": (3, 2),
     "mars_obstacles.png": (3, 2),
@@ -743,7 +744,18 @@ SHEET_GRIDS = {
     "landmarks.png": (4, 2),
     "mars_atlas_v4.png": (4, 3),
     "campaign_portal_sheet_v2.png": (4, 4),
+    "titan_portal_vertical_v2.png": (4, 2),
     "titan_formations_v2.png": (3, 2),
+}
+
+# Assets do manifesto (docs/NEW_VISUAL_ASSETS.md) que ainda não foram
+# fornecidos. Validados só quando o arquivo existe: um nome aqui nunca torna a
+# validação obrigatória, mas assim que o PNG chegar ele é checado sem precisar
+# lembrar de mexer neste script de novo.
+OPTIONAL_SHEET_GRIDS = {
+    "npc_researcher_lira_sheet_v2.png": (4, 4),
+    "mars_station_sheet_v2.png": (4, 3),
+    "titan_refinery_sheet_v2.png": (4, 1),
 }
 
 
@@ -762,6 +774,80 @@ def validate_sheet_grids() -> None:
             )
     if errors:
         raise SystemExit("QA de spritesheets falhou:\n- " + "\n- ".join(errors))
+
+
+def validate_optional_sheet_grids() -> None:
+    """Como validate_sheet_grids, mas silenciosa enquanto o arquivo não existir."""
+    errors: list[str] = []
+    for name, (columns, rows) in OPTIONAL_SHEET_GRIDS.items():
+        path = TEXTURES / name
+        if not path.exists():
+            continue
+        with Image.open(path) as image:
+            width, height = image.size
+        if width % columns != 0 or height % rows != 0:
+            errors.append(
+                f"{name}: {width}x{height} não divide a grade {columns}x{rows}"
+            )
+    if errors:
+        raise SystemExit("QA de spritesheets opcionais falhou:\n- " + "\n- ".join(errors))
+
+
+def validate_no_empty_frames() -> None:
+    """Nenhuma célula de uma folha animada pode estar totalmente vazia."""
+    errors: list[str] = []
+    all_grids = {**SHEET_GRIDS, **{
+        name: grid for name, grid in OPTIONAL_SHEET_GRIDS.items() if (TEXTURES / name).exists()
+    }}
+    for name, (columns, rows) in all_grids.items():
+        image = Image.open(TEXTURES / name).convert("RGBA")
+        cell_w, cell_h = image.width // columns, image.height // rows
+        for row in range(rows):
+            for column in range(columns):
+                cell = image.crop((column * cell_w, row * cell_h,
+                                   (column + 1) * cell_w, (row + 1) * cell_h))
+                if cell.getchannel("A").getbbox() is None:
+                    errors.append(f"{name} célula {row * columns + column + 1}: quadro vazio")
+    if errors:
+        raise SystemExit("QA de quadros vazios falhou:\n- " + "\n- ".join(errors))
+
+
+def validate_frame_baseline(maximum_deviation_ratio: float = 0.12) -> None:
+    """A base do desenho (pé/pivô) não pode derivar entre quadros da mesma linha.
+
+    Um pivô instável é o sintoma clássico de "personagem deslizando": a
+    silhueta muda de tamanho ou de posição vertical quadro a quadro. Aqui o
+    limite é relativo à altura da célula, então funciona igual em folhas de
+    tamanhos diferentes.
+    """
+    errors: list[str] = []
+    for name in (
+        "astronauta_sheet.png", "astronaut_combat_sheet.png",
+        "lunar_enemy_sheet.png", "mars_drone_sheet.png", "mars_crawler_sheet.png",
+        "titan_hunter_sheet_v3.png", "titan_boss_sheet_v3.png",
+        "npc_colony_officer_sheet_v2.png", "npc_commander_ayla_sheet.png",
+    ):
+        columns, rows = SHEET_GRIDS[name]
+        image = Image.open(TEXTURES / name).convert("RGBA")
+        cell_w, cell_h = image.width // columns, image.height // rows
+        for row in range(rows):
+            baselines: list[int] = []
+            for column in range(columns):
+                cell = image.crop((column * cell_w, row * cell_h,
+                                   (column + 1) * cell_w, (row + 1) * cell_h))
+                bbox = cell.getchannel("A").getbbox()
+                if bbox:
+                    baselines.append(bbox[3])
+            if len(baselines) < 2:
+                continue
+            spread = max(baselines) - min(baselines)
+            if spread / cell_h > maximum_deviation_ratio:
+                errors.append(
+                    f"{name} linha {row + 1}: base varia {spread}px "
+                    f"({spread / cell_h:.0%} da célula) entre quadros"
+                )
+    if errors:
+        raise SystemExit("QA de baseline falhou:\n- " + "\n- ".join(errors))
 
 
 def validate_character_motion(minimum_mean_difference: float = 5.0) -> None:
@@ -826,7 +912,8 @@ def validate_terrain_seams(maximum_mean_difference: float = 4.0) -> None:
 def validate_cell_scale(maximum_deviation: float = 0.55) -> None:
     errors: list[str] = []
     for name in ("mission_atlas_unified.png", "landmarks.png",
-                 "lunar_obstacles.png", "mars_obstacles.png"):
+                 "lunar_obstacles.png", "mars_obstacles.png",
+                 "npc_colony_officer_sheet_v2.png", "npc_commander_ayla_sheet.png"):
         columns, rows = SHEET_GRIDS[name]
         image = Image.open(TEXTURES / name).convert("RGBA")
         cell_w, cell_h = image.width // columns, image.height // rows
@@ -877,6 +964,9 @@ def validate_cell_borders(maximum_visible_pixels: int = 0) -> None:
 
 def validate_all() -> None:
     validate_sheet_grids()
+    validate_optional_sheet_grids()
+    validate_no_empty_frames()
+    validate_frame_baseline()
     validate_character_motion()
     validate_palette_sync()
     validate_terrain_seams()

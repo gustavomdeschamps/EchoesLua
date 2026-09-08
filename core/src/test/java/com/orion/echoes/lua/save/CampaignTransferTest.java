@@ -38,4 +38,32 @@ class CampaignTransferTest {
             assertEquals(360f, data.posY);
         }
     }
+
+    @Test void worldIntroFlagsRoundTripOnAFreshSave() {
+        CampaignState before = new CampaignState(1L);
+        before.setLunarIntroShown(true);
+        before.setMarsIntroShown(true);
+        GameSaveData data = new GameSaveData();
+        LunarCheckpoint.applyCampaign(data, before);
+        CampaignState after = LunarCheckpoint.toCampaign(data);
+        assertTrue(after.isLunarIntroShown());
+        assertTrue(after.isMarsIntroShown());
+        assertFalse(after.isTitanIntroShown());
+    }
+
+    @Test void legacySaveWithoutIntroFlagsDoesNotReplayCinematicsAlreadyEarned() {
+        // Save anterior à versão 5: nunca gravou as flags de abertura, então
+        // chegam com o default do Json (false). A Lua já foi vista por
+        // definição (é sempre o primeiro mundo); Marte e Titã herdam da
+        // visita/entrada já registradas, para o portal bidirecional não
+        // reapresentar a cinematic completa a cada troca de fase.
+        GameSaveData data = new GameSaveData();
+        data.versao = 4;
+        data.marteVisitado = true;
+        data.entrouTita = false;
+        CampaignState restored = LunarCheckpoint.toCampaign(data);
+        assertTrue(restored.isLunarIntroShown());
+        assertTrue(restored.isMarsIntroShown());
+        assertFalse(restored.isTitanIntroShown());
+    }
 }

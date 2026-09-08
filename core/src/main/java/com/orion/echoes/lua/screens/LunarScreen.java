@@ -147,7 +147,8 @@ public class LunarScreen implements Screen {
         astronauta = world.getPlayer();
         lunarConversation = new com.orion.echoes.lua.systems.NpcConversation(
             new com.orion.echoes.lua.entities.Npc(astronauta.getPosition().x + 65f,
-                astronauta.getPosition().y + 10f, "COMANDANTE AYLA", com.badlogic.gdx.graphics.Color.WHITE, assets, true),
+                astronauta.getPosition().y + 10f, "COMANDANTE AYLA", com.badlogic.gdx.graphics.Color.WHITE,
+                assets, com.orion.echoes.lua.entities.Npc.Visual.AYLA),
             new String[] {
                 "Esta colônia mantém o enlace entre a Terra e nossas expedições. Sem as antenas, ninguém ouve um pedido de resgate.",
                 "Recolha as peças espalhadas e reative três sistemas. Os cilindros renovam o oxigênio; o gelo abastece a fabricação de munição.",
@@ -163,7 +164,7 @@ public class LunarScreen implements Screen {
         collection = new CollectionSystem(sounds, particleManager, juice, feedback);
         worldRenderer = new WorldRenderer(batch, assets, camera);
         overlay = new MissionOverlay(batch, assets, camera, uiCamera);
-        pauseOverlay = new PauseOverlay(batch, assets, uiCamera);
+        pauseOverlay = new PauseOverlay(batch, assets);
         hitboxDebug = new HitboxDebugRenderer(batch, assets);
     }
 
@@ -243,8 +244,16 @@ public class LunarScreen implements Screen {
 
         overlay.renderDamageVignette(juice.getDamageFlashAlpha());
 
-        if (pausado) pauseOverlay.render(world);
-        else {
+        if (pausado) {
+            pauseOverlay.render(UiTheme.CYAN, "ECHOES · LUA", campaign.missaoAtual(),
+                "A missão está congelada. Nenhum recurso será consumido.",
+                new String[] {"OXIGÊNIO", "REPAROS", "TEMPO"},
+                new String[] {
+                    String.format("%.0f%%", astronauta.getOxigenio()),
+                    mission.getRepairCount() + "/3",
+                    String.format("%.1f s", astronauta.getTempoVivo())
+                });
+        } else {
             batch.setProjectionMatrix(uiCamera.combined);
             batch.begin();
             lunarConversation.renderUi();
@@ -321,7 +330,7 @@ public class LunarScreen implements Screen {
                 vitoria = true;
                 guardarCampanha();
                 campaign.setPhase(CampaignState.Phase.MARS);
-                nextScreen = new MarsScreen(game, campaign);
+                nextScreen = WorldIntroScreen.routeToMars(game, campaign);
             }
             return;
         }
@@ -543,7 +552,7 @@ public class LunarScreen implements Screen {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             pausado = !pausado;
             astronauta.getBody().setLinearVelocity(0f, 0f);
-            if (pausado) sounds.tocarPause();
+            if (pausado) { sounds.tocarPause(); pauseOverlay.open(); }
             else sounds.tocarUnpause();
         }
         if (!pausado) return;
@@ -595,6 +604,7 @@ public class LunarScreen implements Screen {
         viewport.update(width, height, true);
         uiViewport.update(width, height, true);
         hud.resize(width, height);
+        if (pauseOverlay != null) pauseOverlay.resize(width, height);
     }
 
     @Override public void pause() { }
@@ -607,5 +617,6 @@ public class LunarScreen implements Screen {
         if (particleManager != null) particleManager.dispose();
         if (physicsWorld != null) physicsWorld.dispose();
         if (overlay != null) overlay.dispose();
+        if (pauseOverlay != null) pauseOverlay.dispose();
     }
 }
