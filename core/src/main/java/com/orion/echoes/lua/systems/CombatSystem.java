@@ -215,7 +215,7 @@ public final class CombatSystem {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         for (Enemy enemy : world.getEnemies()) {
-            if (!enemy.isAtivo() || enemy.getHealthRatio() >= 1f) continue;
+            if (!enemy.isAtivo()) continue;
             float x = enemy.centerX() - HEALTH_BAR_WIDTH / 2f;
             float y = enemy.centerY() + 46f;
             batch.setColor(Color.WHITE);

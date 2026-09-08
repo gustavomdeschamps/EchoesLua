@@ -88,6 +88,8 @@ public final class MarsScreen implements Screen {
     private HitboxDebugRenderer hitboxDebug;
     private int minerals, activeStations, hostilesDefeated;
     private boolean changingScreen;
+    /** 0 normal, 1 viajando para Titã, 2 retornando à Lua. */
+    private int portalTravel;
     private boolean paused;
     private final DialogueController titanDialogue = new DialogueController();
     private Npc oficial;
@@ -145,7 +147,7 @@ public final class MarsScreen implements Screen {
     private void buildColony() {
         habitat = prop(160f, 1020f, 330f, 275f, MarsObject.Kind.HABITAT);
         // Alguem de carne e osso para conversar, em vez de uma voz no radio.
-        oficial = new Npc(548f, 1060f, "COMANDANTE AYLA",
+        oficial = new Npc(548f, 1060f, "OFICIAL DA COLÔNIA",
             new Color(.72f, .86f, 1f, 1f), assets);
         stations.add(prop(700f, 1420f, 225f, 190f, MarsObject.Kind.SOLAR_STATION));
         stations.add(prop(1550f, 1330f, 225f, 190f, MarsObject.Kind.OXYGEN_STATION));
@@ -165,6 +167,7 @@ public final class MarsScreen implements Screen {
          */
         returnPortal = new Portal(360f, 300f, assets);
         returnPortal.setUnlocked(true);
+        returnPortal.setReversed(true);
         titanPortal = new TitanPortal(2600f, 1520f, assets);
         dialogBox = new DialogBox(batch, assets);
         titanPortal.setUnlocked(campaign.portalLiberado());
@@ -274,6 +277,7 @@ public final class MarsScreen implements Screen {
         returnPortal.render(batch);
         titanPortal.render(batch);
         for (Pickup suprimento : suprimentos) suprimento.render(batch);
+        oficial.setTalking(titanDialogue.isOpen());
         oficial.update(Gdx.graphics.getDeltaTime());
         oficial.render(batch);
         oficial.renderIndicador(batch, assets.uiObjectiveMarkerTexture, player);
@@ -373,6 +377,19 @@ public final class MarsScreen implements Screen {
                 changingScreen = true;
                 game.setScreen(new MenuScreen(game));
                 dispose();
+            }
+            return;
+        }
+        if (portalTravel != 0) {
+            player.getBody().setLinearVelocity(0f, 0f);
+            returnPortal.update(delta);
+            titanPortal.update(delta);
+            particles.update(delta);
+            boolean complete = portalTravel == 1
+                ? titanPortal.isTraversalComplete() : returnPortal.isTraversalComplete();
+            if (complete) {
+                if (portalTravel == 1) finishEnterTitan();
+                else finishReturnToMoon();
             }
             return;
         }
@@ -564,6 +581,13 @@ public final class MarsScreen implements Screen {
     }
 
     private void enterTitan() {
+        if (portalTravel != 0) return;
+        portalTravel = 1;
+        titanPortal.beginTraversal(false);
+        feedback("O campo dobra e inverte o vetor de saída para Titã.");
+    }
+
+    private void finishEnterTitan() {
         campaign.setEntrouTita(true);
         campaign.setPhase(CampaignState.Phase.TITAN);
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
@@ -620,6 +644,13 @@ public final class MarsScreen implements Screen {
 
     /** Portal de volta: devolve o jogador a mesma Lua que ele deixou. */
     private void atravessarPortalDeVolta() {
+        if (portalTravel != 0) return;
+        portalTravel = 2;
+        returnPortal.beginTraversal(true);
+        feedback("Portal invertido: rota de retorno à Lua estabilizada.");
+    }
+
+    private void finishReturnToMoon() {
         guardarCampanha();
         campaign.setPhase(CampaignState.Phase.LUNAR);
         changingScreen = true;
@@ -757,7 +788,7 @@ public final class MarsScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         for (MarsEnemy enemy : enemies) {
-            if (!enemy.isAtivo() || enemy.getHealthRatio() >= 1f) continue;
+            if (!enemy.isAtivo()) continue;
             batch.setColor(MARS_DARK);
             batch.draw(assets.uiBarTrackTexture, enemy.centerX() - 28f, enemy.centerY() + 48f, 56f, 6f);
             batch.setColor(MARS);

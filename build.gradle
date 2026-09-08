@@ -105,10 +105,11 @@ def atlasGroups = [
     'oxigenio.png', 'comida.png', 'gelo.png', 'mission_atlas_unified.png',
     'mars_atlas_v4.png', 'lunar_enemy_sheet.png', 'mars_drone_sheet.png',
     'mars_crawler_sheet.png', 'lunar_obstacles.png', 'mars_obstacles.png',
-    'landmarks.png', 'titan_hunter_sheet_v2.png', 'titan_boss_sheet_v2.png',
-    'titan_portal_vertical_v2.png', 'npc_commander_ayla_sheet.png'
+    'landmarks.png', 'titan_hunter_sheet_v3.png', 'titan_boss_sheet_v3.png',
+    'campaign_portal_sheet_v2.png', 'lunar_repair_stations_v2.png', 'titan_formations_v2.png',
+    'npc_colony_officer_sheet_v2.png'
   ],
-  ui: ['intro_keyart_v3.png', 'ui_panel_frame.png',
+  ui: ['intro_keyart_v4.png', 'ui_panel_frame.png',
     'ui/panel_hud.png', 'ui/panel_dialog.png', 'ui/panel_modal.png',
     'ui/button_normal.png', 'ui/button_hover.png', 'ui/button_pressed.png', 'ui/button_disabled.png',
     'ui/bar_track.png', 'ui/bar_fill.png', 'ui/resource_icons.png',

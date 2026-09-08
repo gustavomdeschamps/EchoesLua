@@ -1,145 +1,159 @@
 
 game.png
-size: 3774, 4093
+size: 4058, 4093
 format: RGBA8888
 filter: MipMapLinearLinear, Linear
 repeat: none
 astronaut_combat_sheet
   rotate: false
-  xy: 2519, 635
+  xy: 1261, 635
   size: 1252, 939
   orig: 1252, 939
   offset: 0, 0
   index: -1
 astronauta_sheet
   rotate: false
-  xy: 3, 2838
+  xy: 1545, 2838
   size: 1252, 1252
   orig: 1252, 1252
   offset: 0, 0
   index: -1
-landmarks
+campaign_portal_sheet_v2
   rotate: false
-  xy: 2519, 3
-  size: 1252, 626
-  orig: 1252, 626
-  offset: 0, 0
-  index: -1
-lunar_enemy_sheet
-  rotate: false
-  xy: 3, 1580
+  xy: 2803, 2838
   size: 1252, 1252
   orig: 1252, 1252
-  offset: 0, 0
-  index: -1
-mars_crawler_sheet
-  rotate: false
-  xy: 1261, 2838
-  size: 1252, 1252
-  orig: 1252, 1252
-  offset: 0, 0
-  index: -1
-mars_drone_sheet
-  rotate: false
-  xy: 3, 322
-  size: 1252, 1252
-  orig: 1252, 1252
-  offset: 0, 0
-  index: -1
-mission_atlas_unified
-  rotate: false
-  xy: 1261, 1580
-  size: 1252, 1252
-  orig: 1252, 1252
-  offset: 0, 0
-  index: -1
-npc_commander_ayla_sheet
-  rotate: false
-  xy: 2519, 2838
-  size: 1252, 1252
-  orig: 1252, 1252
-  offset: 0, 0
-  index: -1
-titan_boss_sheet_v2
-  rotate: false
-  xy: 1261, 322
-  size: 1252, 1252
-  orig: 1252, 1252
-  offset: 0, 0
-  index: -1
-titan_hunter_sheet_v2
-  rotate: false
-  xy: 2519, 1580
-  size: 1252, 1252
-  orig: 1252, 1252
-  offset: 0, 0
-  index: -1
-
-game2.png
-size: 2294, 2300
-format: RGBA8888
-filter: MipMapLinearLinear, Linear
-repeat: none
-base_lunar
-  rotate: false
-  xy: 3, 80
-  size: 768, 640
-  orig: 768, 640
   offset: 0, 0
   index: -1
 comida
   rotate: false
-  xy: 1261, 1785
+  xy: 777, 32
   size: 512, 512
   orig: 512, 512
   offset: 0, 0
   index: -1
 gelo
   rotate: false
-  xy: 1779, 1785
+  xy: 3498, 117
   size: 512, 512
   orig: 512, 512
+  offset: 0, 0
+  index: -1
+landmarks
+  rotate: false
+  xy: 1295, 3
+  size: 1252, 626
+  orig: 1252, 626
+  offset: 0, 0
+  index: -1
+lunar_enemy_sheet
+  rotate: false
+  xy: 2803, 1580
+  size: 1252, 1252
+  orig: 1252, 1252
   offset: 0, 0
   index: -1
 lunar_obstacles
   rotate: false
-  xy: 1261, 1153
+  xy: 2553, 3
   size: 939, 626
   orig: 939, 626
+  offset: 0, 0
+  index: -1
+lunar_repair_stations_v2
+  rotate: false
+  xy: 3, 1808
+  size: 1252, 1252
+  orig: 1252, 1252
   offset: 0, 0
   index: -1
 mars_atlas_v4
   rotate: false
-  xy: 3, 1358
+  xy: 2519, 635
   size: 1252, 939
   orig: 1252, 939
   offset: 0, 0
   index: -1
-mars_obstacles
+mars_crawler_sheet
   rotate: false
-  xy: 1261, 521
-  size: 939, 626
-  orig: 939, 626
+  xy: 1261, 1580
+  size: 1252, 1252
+  orig: 1252, 1252
   offset: 0, 0
   index: -1
-oxigenio
+mars_drone_sheet
   rotate: false
-  xy: 1551, 3
-  size: 512, 512
-  orig: 512, 512
+  xy: 3, 550
+  size: 1252, 1252
+  orig: 1252, 1252
   offset: 0, 0
   index: -1
 pulse_rifle
   rotate: false
-  xy: 777, 3
+  xy: 3, 32
   size: 768, 512
   orig: 768, 512
   offset: 0, 0
   index: -1
-titan_portal_vertical_v2
+titan_formations_v2
   rotate: false
-  xy: 3, 726
-  size: 1252, 626
-  orig: 1252, 626
+  xy: 3, 3066
+  size: 1536, 1024
+  orig: 1536, 1024
+  offset: 0, 0
+  index: -1
+
+game2.png
+size: 2516, 3162
+format: RGBA8888
+filter: MipMapLinearLinear, Linear
+repeat: none
+base_lunar
+  rotate: false
+  xy: 948, 3
+  size: 768, 640
+  orig: 768, 640
+  offset: 0, 0
+  index: -1
+mars_obstacles
+  rotate: false
+  xy: 3, 17
+  size: 939, 626
+  orig: 939, 626
+  offset: 0, 0
+  index: -1
+mission_atlas_unified
+  rotate: false
+  xy: 3, 1907
+  size: 1252, 1252
+  orig: 1252, 1252
+  offset: 0, 0
+  index: -1
+npc_colony_officer_sheet_v2
+  rotate: false
+  xy: 3, 649
+  size: 1252, 1252
+  orig: 1252, 1252
+  offset: 0, 0
+  index: -1
+oxigenio
+  rotate: false
+  xy: 1722, 131
+  size: 512, 512
+  orig: 512, 512
+  offset: 0, 0
+  index: -1
+titan_boss_sheet_v3
+  rotate: false
+  xy: 1261, 1907
+  size: 1252, 1252
+  orig: 1252, 1252
+  offset: 0, 0
+  index: -1
+titan_hunter_sheet_v3
+  rotate: false
+  xy: 1261, 649
+  size: 1252, 1252
+  orig: 1252, 1252
   offset: 0, 0
   index: -1

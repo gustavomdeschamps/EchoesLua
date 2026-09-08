@@ -69,18 +69,18 @@ public final class IntroScreen implements Screen {
         float artX = -24f - drift * 24f + jitter;
         float artY = -14f - drift * 12f;
         desenharKeyArt(artX, artY, artW, artH, signalKick);
-        // Véu só na área de texto: mantém o portal e o chefe completamente visíveis.
-        batch.setColor(.005f, .01f, .02f, .56f * envelope(.45f, 6.8f, .5f));
-        rect(42f, 430f, 570f, 225f);
+        // Faixa editorial curta: a arte continua mostrando Lua, Marte e Titã.
+        batch.setColor(.005f, .01f, .02f, .66f * envelope(.45f, 6.8f, .5f));
+        rect(42f, 432f, 610f, 224f);
         batch.setColor(Color.WHITE);
-        drawAt(assets.font, "TRANSMISSÃO PRIORITÁRIA  //  TITÃ", .62f, 1.05f, 4.5f, 78f, 628f,
+        drawAt(assets.font, "ARQUIVO DE MISSÃO  //  ROTA EXTERIOR", .62f, 1.05f, 4.5f, 78f, 628f,
             new Color(.82f, .49f, .28f, 1f));
         drawAt(assets.titleFont, "ECHOES OF LUA", 1.72f, 1.45f, 6.85f, 76f, 570f, Color.WHITE);
-        drawAt(assets.titleFont, "O ÚLTIMO ECO", .68f, 2.0f, 6.85f, 82f, 512f,
+        drawAt(assets.titleFont, "LUA  •  MARTE  •  TITÃ", .68f, 2.0f, 6.85f, 82f, 512f,
             new Color(.78f, .8f, .76f, 1f));
-        drawAt(assets.font, "UM PORTAL DESPERTOU. ALGO RESPONDEU DO OUTRO LADO.", .62f,
+        drawAt(assets.font, "TRÊS MUNDOS. UM SINAL. A ÚLTIMA RESPOSTA AGUARDA.", .62f,
             2.35f, 6.35f, 80f, 112f, new Color(.38f, .78f, .77f, 1f));
-        drawAt(assets.font, "RECONSTRUA  •  ATRAVESSE  •  SOBREVIVA", .72f,
+        drawAt(assets.font, "REPARE  •  ATRAVESSE  •  ENFRENTE", .72f,
             3.05f, 6.65f, 80f, 82f, new Color(.9f, .91f, .86f, 1f));
         drawAt(assets.font, "ESPAÇO / ENTER  PULAR", .56f,
             .55f, 6.85f, 1038f, 68f, new Color(.72f, .76f, .75f, 1f));

@@ -1,110 +1,110 @@
 
 ui.png
-size: 2196, 947
+size: 2454, 1086
 format: RGBA8888
 filter: MipMapLinearLinear, Linear
 repeat: none
 bar_fill
   rotate: false
-  xy: 1681, 556
+  xy: 1929, 695
   size: 256, 24
   orig: 256, 24
   offset: 0, 0
   index: -1
 bar_track
   rotate: false
-  xy: 1681, 526
+  xy: 1929, 665
   size: 256, 24
   orig: 256, 24
   offset: 0, 0
   index: -1
 button_disabled
   rotate: false
-  xy: 1943, 586
+  xy: 2191, 725
   size: 192, 64
   orig: 192, 64
   offset: 0, 0
   index: -1
 button_hover
   rotate: false
-  xy: 1681, 456
+  xy: 1929, 595
   size: 192, 64
   orig: 192, 64
   offset: 0, 0
   index: -1
 button_normal
   rotate: false
-  xy: 1681, 386
+  xy: 1929, 525
   size: 192, 64
   orig: 192, 64
   offset: 0, 0
   index: -1
 button_pressed
   rotate: false
-  xy: 1681, 316
+  xy: 1929, 455
   size: 192, 64
   orig: 192, 64
   offset: 0, 0
   index: -1
 damage_vignette
   rotate: false
-  xy: 1681, 656
+  xy: 1929, 795
   size: 512, 288
   orig: 512, 288
   offset: 0, 0
   index: -1
-intro_keyart_v3
+intro_keyart_v4
   rotate: false
   xy: 3, 3
-  size: 1672, 941
-  orig: 1672, 941
+  size: 1920, 1080
+  orig: 1920, 1080
   offset: 0, 0
   index: -1
 objective_marker
   rotate: false
-  xy: 1783, 144
+  xy: 2031, 385
   size: 64, 64
   orig: 64, 64
   offset: 0, 0
   index: -1
 panel_dialog
   rotate: false
-  xy: 1681, 214
+  xy: 1929, 353
   size: 96, 96
   orig: 96, 96
   offset: 0, 0
   index: -1
 panel_hud
   rotate: false
-  xy: 1681, 112
+  xy: 1929, 251
   size: 96, 96
   orig: 96, 96
   offset: 0, 0
   index: -1
 panel_modal
   rotate: false
-  xy: 1681, 10
+  xy: 1929, 149
   size: 96, 96
   orig: 96, 96
   offset: 0, 0
   index: -1
 resource_icons
   rotate: false
-  xy: 1681, 586
+  xy: 1929, 725
   size: 256, 64
   orig: 256, 64
   offset: 0, 0
   index: -1
 ui_panel_frame
   rotate: false
-  xy: 1783, 214
+  xy: 1929, 47
   size: 96, 96
   orig: 96, 96
   offset: 0, 0
   index: -1
 white_pixel
   rotate: false
-  xy: 1943, 576
+  xy: 2447, 1079
   size: 4, 4
   orig: 4, 4
   offset: 0, 0

@@ -91,6 +91,7 @@ public class LunarScreen implements Screen {
     private MissionState mission;
 
     private boolean pausado, gameOver, vitoria;
+    private boolean portalTraveling;
     private boolean oxigenioCriticoAtivado, estavaNaBase, portalWasUnlocked;
     private float tempoPoeira, tempoPasso;
 
@@ -285,6 +286,18 @@ public class LunarScreen implements Screen {
         if (pausado || gameOver || vitoria) return;
 
         delta = Math.min(delta, MAX_STEP);
+        if (portalTraveling) {
+            astronauta.getBody().setLinearVelocity(0f, 0f);
+            world.getPortal().update(delta);
+            particleManager.update(delta);
+            if (world.getPortal().isTraversalComplete()) {
+                vitoria = true;
+                guardarCampanha();
+                campaign.setPhase(CampaignState.Phase.MARS);
+                nextScreen = new MarsScreen(game, campaign);
+            }
+            return;
+        }
         juice.update(delta);
 
         float gameplayDelta = juice.gameplayDelta(delta);
@@ -414,10 +427,9 @@ public class LunarScreen implements Screen {
     private void atualizarInteracao() {
         if (!input.consumeInteractPressed()) return;
         if (interactions.interact(world) != InteractionSystem.Result.PORTAL_CROSSED) return;
-        vitoria = true;
-        guardarCampanha();
-        campaign.setPhase(CampaignState.Phase.MARS);
-        nextScreen = new MarsScreen(game, campaign);
+        portalTraveling = true;
+        world.getPortal().beginTraversal(false);
+        feedback.show("Travessia iniciada. Vetor de saída invertido para Marte.");
     }
 
     // =====================================================

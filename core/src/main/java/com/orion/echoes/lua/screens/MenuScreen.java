@@ -125,8 +125,6 @@ public final class MenuScreen implements Screen {
         });
 
         Table system = column();
-        section(system, "VÍDEO");
-        toggle(system, "Tela cheia", settings.isFullscreen(), this::setFullscreen);
         section(system, "INTERFACE");
         slider(system, "Escala do HUD", (settings.getHudScale() - .85f) / .35f,
             value -> settings.setHudScale(.85f + value * .35f));
@@ -305,12 +303,6 @@ public final class MenuScreen implements Screen {
             page.setX(page.getX() - 24f);
             page.addAction(Actions.parallel(Actions.fadeIn(.24f), Actions.moveBy(24f, 0f, .3f)));
         }
-    }
-
-    private void setFullscreen(boolean enabled) {
-        game.getSettings().setFullscreen(enabled);
-        if (enabled) Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
-        else Gdx.graphics.setWindowedMode(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
     }
 
     /** Comeca do zero: campanha nova, semente nova, Lua intacta. */

@@ -27,9 +27,13 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     private boolean moving;
     private float deathTime;
     private boolean facingLeft;
+    private final float spawnX;
+    private final float spawnY;
 
     public TitanEnemy(float x, float y, AssetManager assets) {
         super(x, y, 90f, 70f);
+        spawnX = x;
+        spawnY = y;
         for (int row = 0; row < 4; row++) {
             for (int column = 0; column < 4; column++) {
                 frames[row][column] = assets.titanEnemyFrame(column, row);
@@ -64,6 +68,19 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
             facingLeft = direction.x < 0f;
             move(direction.x, direction.y, delta, worldWidth, worldHeight, obstacles);
             moving = true;
+        } else if (distance > CHASE_RADIUS && hitTimer <= 0f) {
+            // Patrulha a área de nascimento: inimigos distantes não parecem congelados.
+            float patrolAngle = time * .48f + (spawnX + spawnY) * .013f;
+            float targetX = spawnX + MathUtils.cos(patrolAngle) * 125f;
+            float targetY = spawnY + MathUtils.sin(patrolAngle * .83f) * 92f;
+            direction.set(targetX - centerX(), targetY - centerY());
+            if (direction.len2() > 16f) {
+                direction.nor();
+                facingLeft = direction.x < 0f;
+                move(direction.x * .48f, direction.y * .48f, delta,
+                    worldWidth, worldHeight, obstacles);
+                moving = true;
+            } else moving = false;
         } else {
             moving = false;
             if (distance <= 450f && attackCooldown <= 0f && hitTimer <= 0f) telegraphTimer = .55f;

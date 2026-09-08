@@ -84,6 +84,7 @@ public final class TitanScreen implements Screen {
     private float shotTimer;
     private boolean paused;
     private boolean changingScreen;
+    private boolean portalTraveling;
 
     public TitanScreen(EchoesLua game, CampaignState campaign) {
         this.game = game;
@@ -141,6 +142,7 @@ public final class TitanScreen implements Screen {
         combat.setMunicao(player.getMunicao());
         returnPortal = new TitanPortal(150f, 150f, assets);
         returnPortal.setUnlocked(true);
+        returnPortal.setReversed(true);
         enemies.add(new TitanEnemy(760f, 610f, assets));
         enemies.add(new TitanEnemy(1370f, 980f, assets));
         enemies.add(new TitanEnemy(2050f, 520f, assets));
@@ -171,7 +173,7 @@ public final class TitanScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        batch.setColor(.78f, .56f, .32f, 1f);
+        batch.setColor(Color.WHITE);
         batch.draw(assets.titanBackgroundTexture, 0f, 0f, WORLD_W, WORLD_H);
         batch.setColor(Color.WHITE);
         desenharTerreno();
@@ -181,6 +183,7 @@ public final class TitanScreen implements Screen {
         for (Pickup suprimento : suprimentos) suprimento.render(batch);
         desenharAvisoDoChefe();
         for (TitanEnemy enemy : enemies) enemy.render(batch);
+        renderEnemyHealth();
         for (TitanProjectile projectile : projectiles) projectile.render(batch);
         boss.render(batch);
         renderPlayerShot();
@@ -206,6 +209,12 @@ public final class TitanScreen implements Screen {
                 game.setScreen(new MenuScreen(game));
                 dispose();
             }
+            return;
+        }
+        if (portalTraveling) {
+            player.getBody().setLinearVelocity(0f, 0f);
+            returnPortal.update(delta);
+            if (returnPortal.isTraversalComplete()) finishReturnToMars();
             return;
         }
         missionTime += delta;
@@ -281,8 +290,8 @@ public final class TitanScreen implements Screen {
      */
     private void desenharTerreno() {
         for (float[] pedra : FORMACOES) {
-            batch.setColor(.62f, .5f, .34f, .92f);
-            batch.draw(assets.marsObstacleRegion((int) pedra[4]),
+            batch.setColor(Color.WHITE);
+            batch.draw(assets.titanFormationRegion((int) pedra[4]),
                 pedra[0], pedra[1], pedra[2], pedra[3]);
         }
         // As silhuetas ficam no alto: sao horizonte, nao obstaculo.
@@ -302,6 +311,20 @@ public final class TitanScreen implements Screen {
             boss.isVolleyTelegraphing() ? .85f : .45f, .45f, .18f + progresso * .30f);
         batch.draw(assets.uiWhiteTexture, boss.centerX() - raio,
             boss.centerY() - 70f - raio * .34f, raio * 2f, raio * .68f);
+        batch.setColor(Color.WHITE);
+    }
+
+    /** Vida sempre visível: o jogador sabe quanto falta antes de gastar munição. */
+    private void renderEnemyHealth() {
+        for (TitanEnemy enemy : enemies) {
+            if (!enemy.isAtivo()) continue;
+            float x = enemy.centerX() - 34f;
+            float y = enemy.getPosition().y + 112f;
+            batch.setColor(.025f, .035f, .055f, .9f);
+            batch.draw(assets.uiWhiteTexture, x - 2f, y - 2f, 72f, 9f);
+            batch.setColor(enemy.isTelegraphing() ? UiTheme.RED : UiTheme.CYAN);
+            batch.draw(assets.uiWhiteTexture, x, y, 68f * enemy.getHealthRatio(), 5f);
+        }
         batch.setColor(Color.WHITE);
     }
 
@@ -456,6 +479,13 @@ public final class TitanScreen implements Screen {
     }
 
     private void returnToMars() {
+        if (portalTraveling) return;
+        portalTraveling = true;
+        returnPortal.beginTraversal(true);
+        feedback("O portal reverte o fluxo e fixa Marte como destino.");
+    }
+
+    private void finishReturnToMars() {
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
         campaign.setAmmo(player.getMunicao());
         campaign.setMissionTime(missionTime);
