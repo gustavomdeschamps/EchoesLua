@@ -193,6 +193,10 @@ public class GameInputProcessor implements InputProcessor {
         int pointer,
         int button
     ) {
+        if (button == Input.Buttons.LEFT) {
+            attackPressed = true;
+            return true;
+        }
         return false;
     }
 

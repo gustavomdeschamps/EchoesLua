@@ -849,8 +849,6 @@ def validate_cell_borders(maximum_visible_pixels: int = 0) -> None:
     """Garante que nenhum desenho atravesse o limite de uma célula do atlas."""
     errors: list[str] = []
     for name, (columns, rows) in SHEET_GRIDS.items():
-        if name.startswith("astronaut"):
-            continue
         image = Image.open(TEXTURES / name).convert("RGBA")
         alpha = image.getchannel("A")
         cell_w, cell_h = image.width // columns, image.height // rows

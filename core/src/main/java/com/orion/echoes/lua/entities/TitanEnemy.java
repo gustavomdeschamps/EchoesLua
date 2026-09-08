@@ -3,7 +3,9 @@ package com.orion.echoes.lua.entities;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.systems.CombatTarget;
 
@@ -15,6 +17,7 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     private static final float SPRITE_SIZE = 144f;
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
+    private final Rectangle movementBounds = new Rectangle();
     private float hp = MAX_HP;
     private float time;
     private float hitTimer;
@@ -35,7 +38,8 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
         syncBounds();
     }
 
-    public void update(float delta, Astronauta player, float worldWidth, float worldHeight) {
+    public void update(float delta, Astronauta player, float worldWidth, float worldHeight,
+                       Array<Rectangle> obstacles) {
         if (!ativo) return;
         time += delta;
         if (hp <= 0f) {
@@ -58,10 +62,7 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
         } else if (distance > 115f && distance <= CHASE_RADIUS && distance > .001f && hitTimer <= 0f) {
             direction.scl(1f / distance);
             facingLeft = direction.x < 0f;
-            position.x = MathUtils.clamp(position.x + direction.x * SPEED * delta,
-                0f, worldWidth - width);
-            position.y = MathUtils.clamp(position.y + direction.y * SPEED * delta,
-                0f, worldHeight - height);
+            move(direction.x, direction.y, delta, worldWidth, worldHeight, obstacles);
             moving = true;
         } else {
             moving = false;
@@ -80,6 +81,21 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     private void syncBounds() {
         bounds.set(centerX() - 43f, position.y + 14f + MathUtils.sin(time * 3f) * 2f,
             86f, 48f);
+    }
+
+    private void move(float dx, float dy, float delta, float worldWidth, float worldHeight,
+                      Array<Rectangle> obstacles) {
+        float nextX = MathUtils.clamp(position.x + dx * SPEED * delta, 0f, worldWidth - width);
+        if (free(nextX, position.y, obstacles)) position.x = nextX;
+        float nextY = MathUtils.clamp(position.y + dy * SPEED * delta, 0f, worldHeight - height);
+        if (free(position.x, nextY, obstacles)) position.y = nextY;
+    }
+
+    private boolean free(float x, float y, Array<Rectangle> obstacles) {
+        movementBounds.set(x + width / 2f - 43f,
+            y + 14f + MathUtils.sin(time * 3f) * 2f, 86f, 48f);
+        for (Rectangle obstacle : obstacles) if (movementBounds.overlaps(obstacle)) return false;
+        return true;
     }
 
     private TextureRegion frame() {

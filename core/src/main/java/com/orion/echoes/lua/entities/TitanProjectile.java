@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
 
 /** Projétil hostil visível, com núcleo e rastro; não é dano invisível. */
 public final class TitanProjectile {
@@ -38,6 +39,15 @@ public final class TitanProjectile {
         if (!active || !bounds.overlaps(player.getBounds())) return false;
         active = false;
         return true;
+    }
+    public boolean collideWith(Array<Rectangle> obstacles) {
+        if (!active) return false;
+        for (Rectangle obstacle : obstacles) {
+            if (!bounds.overlaps(obstacle)) continue;
+            active = false;
+            return true;
+        }
+        return false;
     }
     public void render(SpriteBatch batch) {
         if (!active) return;

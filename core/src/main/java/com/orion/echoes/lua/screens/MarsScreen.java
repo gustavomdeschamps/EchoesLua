@@ -63,6 +63,7 @@ public final class MarsScreen implements Screen {
     private final Vector2 shotStart = new Vector2();
     private final Vector2 shotEnd = new Vector2();
     private final Vector2 cameraTarget = new Vector2();
+    private final Vector2 mouseWorld = new Vector2();
 
     private AssetManager assets;
     private SpriteBatch batch;
@@ -397,6 +398,9 @@ public final class MarsScreen implements Screen {
         player.move(direction.x, direction.y, input.isRunning(), delta);
         physics.update(delta);
         player.update(delta);
+        mouseWorld.set(Gdx.input.getX(), Gdx.input.getY());
+        viewport.unproject(mouseWorld);
+        player.setAimTarget(mouseWorld.x, mouseWorld.y);
         player.setProtegido(player.getBounds().overlaps(habitat.getBounds()));
         if (player.isProtegido()) {
             player.recuperarOxigenio(9f * delta);
@@ -415,7 +419,7 @@ public final class MarsScreen implements Screen {
         collectItems();
         coletarSuprimentos(delta);
         for (MarsEnemy enemy : enemies) {
-            enemy.update(delta, player, rocks);
+            enemy.update(delta, player, props);
             if (enemy.consumeTelegraphStarted()) {
                 particles.criarAlertaInimigo(enemy.centerX(), enemy.centerY(), true);
                 sounds.tocarAlertaInimigo(enemy.centerX(), enemy.centerY());

@@ -20,6 +20,8 @@ def main() -> None:
     parser.add_argument("height", type=int)
     parser.add_argument("--keep-components", action="store_true",
                         help="Do not discard disconnected details in already-clean art.")
+    parser.add_argument("--margin", type=float, default=.075,
+                        help="Transparent margin reserved inside every cell.")
     args = parser.parse_args()
 
     target = (args.width, args.height)
@@ -34,7 +36,7 @@ def main() -> None:
         for column in range(args.columns):
             cell = image.crop((column * cell_w, row * cell_h,
                                (column + 1) * cell_w, (row + 1) * cell_h))
-            normalized = _fit_cell(cell, (cell_w, cell_h), margin=.075)
+            normalized = _fit_cell(cell, (cell_w, cell_h), margin=args.margin)
             output.alpha_composite(normalized, (column * cell_w, row * cell_h))
 
     args.output.parent.mkdir(parents=True, exist_ok=True)

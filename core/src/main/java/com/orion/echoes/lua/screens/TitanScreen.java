@@ -56,10 +56,12 @@ public final class TitanScreen implements Screen {
     private final Array<TitanEnemy> enemies = new Array<>();
     private final Array<Pickup> suprimentos = new Array<>();
     private final Array<TitanProjectile> projectiles = new Array<>();
+    private final Array<Rectangle> collisionObstacles = new Array<>();
     /** Refinaria de campo: e aqui que o gelo de Tita vira municao. */
     private final Rectangle refinaria = new Rectangle(430f, 150f, 148f, 132f);
     private final Vector2 shotOrigin = new Vector2();
     private final Vector2 shotEnd = new Vector2();
+    private final Vector2 mouseWorld = new Vector2();
     private AssetManager assets;
     private SpriteBatch batch;
     private PhysicsWorld physics;
@@ -107,6 +109,20 @@ public final class TitanScreen implements Screen {
         new Wall(WORLD_W, 0f, 24f, WORLD_H, physics);
         new Wall(0f, -24f, WORLD_W, 24f, physics);
         new Wall(0f, WORLD_H, WORLD_W, 24f, physics);
+        for (float[] formation : FORMACOES) {
+            Rectangle footprint = new Rectangle(
+                formation[0] + formation[2] * .16f,
+                formation[1] + formation[3] * .06f,
+                formation[2] * .68f,
+                formation[3] * .28f);
+            collisionObstacles.add(footprint);
+            new Wall(footprint.x, footprint.y, footprint.width, footprint.height, physics);
+        }
+        Rectangle refineryFootprint = new Rectangle(refinaria.x + 24f, refinaria.y + 8f,
+            refinaria.width - 48f, 34f);
+        collisionObstacles.add(refineryFootprint);
+        new Wall(refineryFootprint.x, refineryFootprint.y,
+            refineryFootprint.width, refineryFootprint.height, physics);
         player = new Astronauta(260f, 260f, assets, physics);
         player.setSurfaceProfile(Astronauta.SurfaceProfile.MARS);
         player.setWeaponEquipped(true);
@@ -201,9 +217,12 @@ public final class TitanScreen implements Screen {
         player.move(direction.x, direction.y, input.isRunning(), delta);
         physics.update(delta);
         player.update(delta);
+        mouseWorld.set(Gdx.input.getX(), Gdx.input.getY());
+        viewport.unproject(mouseWorld);
+        player.setAimTarget(mouseWorld.x, mouseWorld.y);
         if (input.consumeAttackPressed()) shoot();
         for (TitanEnemy enemy : enemies) {
-            enemy.update(delta, player, WORLD_W, WORLD_H);
+            enemy.update(delta, player, WORLD_W, WORLD_H, collisionObstacles);
             if (enemy.consumeShot()) spawnEnemyShot(enemy.centerX(), enemy.centerY(),
                 enemy.shotDirectionX(), enemy.shotDirectionY(), 245f, 12f);
             if (enemy.canDamage(player)) {
@@ -243,7 +262,7 @@ public final class TitanScreen implements Screen {
             if (!vitoriaRegistrada) { vitoriaRegistrada = true; concluirCampanha(); }
             return;
         }
-        boss.update(delta, player, WORLD_W, WORLD_H);
+        boss.update(delta, player, WORLD_W, WORLD_H, collisionObstacles);
         if (boss.consumeSlam() && boss.slamHits(player)) {
             player.receberDano(GameConfig.BOSS_DAMAGE, boss.centerX(), boss.centerY());
             feedback("O impacto do chefe alcançou o traje.");
@@ -289,29 +308,28 @@ public final class TitanScreen implements Screen {
     private void shoot() {
         shotOrigin.set(player.getPosition().x + GameConfig.PLAYER_WIDTH / 2f,
             player.getPosition().y + GameConfig.PLAYER_HEIGHT * .48f);
+        float dirX = MathUtils.cosDeg(player.getAimAngle());
+        float dirY = MathUtils.sinDeg(player.getAimAngle());
         CombatTarget target = null;
         float closest = combat.getAlcance();
         for (TitanEnemy enemy : enemies) {
             if (!enemy.isAlive()) continue;
-            float along = Vector2.dst(shotOrigin.x, shotOrigin.y, enemy.centerX(), enemy.centerY());
-            if (along < closest) {
+            float along = alinhamento(enemy.centerX(), enemy.centerY(), dirX, dirY, closest, 52f);
+            if (along > 0f) {
                 target = enemy;
                 closest = along;
             }
         }
         // O chefe e alvo como qualquer outro, so que com corpo bem maior.
         if (boss != null && boss.isAlive()) {
-            float along = Vector2.dst(shotOrigin.x, shotOrigin.y, boss.centerX(), boss.centerY());
-            if (along < closest) {
+            float along = alinhamento(boss.centerX(), boss.centerY(), dirX, dirY, closest, 105f);
+            if (along > 0f) {
                 target = boss;
                 closest = along;
             }
         }
-        if (target != null) player.setAimDirection(target.centerX() - shotOrigin.x,
-            target.centerY() - shotOrigin.y);
-        float dirX = MathUtils.cosDeg(player.getAimAngle());
-        float dirY = MathUtils.sinDeg(player.getAimAngle());
-        shotOrigin.mulAdd(new Vector2(dirX, dirY), 30f);
+        shotOrigin.x += dirX * 30f;
+        shotOrigin.y += dirY * 30f;
         shotEnd.set(target == null ? shotOrigin.x + dirX * combat.getAlcance() : target.centerX(),
             target == null ? shotOrigin.y + dirY * combat.getAlcance() : target.centerY());
         combat.setMunicao(player.getMunicao());
@@ -355,7 +373,9 @@ public final class TitanScreen implements Screen {
         for (int i = projectiles.size - 1; i >= 0; i--) {
             TitanProjectile projectile = projectiles.get(i);
             projectile.update(delta);
-            if (projectile.hits(player)) {
+            if (projectile.collideWith(collisionObstacles)) {
+                // A formação absorve o disparo; serve de cobertura na arena.
+            } else if (projectile.hits(player)) {
                 player.receberDano(projectile.getDamage(), projectile.x(), projectile.y());
                 feedback("Cristal de metano perfurou o traje.");
             }

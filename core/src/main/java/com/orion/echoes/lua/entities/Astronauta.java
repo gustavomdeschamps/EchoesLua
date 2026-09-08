@@ -463,6 +463,13 @@ public class Astronauta extends Entidade implements Interagivel {
         if (weaponEquipped && Math.abs(dirX) > .03f) viradoEsquerda = dirX < 0f;
     }
 
+    /** Aponta pelo mouse sem desenhar retículo customizado. */
+    public void setAimTarget(float worldX, float worldY) {
+        float centerX = position.x + WIDTH / 2f;
+        float centerY = position.y + HEIGHT * .48f;
+        setAimDirection(worldX - centerX, worldY - centerY);
+    }
+
     public float getAimAngle() { return aimAngle; }
 
     // ==========================================

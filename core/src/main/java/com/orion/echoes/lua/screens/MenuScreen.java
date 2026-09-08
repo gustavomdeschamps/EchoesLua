@@ -89,7 +89,7 @@ public final class MenuScreen implements Screen {
         content.add(title("COMO JOGAR", 1.2f)).left().colspan(2).padBottom(25f).row();
         helpCard(content, "MOVIMENTO", "WASD ou setas  ·  SHIFT para correr", UiTheme.CYAN);
         helpCard(content, "AÇÃO", "E interage  ·  ESPAÇO executa o dash", UiTheme.AMBER);
-        helpCard(content, "COMBATE", "F / J dispara  ·  a mira acompanha seu movimento", UiTheme.GREEN);
+        helpCard(content, "COMBATE", "Mouse aponta  ·  botão esquerdo dispara  ·  sem retículo", UiTheme.GREEN);
         helpCard(content, "MISSÃO", "Reative três sistemas, fabrique a arma e abra o portal", UiTheme.RED);
         content.add(button("VOLTAR", () -> showMain(true))).width(210f).height(54f).left().colspan(2).padTop(24f).row();
         swap(content, animate);

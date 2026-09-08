@@ -120,7 +120,9 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
 
     private boolean free(float x, float y, Array<MarsObject> rocks) {
         testBounds.set(hitboxX(x), hitboxY(y), hitboxWidth(), hitboxHeight());
-        for (MarsObject rock : rocks) if (rock.isBlocking() && testBounds.overlaps(rock.getBounds())) return false;
+        for (MarsObject rock : rocks) {
+            if (rock.isBlocking() && testBounds.overlaps(rock.getCollisionBounds())) return false;
+        }
         return true;
     }
 

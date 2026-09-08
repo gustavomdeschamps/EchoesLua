@@ -23,6 +23,7 @@ public final class MarsObject extends Entidade {
     private final Kind kind;
     /** Retangulo realmente desenhado; hitbox e flutuacao seguem ele. */
     private final Rectangle drawRect = new Rectangle();
+    private final Rectangle collisionBounds = new Rectangle();
     private final Sprite sprite;
     private final float baseY;
     private final Body body;
@@ -54,14 +55,17 @@ public final class MarsObject extends Entidade {
             float hitHeight = drawRect.height * .27f;
             bounds.set(drawRect.x + (drawRect.width - hitWidth) / 2f,
                 drawRect.y + drawRect.height * .08f, hitWidth, hitHeight);
+            collisionBounds.set(bounds);
             body = physics.createStaticBody(bounds.x + bounds.width / 2f,
                 bounds.y + bounds.height / 2f, bounds.width, bounds.height, "MARS_ROCK");
         } else if ((isStation() || kind == Kind.HABITAT) && physics != null) {
             // O volume visual alto não bloqueia: só a sapata apoiada no solo.
             float hitWidth = drawRect.width * (kind == Kind.HABITAT ? .72f : .58f);
             float hitHeight = drawRect.height * .22f;
-            body = physics.createStaticBody(drawRect.x + drawRect.width / 2f,
-                drawRect.y + hitHeight / 2f + drawRect.height * .05f,
+            collisionBounds.set(drawRect.x + (drawRect.width - hitWidth) / 2f,
+                drawRect.y + drawRect.height * .05f, hitWidth, hitHeight);
+            body = physics.createStaticBody(collisionBounds.x + collisionBounds.width / 2f,
+                collisionBounds.y + collisionBounds.height / 2f,
                 hitWidth, hitHeight, "MARS_STRUCTURE");
             // Area de interacao: o volume desenhado com uma folga de alcance.
             bounds.set(drawRect.x - 24f, drawRect.y - 18f,
@@ -95,6 +99,7 @@ public final class MarsObject extends Entidade {
     public boolean isCollectible() { return kind == Kind.MINERAL || kind == Kind.MEDKIT || kind == Kind.POWER_CELL; }
     public boolean isStation() { return kind == Kind.SOLAR_STATION || kind == Kind.OXYGEN_STATION || kind == Kind.COMMS_STATION; }
     public boolean isBlocking() { return kind == Kind.ROCK || isStation() || kind == Kind.HABITAT; }
+    public Rectangle getCollisionBounds() { return collisionBounds; }
     public void collect() { ativo = false; }
     public void activate() { if (!enabled) { enabled = true; activation = 1f; sprite.setColor(1f, .82f, .58f, 1f); } }
     public boolean isEnabled() { return enabled; }

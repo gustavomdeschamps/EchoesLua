@@ -4,7 +4,9 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
+import com.badlogic.gdx.utils.Array;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.systems.CombatTarget;
@@ -32,6 +34,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
 
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
+    private final Rectangle movementBounds = new Rectangle();
 
     private State state = State.GUARDA;
     private float hp = GameConfig.BOSS_MAX_HP;
@@ -58,7 +61,8 @@ public final class TitanBoss extends Entidade implements CombatTarget {
     // COMPORTAMENTO
     // =====================================================
 
-    public void update(float delta, Astronauta player, float worldWidth, float worldHeight) {
+    public void update(float delta, Astronauta player, float worldWidth, float worldHeight,
+                       Array<Rectangle> obstacles) {
         time += delta;
         stateTime += delta;
         attackCooldown = Math.max(0f, attackCooldown - delta);
@@ -120,7 +124,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
                         change(State.PREPARA_VOLLEY);
                     }
                 } else {
-                    move(direction.x, direction.y, delta, worldWidth, worldHeight);
+                    move(direction.x, direction.y, delta, worldWidth, worldHeight, obstacles);
                 }
             }
             default -> {
@@ -129,12 +133,27 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         }
     }
 
-    private void move(float dx, float dy, float delta, float worldWidth, float worldHeight) {
-        position.x = MathUtils.clamp(position.x + dx * GameConfig.BOSS_SPEED * delta,
+    private void move(float dx, float dy, float delta, float worldWidth, float worldHeight,
+                      Array<Rectangle> obstacles) {
+        float nextX = MathUtils.clamp(position.x + dx * GameConfig.BOSS_SPEED * delta,
             0f, worldWidth - width);
-        position.y = MathUtils.clamp(position.y + dy * GameConfig.BOSS_SPEED * delta,
+        if (free(nextX, position.y, obstacles)) position.x = nextX;
+        float nextY = MathUtils.clamp(position.y + dy * GameConfig.BOSS_SPEED * delta,
             0f, worldHeight - height);
+        if (free(position.x, nextY, obstacles)) position.y = nextY;
         syncBounds();
+    }
+
+    private boolean free(float x, float y, Array<Rectangle> obstacles) {
+        float size = GameConfig.BOSS_SPRITE_SIZE;
+        float spriteX = x + width / 2f - size / 2f;
+        float spriteY = y + size * GameConfig.BOSS_SPRITE_OFFSET_Y_RATIO;
+        float boxWidth = size * GameConfig.BOSS_HITBOX_WIDTH_RATIO;
+        float boxHeight = size * GameConfig.BOSS_HITBOX_HEIGHT_RATIO;
+        movementBounds.set(spriteX + (size - boxWidth) / 2f,
+            spriteY + size * GameConfig.BOSS_HITBOX_BASE_RATIO, boxWidth, boxHeight);
+        for (Rectangle obstacle : obstacles) if (movementBounds.overlaps(obstacle)) return false;
+        return true;
     }
 
     private void change(State next) {

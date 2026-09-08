@@ -95,6 +95,7 @@ public class LunarScreen implements Screen {
     private float tempoPoeira, tempoPasso;
 
     private final Vector2 cameraTarget = new Vector2();
+    private final Vector2 mouseWorld = new Vector2();
     private Screen nextScreen;
 
     public LunarScreen(EchoesLua game, SpriteBatch batch, AssetManager assets) {
@@ -332,6 +333,9 @@ public class LunarScreen implements Screen {
 
     private void apontarMira() {
         astronauta.setWeaponEquipped(mission.hasWeapon());
+        mouseWorld.set(Gdx.input.getX(), Gdx.input.getY());
+        viewport.unproject(mouseWorld);
+        astronauta.setAimTarget(mouseWorld.x, mouseWorld.y);
     }
 
     // =====================================================
