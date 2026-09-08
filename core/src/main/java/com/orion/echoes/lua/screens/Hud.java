@@ -138,9 +138,9 @@ public final class Hud implements Disposable {
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        centered(batch, mission.getObjective(player.getOxigenio()), 1.02f, UiTheme.TEXT, 640f,
-            objectiveY + 36f, objectiveAlpha);
-        text(batch, String.format("QUEST %d/%d", mission.getQuestStep(player.getOxigenio()),
+        centered(batch, mission.getObjective(player.getOxigenio()), .86f, UiTheme.TEXT, 640f,
+            objectiveY + 44f, objectiveAlpha);
+        text(batch, String.format("LUA · %d/%d", mission.getQuestStep(player.getOxigenio()),
                 MissionState.QUEST_TOTAL_STEPS),
             .62f, UiTheme.AMBER, 372f, objectiveY + 17f, objectiveAlpha);
         centered(batch, mission.getQuestTitle(player.getOxigenio()), .64f, UiTheme.TEXT_MUTED,

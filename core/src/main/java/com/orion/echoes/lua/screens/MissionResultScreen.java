@@ -36,10 +36,10 @@ abstract class MissionResultScreen implements Screen {
     /** Deslocamento vertical de entrada de cada bloco. */
     private static final float APPEAR_RISE = 22f;
 
-    private static final float REPORT_X = 872f;
-    private static final float REPORT_Y = 176f;
-    private static final float REPORT_WIDTH = 356f;
-    private static final float REPORT_HEIGHT = 404f;
+    private static final float REPORT_X = 770f;
+    private static final float REPORT_Y = 204f;
+    private static final float REPORT_WIDTH = 432f;
+    private static final float REPORT_HEIGHT = 360f;
 
     protected final EchoesLua game;
     private final float missionTime;
@@ -139,23 +139,21 @@ abstract class MissionResultScreen implements Screen {
         ui.beginShapes();
         // Faixa inferior: assenta os botoes e separa a leitura do fundo.
         ui.rect(0f, 0f, GameConfig.WINDOW_WIDTH, 168f, new Color(.016f, .024f, .030f, .95f));
-        ui.rect(0f, 166f, GameConfig.WINDOW_WIDTH * titleIn, 2f, fade(accent, .85f));
         // Regua curta acima do titulo, na cor do desfecho.
-        ui.rect(74f, 592f + rise(titleIn), 132f * titleIn, 6f, fade(accent, titleIn));
         ui.sprite(game.getAssets().uiDamageVignetteTexture, 0f, 0f,
             GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT,
             new Color(1f, 1f, 1f, success ? .22f : .48f));
         ui.endShapes();
 
         ui.beginText();
-        ui.text(success ? "ARQUIVO M-01  ·  MISSÃO ENCERRADA" : "ARQUIVO L-01  ·  SINAL INTERROMPIDO",
+        ui.text("ECHOES  ·  " + game.getCampaign().phaseToken(),
             .72f, fade(accent, titleIn), 74f, 640f + rise(titleIn));
-        ui.title(success ? "MISSÃO\nCONCLUÍDA" : "SINAL\nPERDIDO",
-            1.85f, fade(UiTheme.TEXT, titleIn), 70f, 566f + rise(titleIn));
+        ui.title(success ? "MISSÃO\nCONCLUÍDA" : "FIM DA\nEXPEDIÇÃO",
+            1.65f, fade(UiTheme.TEXT, titleIn), 70f, 548f + rise(titleIn));
         ui.text(success
-                ? "A colônia voltou a transmitir. Marte responde."
-                : "O traje silenciou. A Lua permanece sem resposta.",
-            .92f, fade(UiTheme.TEXT_MUTED, subtitleIn), 74f, 416f + rise(subtitleIn));
+                ? "O Soberano caiu. O enlace entre as colônias está seguro."
+                : "O suporte de vida do traje chegou ao limite.",
+            .72f, fade(UiTheme.TEXT_MUTED, subtitleIn), 74f, 386f + rise(subtitleIn));
         ui.endText();
     }
 
@@ -178,7 +176,7 @@ abstract class MissionResultScreen implements Screen {
 
         float top = REPORT_Y + REPORT_HEIGHT - 46f + rise(reportIn);
         ui.beginText();
-        ui.text("RELATÓRIO", .74f, fade(accent, reportIn), REPORT_X + 28f, top);
+        ui.text("SUA EXPEDIÇÃO", .74f, fade(accent, reportIn), REPORT_X + 28f, top);
 
         float line = top - 44f;
         line = reportRow(reportIn, "Tempo de operação",
@@ -187,7 +185,7 @@ abstract class MissionResultScreen implements Screen {
             campaign.getLunarTotalEnemies() > 0 || campaign.hasLunarProgress()
                 ? repairedCount(campaign) + "/4" : "—", line);
         line = reportRow(reportIn, "Hostis lunares",
-            campaign.getLunarTotalEnemies() > 0 ? "eliminados" : "—", line);
+            campaign.toLunarArray()[12] + "/" + campaign.getLunarTotalEnemies(), line);
         if (campaign.hasVisitedMars()) {
             line = reportRow(reportIn, "Estações marcianas",
                 campaign.getMarsStationsOnline() + "/3", line);
@@ -232,8 +230,6 @@ abstract class MissionResultScreen implements Screen {
         ui.beginText();
         drawButtonLabel("JOGAR NOVAMENTE", retryButton, selected == 0, buttonsIn, accent);
         drawButtonLabel("MENU", menuButton, selected == 1, buttonsIn, accent);
-        ui.text("ENTER confirma  ·  ←  →  alterna  ·  ESC volta ao menu",
-            .62f, fade(UiTheme.TEXT_MUTED, buttonsIn * .8f), 74f, 42f);
         ui.endText();
     }
 

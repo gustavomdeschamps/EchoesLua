@@ -46,6 +46,12 @@ public final class CampaignState {
     private boolean combateOk;
     private boolean amostraOk;
     private boolean entrouTita;
+    private boolean dialogoLua;
+    private boolean dialogoExplorador;
+    public boolean isDialogoLua() { return dialogoLua; }
+    public void setDialogoLua(boolean value) { dialogoLua = value; }
+    public boolean isDialogoExplorador() { return dialogoExplorador; }
+    public void setDialogoExplorador(boolean value) { dialogoExplorador = value; }
 
     public CampaignState() {
         this(System.nanoTime());
@@ -120,7 +126,9 @@ public final class CampaignState {
     }
 
     public String missaoAtual() {
-        if (entrouTita) return "Explore Titã e localize o sinal de retorno.";
+        if (phase == Phase.TITAN) return dialogoExplorador
+            ? "Use a refinaria e enfrente o Soberano a nordeste."
+            : "Fale com a pesquisadora junto à refinaria.";
         if (!dialogoTita) return "Investigue o portal instável no setor de extração.";
         if (!combateOk && !amostraOk) return "Prove capacidade de combate ou colete uma amostra de metano.";
         return "Portal autorizado. Atravesse para Titã.";

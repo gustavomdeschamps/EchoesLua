@@ -84,6 +84,8 @@ public class GameSaveData {
     public int marteEstacoes;
     public int marteHostis;
     public boolean dialogoTita;
+    public boolean dialogoLua;
+    public boolean dialogoExplorador;
     public boolean combateOk;
     public boolean amostraOk;
     public boolean entrouTita;

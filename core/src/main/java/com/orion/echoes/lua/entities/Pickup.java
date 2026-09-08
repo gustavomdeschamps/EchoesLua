@@ -33,6 +33,7 @@ public final class Pickup extends Entidade {
     private final float baseY;
     private float time;
     private boolean coletado;
+    private float respawnTimer;
 
     public Pickup(float x, float y, Kind kind, AssetManager assets) {
         super(x, y, SIZE, SIZE);
@@ -44,7 +45,12 @@ public final class Pickup extends Entidade {
 
     @Override
     public void update(float delta) {
-        if (coletado) return;
+        if (coletado) {
+            respawnTimer -= delta;
+            if (respawnTimer > 0f) return;
+            coletado = false;
+            ativo = true;
+        }
         time += delta;
         sincronizar(baseY + MathUtils.sin(time * 2.3f + position.x * .01f) * 8f);
     }
@@ -60,9 +66,11 @@ public final class Pickup extends Entidade {
     public boolean coletar(Astronauta player) {
         if (coletado || !bounds.overlaps(player.getBounds())) return false;
         coletado = true;
+        respawnTimer = kind == Kind.GELO ? 45f : 55f;
         ativo = false;
         if (kind == Kind.OXIGENIO) {
             player.recuperarOxigenio(GameConfig.OXYGEN_ITEM_VALUE);
+            player.registrarColeta(Item.TipoItem.OXIGENIO);
         } else {
             player.adicionarGelo();
             player.registrarColeta(Item.TipoItem.GELO);
@@ -80,8 +88,7 @@ public final class Pickup extends Entidade {
         float pulse = 1f + MathUtils.sin(time * 3.1f) * .05f;
         float w = drawRect.width * pulse;
         float h = drawRect.height * pulse;
-        batch.setColor(kind == Kind.OXIGENIO
-            ? new Color(.72f, .92f, 1f, 1f) : new Color(.85f, .95f, 1f, 1f));
+        batch.setColor(Color.WHITE);
         batch.draw(region, drawRect.x + (drawRect.width - w) / 2f,
             drawRect.y + (drawRect.height - h) / 2f, w, h);
         batch.setColor(Color.WHITE);

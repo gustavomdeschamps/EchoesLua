@@ -107,7 +107,7 @@ def atlasGroups = [
     'mars_crawler_sheet.png', 'lunar_obstacles.png', 'mars_obstacles.png',
     'landmarks.png', 'titan_hunter_sheet_v3.png', 'titan_boss_sheet_v3.png',
     'campaign_portal_sheet_v2.png', 'lunar_repair_stations_v2.png', 'titan_formations_v2.png',
-    'npc_colony_officer_sheet_v2.png'
+    'npc_colony_officer_sheet_v2.png', 'npc_commander_ayla_sheet.png', 'titan_portal_vertical_v2.png'
   ],
   ui: ['intro_keyart_v4.png', 'ui_panel_frame.png',
     'ui/panel_hud.png', 'ui/panel_dialog.png', 'ui/panel_modal.png',
@@ -121,6 +121,7 @@ tasks.register('prepareAtlasInputs') {
   dependsOn tasks.named('validateVisualAssets')
   inputs.files(atlasGroups.values().flatten().collect { file("assets/textures/$it") })
   inputs.file(file('tools/texturepacker/pack.json'))
+  inputs.file(file('tools/split_atlas_frames.py'))
   outputs.dir(layout.buildDirectory.dir('atlas-input'))
   doLast {
     delete(layout.buildDirectory.dir('atlas-input'))
@@ -131,6 +132,11 @@ tasks.register('prepareAtlasInputs') {
         into(layout.buildDirectory.dir("atlas-input/$group"))
       }
     }
+    def python = project.findProperty('assetQaPython')?.toString() ?: 'python'
+    def splitter = new ProcessBuilder(python, 'tools/split_atlas_frames.py',
+        layout.buildDirectory.dir('atlas-input').get().asFile.absolutePath)
+      .directory(rootProject.projectDir).inheritIO().start()
+    if (splitter.waitFor() != 0) throw new GradleException('Falha ao separar frames do atlas.')
   }
 }
 
@@ -143,6 +149,7 @@ def atlasTasks = atlasGroups.keySet().collect { group ->
       file('assets/atlases').absolutePath, group
     inputs.dir(layout.buildDirectory.dir("atlas-input/$group"))
     outputs.file(file("assets/atlases/${group}.atlas"))
+    outputs.file(file("assets/atlases/${group}.png"))
   }
 }
 
@@ -152,31 +159,26 @@ tasks.register('packVisualAssets') {
   dependsOn atlasTasks
 }
 
+tasks.register('generateAssetList') {
+    mustRunAfter atlasTasks
+    // Os atlas de produção são versionados. Rodar/importar o jogo não exige Python.
+    // packVisualAssets é uma tarefa explícita do fluxo de criação de arte.
+    def assetsFolder = rootProject.file('assets')
+    def assetsFile = rootProject.file('assets/assets.txt')
+    inputs.files(fileTree(assetsFolder) { exclude 'assets.txt' })
+    outputs.file(assetsFile)
+    doLast {
+      assetsFile.setText(fileTree(assetsFolder).matching { exclude 'assets.txt' }
+        .collect { assetsFolder.relativePath(it).replace('\\', '/') }
+        .sort().join('\n') + '\n', 'UTF-8')
+    }
+}
+
 configure(subprojects) {
   apply plugin: 'java-library'
   java.sourceCompatibility = 17
-
-  // From https://lyze.dev/2021/04/29/libGDX-Internal-Assets-List/
-  // The article can be helpful when using assets.txt in your project.
-  tasks.register('generateAssetList') {
-    dependsOn rootProject.tasks.named('packVisualAssets')
-    inputs.dir("${project.rootDir}/assets/")
-    // projectFolder/assets
-    File assetsFolder = new File("${project.rootDir}/assets/")
-    // projectFolder/assets/assets.txt
-    File assetsFile = new File(assetsFolder, "assets.txt")
-    // delete that file in case we've already created it
-    assetsFile.delete()
-
-    // iterate through all files inside that folder
-    // convert it to a relative path
-    // and append it to the file assets.txt
-    fileTree(assetsFolder).collect { assetsFolder.relativePath(it) }.sort().each {
-      assetsFile.append(it + "\n")
-    }
-  }
-  processResources.dependsOn 'generateAssetList'
-  processResources.dependsOn rootProject.tasks.named('validateVisualAssets')
+  processResources.dependsOn rootProject.tasks.named('generateAssetList')
+  processResources.mustRunAfter atlasTasks
 
   compileJava {
     options.incremental = true

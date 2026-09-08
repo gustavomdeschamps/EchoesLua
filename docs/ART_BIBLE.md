@@ -85,11 +85,19 @@ autoriza glow decorativo na UI.
 
 ## Arte cinematográfica de abertura
 
-A abertura usa composição mais ampla, mas a mesma pintura, paleta, materiais,
-câmera e direção de luz do gameplay. `intro_keyart_v2.png` deriva do astronauta,
-dos props e do terreno aprovados; não usa microtextura fotográfica. O receptor
-danificado e a fita em arco conectam a imagem diretamente ao motivo de rádio de
-Echoes.
+A abertura usa `intro_keyart_v4.png`, compartilhada pelo carregamento, introdução
+e menu. A revisão de setembro substitui a montagem de planetas por uma cena lunar
+única: antena com cabo rompido, habitat distante, luz fria e espaço escuro à esquerda
+para os botões. O acabamento cinematográfico realista foi solicitado explicitamente
+no documento Trilha 1; não altera a direção dos sprites jogáveis.
+
+Arte gerada com a ferramenta integrada de imagens. Briefing final: cenário lunar
+16:9, antena funcional de cerâmica clara e grafite no primeiro plano direito,
+cabo rompido, habitat discreto ao fundo, iluminação dura superior esquerda,
+regolito azul-acinzentado, pequenos sinais ciano e âmbar; 45% da esquerda livre;
+sem personagens, texto, interface, castelos, cristais, colagem de planetas ou neon
+decorativo. Fonte final em `assets/textures/intro_keyart_v4.png` e cópia de execução
+no atlas de UI. Ambos devem sempre ser atualizados juntos.
 
 ## Tipografia
 

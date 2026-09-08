@@ -15,7 +15,7 @@ import com.orion.echoes.lua.config.GameConfig;
  */
 public final class MusicDirector implements Disposable {
 
-    public enum Track { NONE, MENU, LUNAR, MARS }
+    public enum Track { NONE, MENU, LUNAR, MARS, TITAN }
 
     private final Music[] layers = new Music[3];
     private Music menu;
@@ -61,6 +61,7 @@ public final class MusicDirector implements Disposable {
             }
             case LUNAR -> openLayers("lunar");
             case MARS -> openLayers("mars");
+            case TITAN -> openLayers("titan");
             case NONE -> { }
         }
     }

@@ -148,7 +148,7 @@ public final class LunarWorld {
          * comportamento mais simples; emboscador e atirador so entram depois,
          * quando o jogador ja leu o telegraph uma vez.
          */
-        enemies.add(factory.enemy(760, 470, Enemy.Behavior.STALKER));
+        enemies.add(factory.enemy(1120, 610, Enemy.Behavior.STALKER));
         enemies.add(factory.enemy(1500, 1320, Enemy.Behavior.AMBUSHER));
         enemies.add(factory.enemy(2180, 720, Enemy.Behavior.RANGED));
         enemies.add(factory.enemy(2570, 1420, Enemy.Behavior.AMBUSHER));

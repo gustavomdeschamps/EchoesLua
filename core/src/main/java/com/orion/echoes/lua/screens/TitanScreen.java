@@ -77,6 +77,9 @@ public final class TitanScreen implements Screen {
     private Viewport uiViewport;
     private NinePatch panel;
     private NinePatch modal;
+    private com.orion.echoes.lua.systems.NpcConversation conversation;
+    private com.orion.echoes.lua.managers.ParticleManager particles;
+    private float footstepTimer;
     private HitboxDebugRenderer hitboxDebug;
     private String message = "A atmosfera abafa o sinal. Explore com cautela.";
     private float messageTimer = 4f;
@@ -94,6 +97,10 @@ public final class TitanScreen implements Screen {
     @Override public void show() {
         assets = game.getAssets();
         batch = game.getBatch();
+        game.getSounds().setVacuum(false);
+        game.getSounds().applySettings(game.getSettings());
+        game.getSounds().tocarMusicaTita();
+        particles = new com.orion.echoes.lua.managers.ParticleManager(assets);
         panel = assets.uiPanelPatch();
         modal = assets.uiModalPatch();
         hitboxDebug = new HitboxDebugRenderer(batch, assets);
@@ -126,7 +133,7 @@ public final class TitanScreen implements Screen {
             refineryFootprint.width, refineryFootprint.height, physics);
         player = new Astronauta(260f, 260f, assets, physics);
         player.setSurfaceProfile(Astronauta.SurfaceProfile.MARS);
-        player.setWeaponEquipped(true);
+        player.setWeaponEquipped(campaign.hasWeapon());
         player.setMunicao(campaign.getAmmo());
 
         // Exigência da prova: a Screen carrega o personagem via fromSaveData no show().
@@ -135,9 +142,18 @@ public final class TitanScreen implements Screen {
             player.fromSaveData(saved);
             player.setMunicao(saved.municao);
         } else {
-            player.setVitals(Math.max(50f, campaign.getOxygen()),
-                Math.max(45f, campaign.getEnergy()));
+            GameSaveData arrival = player.toSaveData();
+            LunarCheckpoint.applyCampaign(arrival, campaign);
+            player.fromSaveData(arrival);
         }
+        conversation = new com.orion.echoes.lua.systems.NpcConversation(
+            new com.orion.echoes.lua.entities.Npc(650f, 210f, "PESQUISADORA LIRA",
+                Color.WHITE, assets),
+            new String[] {
+                "Os lagos daqui são de metano líquido. Nossa equipe perdeu contato quando o Soberano ocupou o vale a nordeste.",
+                "O gelo abastece esta refinaria. Guarde munição para o chefe e aproveite os cilindros de oxigênio entre as formações.",
+                "Quando o solo brilhar sob ele, saia da área. Se precisar recuar, o portal oeste leva você de volta a Marte."
+            }, batch, assets);
         combat = new TitanCombatSystem(campaign);
         combat.setMunicao(player.getMunicao());
         returnPortal = new TitanPortal(150f, 150f, assets);
@@ -188,10 +204,18 @@ public final class TitanScreen implements Screen {
         boss.render(batch);
         renderPlayerShot();
         player.render(batch);
+        conversation.renderWorld(batch, player);
+        particles.render(batch);
         batch.end();
         renderHitboxes();
         renderHud();
         if (paused) renderPause();
+        else {
+            batch.setProjectionMatrix(uiCamera.combined);
+            batch.begin();
+            conversation.renderUi();
+            batch.end();
+        }
     }
 
     private void update(float delta) {
@@ -218,12 +242,30 @@ public final class TitanScreen implements Screen {
             return;
         }
         missionTime += delta;
+        if (conversation.update(delta, player, campaign.isDialogoExplorador(), () -> {
+            campaign.setDialogoExplorador(true);
+            feedback(campaign.missaoAtual());
+        })) {
+            input.consumeInteractPressed();
+            input.consumeAttackPressed();
+            input.consumeDashPressed();
+            return;
+        }
+        game.getSounds().setListener(camera.position.x, camera.position.y);
+        game.getSounds().atualizarIntensidade(boss.isTelegraphing() ? 1f : .25f,
+            MathUtils.clamp((35f - player.getOxigenio()) / 35f, 0f, 1f));
+        particles.update(delta);
         combat.update(delta);
         messageTimer = Math.max(0f, messageTimer - delta);
         shotTimer = Math.max(0f, shotTimer - delta);
         Vector2 direction = input.getDirection();
         if (input.consumeDashPressed()) player.tryDash(direction.x, direction.y);
         player.move(direction.x, direction.y, input.isRunning(), delta);
+        footstepTimer -= delta;
+        if (!direction.isZero() && footstepTimer <= 0f) {
+            footstepTimer = input.isRunning() ? .24f : .38f;
+            game.getSounds().tocarPassoTita();
+        }
         physics.update(delta);
         player.update(delta);
         mouseWorld.set(Gdx.input.getX(), Gdx.input.getY());
@@ -240,6 +282,7 @@ public final class TitanScreen implements Screen {
             }
         }
         atualizarChefe(delta);
+        if (changingScreen) return;
         updateProjectiles(delta);
         returnPortal.update(delta);
         coletarSuprimentos(delta);
@@ -252,6 +295,10 @@ public final class TitanScreen implements Screen {
             GameConfig.WINDOW_HEIGHT / 2f, WORLD_H - GameConfig.WINDOW_HEIGHT / 2f);
         camera.update();
         if (player.isMorto()) {
+            campaign.setVitals(player.getOxigenio(), player.getEnergia());
+            campaign.setAmmo(player.getMunicao());
+            campaign.setResources(player.getGelo(), player.getAgua(), player.getCombustivel());
+            campaign.setMissionTime(missionTime);
             changingScreen = true;
             game.setScreen(new GameOverScreen(game, missionTime));
             dispose();
@@ -359,6 +406,8 @@ public final class TitanScreen implements Screen {
         boolean fired = combat.tentarTiro(shotOrigin, target, campaign.hasWeapon());
         player.setMunicao(combat.getMunicao());
         if (fired) {
+            game.getSounds().tocarDisparo();
+            if (target != null) game.getSounds().tocarImpacto(target.centerX(), target.centerY());
             player.triggerShot();
             shotTimer = .14f;
             feedback(target == null ? "Disparo perdido na névoa de metano."
@@ -373,6 +422,7 @@ public final class TitanScreen implements Screen {
     }
 
     private void spawnBossVolley(boolean radial) {
+        game.getSounds().tocarBoss("ataque", boss.centerX(), boss.centerY());
         if (radial) {
             for (int i = 0; i < 12; i++) {
                 float angle = i * 30f + missionTime * 35f;
@@ -451,6 +501,7 @@ public final class TitanScreen implements Screen {
     }
 
     private void saveTitan() {
+        campaign.setResources(player.getGelo(), player.getAgua(), player.getCombustivel());
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
         campaign.setAmmo(player.getMunicao());
         campaign.setMissionTime(missionTime);
@@ -482,10 +533,12 @@ public final class TitanScreen implements Screen {
         if (portalTraveling) return;
         portalTraveling = true;
         returnPortal.beginTraversal(true);
+        game.getSounds().tocarPortal();
         feedback("O portal reverte o fluxo e fixa Marte como destino.");
     }
 
     private void finishReturnToMars() {
+        campaign.setResources(player.getGelo(), player.getAgua(), player.getCombustivel());
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
         campaign.setAmmo(player.getMunicao());
         campaign.setMissionTime(missionTime);
@@ -506,6 +559,8 @@ public final class TitanScreen implements Screen {
         for (Pickup suprimento : suprimentos) {
             suprimento.update(delta);
             if (!suprimento.coletar(player)) continue;
+            game.getSounds().tocarColetaEspacial(suprimento.centerX(), suprimento.centerY());
+            particles.criarEfeitoColeta(suprimento.centerX(), suprimento.centerY());
             feedback(suprimento.getKind() == Pickup.Kind.OXIGENIO
                 ? "Cilindro de oxigênio  •  O2 restaurado"
                 : "Gelo de metano recolhido  •  refine na refinaria");
@@ -525,6 +580,10 @@ public final class TitanScreen implements Screen {
      * invencivel, e a refinaria da sempre um caminho de volta.
      */
     private void refinar() {
+        if (player.getMunicao() >= GameConfig.AMMO_MAX) {
+            feedback("Munição no limite. O gelo foi preservado.");
+            return;
+        }
         if (!player.removerGelo()) {
             feedback("Sem gelo para refinar. Recolha gelo pelo mapa.");
             return;
@@ -543,11 +602,15 @@ public final class TitanScreen implements Screen {
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
         panel.setColor(new Color(1f, .76f, .42f, .96f));
-        panel.draw(batch, 32f, 28f, 360f, 94f);
+        panel.draw(batch, 32f, 28f, 560f, 94f);
         panel.draw(batch, 410f, 648f, 838f, 50f);
+        panel.draw(batch, 410f, 588f, 838f, 52f);
         if (messageTimer > 0f) panel.draw(batch, 430f, 130f, 420f, 48f);
         panel.setColor(Color.WHITE);
         text("TITÃ  •  LAGOS DE METANO", .78f, AMBER, 444f, 681f);
+        assets.font.getData().setScale(.70f);
+        assets.font.setColor(UiTheme.TEXT);
+        assets.font.draw(batch, campaign.missaoAtual(), 436f, 622f, 786f, Align.left, true);
         text("SOBERANO DO METANO", .62f, UiTheme.TEXT_MUTED, 738f, 681f);
         batch.setColor(Color.WHITE);
         batch.draw(assets.uiBarTrackTexture, 956f, 669f, 250f, 8f);
@@ -558,7 +621,7 @@ public final class TitanScreen implements Screen {
         text(String.format("O2  %.0f%%     ENERGIA  %.0f%%     MUNIÇÃO  %d",
             player.getOxigenio(), player.getEnergia(), player.getMunicao()), .74f,
             UiTheme.TEXT, 58f, 88f);
-        text(String.format("GELO  %d     E: refinaria vira munição  •  portal retorna a Marte",
+        text(String.format("GELO  %d     •     Refinaria: gelo → munição",
             player.getGelo()), .65f, UiTheme.TEXT_MUTED, 58f, 55f);
         if (messageTimer > 0f) {
             assets.font.getData().setScale(.68f);
@@ -629,6 +692,7 @@ public final class TitanScreen implements Screen {
     @Override public void resume() { }
     @Override public void hide() { }
     @Override public void dispose() {
+        if (particles != null) { particles.dispose(); particles = null; }
         if (physics != null) { physics.dispose(); physics = null; }
         // SpriteBatch e AssetManager pertencem ao EchoesLua e não são descartados aqui.
     }

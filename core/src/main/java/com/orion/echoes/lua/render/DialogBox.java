@@ -57,6 +57,11 @@ public final class DialogBox {
 
     /** Desenha dentro de um batch já aberto, em coordenadas de tela. */
     public void render(DialogueController dialog, String falante) {
+        render(dialog, falante, assets.npcCommanderFrame(0, 1));
+    }
+
+    public void render(DialogueController dialog, String falante,
+                       com.badlogic.gdx.graphics.g2d.TextureRegion portrait) {
         if (appear <= 0f || !dialog.isOpen()) return;
         float eased = Interpolation.pow3Out.apply(appear);
         float y = Y - (1f - eased) * 24f;
@@ -78,7 +83,7 @@ public final class DialogBox {
         batch.setColor(.12f, .9f, 1f, .18f * eased);
         batch.draw(assets.uiWhiteTexture, portraitX - 5f, portraitY - 5f, 194f, 214f);
         batch.setColor(1f, 1f, 1f, eased);
-        batch.draw(assets.npcCommanderFrame((int)(appear * 18f) % 4, 1),
+        batch.draw(portrait,
             portraitX, portraitY, 184f, 204f);
 
         float textX = X + 252f;
@@ -89,7 +94,7 @@ public final class DialogBox {
 
         font.getData().setScale(.56f);
         font.setColor(UiTheme.CYAN.r, UiTheme.CYAN.g, UiTheme.CYAN.b, eased);
-        font.draw(batch, "BRIEFING DA MISSÃO  •  TITÃ", textX, y + HEIGHT - 68f);
+        font.draw(batch, "CANAL LOCAL  •  ECHOES", textX, y + HEIGHT - 68f);
 
         // Quebra dentro da largura útil: é isto que impede o texto de vazar.
         font.getData().setScale(TEXT_SCALE);

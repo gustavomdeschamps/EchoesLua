@@ -132,8 +132,10 @@ public final class MarsScreen implements Screen {
         new Wall(0f, WORLD_H, WORLD_W, 24f, physics);
         player = new Astronauta(230f, 250f, assets, physics);
         player.setSurfaceProfile(Astronauta.SurfaceProfile.MARS);
-        player.setVitals(Math.max(45f, campaign.getOxygen()), Math.max(38f, campaign.getEnergy()));
-        player.setWeaponEquipped(true);
+        GameSaveData arrival = player.toSaveData();
+        LunarCheckpoint.applyCampaign(arrival, campaign);
+        player.fromSaveData(arrival);
+        player.setWeaponEquipped(campaign.hasWeapon());
         player.setMunicao(campaign.getAmmo());
         titanCombat = new TitanCombatSystem(campaign);
         titanCombat.setMunicao(player.getMunicao());
@@ -226,6 +228,7 @@ public final class MarsScreen implements Screen {
 
     /** Fotografa Marte antes de voltar pelo portal ou de salvar. */
     private void guardarCampanha() {
+        campaign.setResources(player.getGelo(), player.getAgua(), player.getCombustivel());
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
         campaign.setAmmo(player.getMunicao());
         campaign.setMissionTime(missionTime);
@@ -452,6 +455,7 @@ public final class MarsScreen implements Screen {
         updateFootFx(delta, direction);
         updateCamera(delta);
         if (player.isMorto()) {
+            guardarCampanha();
             changingScreen = true;
             game.setScreen(new GameOverScreen(game, missionTime));
             dispose();
@@ -506,6 +510,10 @@ public final class MarsScreen implements Screen {
      * jogador sempre tem como voltar ao habitat e converter o que recolheu.
      */
     private void refinarNoHabitat() {
+        if (player.getMunicao() >= GameConfig.AMMO_MAX) {
+            feedback("Munição no limite. O gelo foi preservado.");
+            return;
+        }
         if (!player.getBounds().overlaps(habitat.getBounds())) return;
         if (!player.removerGelo()) {
             feedback("Sem gelo para refinar. Recolha gelo pelo mapa.");
@@ -588,6 +596,7 @@ public final class MarsScreen implements Screen {
     }
 
     private void finishEnterTitan() {
+        guardarCampanha();
         campaign.setEntrouTita(true);
         campaign.setPhase(CampaignState.Phase.TITAN);
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
@@ -724,7 +733,7 @@ public final class MarsScreen implements Screen {
         }
         if (stepTimer >= (player.isSprinting() ? .32f : .48f)) {
             stepTimer = 0f;
-            sounds.tocarPassoLunar();
+            sounds.tocarPassoMarte();
         }
     }
 

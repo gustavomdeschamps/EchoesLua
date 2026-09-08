@@ -41,6 +41,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
     private float time;
     private float stateTime;
     private float attackCooldown;
+    private float hitFlash;
     private boolean facingLeft;
     private boolean slamPending;
     private boolean volleyPending;
@@ -66,6 +67,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         time += delta;
         stateTime += delta;
         attackCooldown = Math.max(0f, attackCooldown - delta);
+        hitFlash = Math.max(0f, hitFlash - delta);
 
         if (state == State.MORTO) {
             if (stateTime >= 1.1f) ativo = false;
@@ -225,8 +227,8 @@ public final class TitanBoss extends Entidade implements CombatTarget {
             change(State.MORTO);
             return true;
         }
-        if (!isTelegraphing() && state != State.IMPACTO && state != State.VOLLEY
-            && state != State.BURST) change(State.DANO);
+        // Feedback must not restart pursuit or cancel the next attack.
+        hitFlash = .12f;
         return false;
     }
 
@@ -248,7 +250,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
             ? MathUtils.clamp(1f - stateTime / 1.1f, 0f, 1f) : 1f;
 
         // O aviso pisca; o impacto clareia. A cor conta o que vem.
-        if (state == State.DANO) batch.setColor(1f, .55f, .5f, alpha);
+        if (hitFlash > 0f) batch.setColor(1f, .55f, .5f, alpha);
         else if (isTelegraphing()) {
             float pulse = .6f + MathUtils.sin(stateTime * 26f) * .4f;
             batch.setColor(1f, .72f + pulse * .18f, .45f, alpha);

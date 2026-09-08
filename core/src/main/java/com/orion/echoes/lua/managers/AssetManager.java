@@ -26,6 +26,11 @@ public final class AssetManager implements Disposable {
         new com.badlogic.gdx.assets.AssetManager();
     private boolean queued;
     private boolean ready;
+    private final java.util.IdentityHashMap<TextureRegion,
+        com.badlogic.gdx.utils.Array<TextureAtlas.AtlasRegion>> frameGroups =
+        new java.util.IdentityHashMap<>();
+    private TextureRegion npcAyla;
+    private TextureRegion titanVerticalPortal;
 
     public TextureRegion astronautaSheetTexture;
     public TextureRegion astronautCombatSheetTexture;
@@ -128,6 +133,8 @@ public final class AssetManager implements Disposable {
         repairStationsSheetTexture = required(gameAtlas, "lunar_repair_stations_v2");
         titanFormationsTexture = required(gameAtlas, "titan_formations_v2");
         npcCommanderSheetTexture = required(gameAtlas, "npc_colony_officer_sheet_v2");
+        npcAyla = required(gameAtlas, "npc_commander_ayla_sheet");
+        titanVerticalPortal = required(gameAtlas, "titan_portal_vertical_v2");
         lunarObstaclesTexture = required(gameAtlas, "lunar_obstacles");
         marsObstaclesTexture = required(gameAtlas, "mars_obstacles");
         landmarksTexture = required(gameAtlas, "landmarks");
@@ -158,6 +165,12 @@ public final class AssetManager implements Disposable {
     }
 
     private TextureRegion required(TextureAtlas atlas, String name) {
+        com.badlogic.gdx.utils.Array<TextureAtlas.AtlasRegion> frames = atlas.findRegions(name);
+        if (frames.size > 1) {
+            TextureRegion handle = frames.first();
+            frameGroups.put(handle, frames);
+            return handle;
+        }
         TextureRegion region = atlas.findRegion(name);
         if (region == null) throw new IllegalStateException("Região obrigatória ausente no atlas: " + name);
         return region;
@@ -174,6 +187,12 @@ public final class AssetManager implements Disposable {
         BitmapFont generated = generator.generateFont(parameter);
         generator.dispose();
         return generated;
+    }
+
+    /** Caller owns this font; Scene2D must not mutate gameplay font metrics. */
+    public BitmapFont createInterfaceFont(int size, boolean heading) {
+        return generateFont(heading ? "fonts/ChakraPetch-SemiBold.ttf"
+            : "fonts/ChakraPetch-Regular.ttf", size);
     }
 
     public TextureRegion astronautFrame(int column, int row) {
@@ -209,8 +228,16 @@ public final class AssetManager implements Disposable {
         return gridRegion(npcCommanderSheetTexture, 4, 4, column, row, 2);
     }
 
+    public TextureRegion npcAylaFrame(int column, int row) {
+        return gridRegion(npcAyla, 4, 4, column, row, 0);
+    }
+
     public TextureRegion portalFrame(int column, int row) {
         return gridRegion(titanPortalSheetTexture, 4, 4, column, row, 3);
+    }
+
+    public TextureRegion titanPortalFrame(int column, int row) {
+        return gridRegion(titanVerticalPortal, 4, 2, column, row == 0 ? 0 : 1, 0);
     }
 
     public TextureRegion repairStationFrame(int stationRow, int column) {
@@ -269,6 +296,12 @@ public final class AssetManager implements Disposable {
                                      int column, int row, int inset) {
         if (column < 0 || column >= columns || row < 0 || row >= rows) {
             throw new IllegalArgumentException("Célula fora da grade: " + column + "," + row);
+        }
+        com.badlogic.gdx.utils.Array<TextureAtlas.AtlasRegion> frames = frameGroups.get(sheet);
+        if (frames != null) {
+            if (frames.size != columns * rows) throw new IllegalStateException("Grade incompleta no atlas");
+            // Each entity owns its flip state. Never flip an atlas singleton.
+            return new TextureRegion(frames.get(row * columns + column));
         }
         int cellWidth = sheet.getRegionWidth() / columns;
         int cellHeight = sheet.getRegionHeight() / rows;

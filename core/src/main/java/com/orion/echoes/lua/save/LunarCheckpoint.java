@@ -21,6 +21,10 @@ public final class LunarCheckpoint {
     public static GameSaveData capture(LunarWorld world, CampaignState campaign) {
         MissionState mission = world.getMission();
         GameSaveData data = world.getPlayer().toSaveData();
+        campaign.captureMission(mission);
+        campaign.setVitals(data.oxigenio, data.energia);
+        campaign.setAmmo(world.getPlayer().getMunicao());
+        campaign.setResources(data.gelo, data.agua, data.combustivel);
         data.pecaAntena = mission.getPartCount(MissionState.PartType.ANTENA);
         data.pecaEnergia = mission.getPartCount(MissionState.PartType.ENERGIA);
         data.pecaExtracao = mission.getPartCount(MissionState.PartType.EXTRACAO);
@@ -40,6 +44,19 @@ public final class LunarCheckpoint {
 
     /** Grava os campos de campanha comuns as duas fases. */
     public static void applyCampaign(GameSaveData data, CampaignState campaign) {
+        data.oxigenio = campaign.getOxygen();
+        data.energia = campaign.getEnergy();
+        data.gelo = campaign.getIce();
+        data.agua = campaign.getWater();
+        data.combustivel = campaign.getFuel();
+        data.tempoVivo = campaign.getMissionTime();
+        int[] mission = campaign.toLunarArray();
+        data.pecaAntena = mission[0]; data.pecaEnergia = mission[1];
+        data.pecaExtracao = mission[2]; data.pecaEstufa = mission[3];
+        data.armaParteA = mission[4]; data.armaParteB = mission[5]; data.armaParteC = mission[6];
+        data.comunicacaoReparada = mission[7] != 0; data.energiaReparada = mission[8] != 0;
+        data.extracaoReparada = mission[9] != 0; data.estufaReparada = mission[10] != 0;
+        data.armaCraftada = campaign.hasWeapon(); data.inimigosEliminados = mission[12];
         data.fase = campaign.phaseToken();
         data.semente = campaign.getSeed();
         data.municao = campaign.getAmmo();
@@ -50,6 +67,8 @@ public final class LunarCheckpoint {
         data.marteEstacoes = campaign.getMarsStationsOnline();
         data.marteHostis = campaign.getMarsHostilesDefeated();
         data.dialogoTita = campaign.isDialogoTita();
+        data.dialogoLua = campaign.isDialogoLua();
+        data.dialogoExplorador = campaign.isDialogoExplorador();
         data.combateOk = campaign.isCombateOk();
         data.amostraOk = campaign.isAmostraOk();
         data.entrouTita = campaign.isEntrouTita();
@@ -76,6 +95,8 @@ public final class LunarCheckpoint {
                 data.marteHostis, data.marteConcluido);
         }
         campaign.setDialogoTita(data.dialogoTita);
+        campaign.setDialogoLua(data.dialogoLua);
+        campaign.setDialogoExplorador(data.dialogoExplorador);
         campaign.setCombateOk(data.combateOk);
         campaign.setAmostraOk(data.amostraOk);
         campaign.setEntrouTita(data.entrouTita);

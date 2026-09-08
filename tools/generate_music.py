@@ -178,7 +178,29 @@ def mars_urgency() -> np.ndarray:
     return _stereo(left, right, 0.33)
 
 
+def titan_base() -> np.ndarray:
+    pressure = _pad(36.71, .7, partials=3, seed=71)
+    pressure += _pad(55.0, .32, partials=4, seed=72) * _lfo(1/32, .3, .6)
+    haze = _periodic_noise(40, 480, .23, seed=73, tilt=1.5)
+    voice = pressure + haze * _lfo(1/16, .35, .6)
+    return _stereo(voice, pressure + np.roll(haze, 1201) * .7, .34)
+
+def titan_tension() -> np.ndarray:
+    pulses = _pulse_envelope(24, .025, .8)
+    voice = (_sine(49, .7) + _sine(73.42, .25)) * pulses
+    voice += _periodic_noise(80, 850, .15, seed=74) * _lfo(1/8, .4, .5)
+    return _stereo(voice, np.roll(voice, 607), .28)
+
+def titan_urgency() -> np.ndarray:
+    pulse = _pulse_envelope(64, .008, .28)
+    voice = (_sine(146.83, .4) + _sine(155.56, .3)) * pulse
+    voice += _sine(36.71, .3) * _lfo(2, .4, .6)
+    return _stereo(voice, np.roll(voice, 403), .25)
+
 LAYERS = {
+    "titan_base": titan_base,
+    "titan_tension": titan_tension,
+    "titan_urgency": titan_urgency,
     "lunar_base": lunar_base,
     "lunar_tension": lunar_tension,
     "lunar_urgency": lunar_urgency,
@@ -191,12 +213,19 @@ LAYERS = {
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", default=str(OUTPUT_DIR))
+    parser.add_argument("--world", choices=['lunar', 'mars', 'titan'])
     arguments = parser.parse_args()
     destination = Path(arguments.output)
     destination.mkdir(parents=True, exist_ok=True)
     for name, builder in LAYERS.items():
+        if arguments.world and not name.startswith(arguments.world + '_'):
+            continue
         path = destination / f"{name}.ogg"
-        sf.write(path, builder(), SAMPLE_RATE, format="OGG", subtype="VORBIS")
+        samples = builder()
+        with sf.SoundFile(path, 'w', samplerate=SAMPLE_RATE, channels=2,
+                          format='OGG', subtype='VORBIS') as audio:
+            for offset in range(0, len(samples), 4096):
+                audio.write(samples[offset:offset + 4096])
         print(f"{path}  {path.stat().st_size // 1024} KB")
 
 

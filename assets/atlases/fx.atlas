@@ -1,20 +1,342 @@
 
 fx.png
-size: 3084, 1030
+size: 804, 1072
 format: RGBA8888
-filter: MipMapLinearLinear, Linear
+filter: Linear, Linear
 repeat: none
 action_fx_sheet
   rotate: false
-  xy: 3, 3
-  size: 1536, 1024
-  orig: 1536, 1024
+  xy: 3, 941
+  size: 128, 128
+  orig: 128, 128
   offset: 0, 0
-  index: -1
+  index: 0
+action_fx_sheet
+  rotate: false
+  xy: 3, 807
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 1
+action_fx_sheet
+  rotate: false
+  xy: 137, 941
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 2
+action_fx_sheet
+  rotate: false
+  xy: 3, 673
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 3
+action_fx_sheet
+  rotate: false
+  xy: 137, 807
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 4
+action_fx_sheet
+  rotate: false
+  xy: 271, 941
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 5
+action_fx_sheet
+  rotate: false
+  xy: 3, 539
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 6
+action_fx_sheet
+  rotate: false
+  xy: 137, 673
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 7
+action_fx_sheet
+  rotate: false
+  xy: 271, 807
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 8
+action_fx_sheet
+  rotate: false
+  xy: 405, 941
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 9
+action_fx_sheet
+  rotate: false
+  xy: 3, 405
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 10
+action_fx_sheet
+  rotate: false
+  xy: 137, 539
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 11
+action_fx_sheet
+  rotate: false
+  xy: 271, 673
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 12
+action_fx_sheet
+  rotate: false
+  xy: 405, 807
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 13
+action_fx_sheet
+  rotate: false
+  xy: 539, 941
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 14
+action_fx_sheet
+  rotate: false
+  xy: 3, 271
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 15
+action_fx_sheet
+  rotate: false
+  xy: 137, 405
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 16
+action_fx_sheet
+  rotate: false
+  xy: 271, 539
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 17
+action_fx_sheet
+  rotate: false
+  xy: 405, 673
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 18
+action_fx_sheet
+  rotate: false
+  xy: 539, 807
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 19
+action_fx_sheet
+  rotate: false
+  xy: 673, 941
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 20
+action_fx_sheet
+  rotate: false
+  xy: 3, 137
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 21
+action_fx_sheet
+  rotate: false
+  xy: 137, 271
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 22
+action_fx_sheet
+  rotate: false
+  xy: 271, 405
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 23
 energy_fx_sheet
   rotate: false
-  xy: 1545, 3
-  size: 1536, 1024
-  orig: 1536, 1024
+  xy: 405, 539
+  size: 128, 128
+  orig: 128, 128
   offset: 0, 0
-  index: -1
+  index: 0
+energy_fx_sheet
+  rotate: false
+  xy: 539, 673
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 1
+energy_fx_sheet
+  rotate: false
+  xy: 673, 807
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 2
+energy_fx_sheet
+  rotate: false
+  xy: 3, 3
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 3
+energy_fx_sheet
+  rotate: false
+  xy: 137, 137
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 4
+energy_fx_sheet
+  rotate: false
+  xy: 271, 271
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 5
+energy_fx_sheet
+  rotate: false
+  xy: 405, 405
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 6
+energy_fx_sheet
+  rotate: false
+  xy: 539, 539
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 7
+energy_fx_sheet
+  rotate: false
+  xy: 673, 673
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 8
+energy_fx_sheet
+  rotate: false
+  xy: 137, 3
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 9
+energy_fx_sheet
+  rotate: false
+  xy: 271, 137
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 10
+energy_fx_sheet
+  rotate: false
+  xy: 405, 271
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 11
+energy_fx_sheet
+  rotate: false
+  xy: 539, 405
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 12
+energy_fx_sheet
+  rotate: false
+  xy: 673, 539
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 13
+energy_fx_sheet
+  rotate: false
+  xy: 271, 3
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 14
+energy_fx_sheet
+  rotate: false
+  xy: 405, 137
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 15
+energy_fx_sheet
+  rotate: false
+  xy: 539, 271
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 16
+energy_fx_sheet
+  rotate: false
+  xy: 673, 405
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 17
+energy_fx_sheet
+  rotate: false
+  xy: 405, 3
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 18
+energy_fx_sheet
+  rotate: false
+  xy: 539, 137
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 19
+energy_fx_sheet
+  rotate: false
+  xy: 673, 271
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 20
+energy_fx_sheet
+  rotate: false
+  xy: 539, 3
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 21
+energy_fx_sheet
+  rotate: false
+  xy: 673, 137
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 22
+energy_fx_sheet
+  rotate: false
+  xy: 673, 3
+  size: 128, 128
+  orig: 128, 128
+  offset: 0, 0
+  index: 23

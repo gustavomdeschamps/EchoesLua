@@ -55,7 +55,9 @@ public class SoundManager implements Disposable {
             "coleta", "coleta_oxigenio", "coleta_comida", "coleta_gelo",
             "processar_gelo", "sem_gelo", "base_recarregando", "alerta_oxigenio",
             "menu_iniciar", "pause", "unpause", "game_over", "vitoria",
-            "passo_lunar", "colisao_rocha", "hover_ui", "disparo_pulso"
+            "passo_lunar", "colisao_rocha", "hover_ui", "disparo_pulso",
+            "passo_marte", "passo_tita", "dialogo", "portal_ativar",
+            "boss_rugido", "boss_ataque", "boss_morte", "impacto_hostil"
         }) {
             Sound sound = carregar("sounds/" + name + ".ogg");
             if (sound != null) sounds.put(name, sound);
@@ -222,6 +224,13 @@ public class SoundManager implements Disposable {
     // =========================================
 
     public void tocarPassoLunar() { tocarVariado("passo_lunar", Bus.AMBIENT, .22f); }
+    public void tocarPassoMarte() { tocarVariado("passo_marte", Bus.AMBIENT, .24f); }
+    public void tocarPassoTita() { tocarVariado("passo_tita", Bus.AMBIENT, .26f); }
+    public void tocarDialogo() { tocarVariado("dialogo", Bus.UI, .3f); }
+    public void tocarPortal() { tocar("portal_ativar", Bus.SFX, .65f); }
+    public void tocarBoss(String evento, float x, float y) {
+        tocarEspacial("boss_" + evento, Bus.SFX, .7f, x, y);
+    }
 
     public void tocarColisaoRocha() { tocarVariado("colisao_rocha", Bus.SFX, .35f); }
 
@@ -233,7 +242,7 @@ public class SoundManager implements Disposable {
 
     /** Impacto no inimigo: mesmo sample do disparo, mais curto e agudo. */
     public void tocarImpacto(float x, float y) {
-        tocarEspacial("colisao_rocha", Bus.SFX, .8f, x, y);
+        tocarEspacial("impacto_hostil", Bus.SFX, .65f, x, y);
     }
 
     public void tocarMorteInimigo(float x, float y) {
@@ -262,6 +271,7 @@ public class SoundManager implements Disposable {
     public void pararMusicaMenu() { music.play(MusicDirector.Track.NONE); }
     public void tocarMusicaLunar() { music.play(MusicDirector.Track.LUNAR); }
     public void tocarMusicaMarte() { music.play(MusicDirector.Track.MARS); }
+    public void tocarMusicaTita() { music.play(MusicDirector.Track.TITAN); }
 
     /** Intensidade adaptativa: proximidade de inimigo e oxigenio critico. */
     public void atualizarIntensidade(float tension, float urgency) {

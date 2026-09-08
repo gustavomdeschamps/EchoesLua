@@ -74,6 +74,7 @@ public class LunarScreen implements Screen {
     private SoundManager sounds;
     private SaveManager saveManager;
     private Hud hud;
+    private com.orion.echoes.lua.systems.NpcConversation lunarConversation;
 
     private JuiceSystem juice;
     private CameraDirector cameraDirector;
@@ -144,6 +145,14 @@ public class LunarScreen implements Screen {
 
         world = new LunarWorld(campaign.getSeed(), assets, physicsWorld);
         astronauta = world.getPlayer();
+        lunarConversation = new com.orion.echoes.lua.systems.NpcConversation(
+            new com.orion.echoes.lua.entities.Npc(astronauta.getPosition().x + 65f,
+                astronauta.getPosition().y + 10f, "COMANDANTE AYLA", com.badlogic.gdx.graphics.Color.WHITE, assets, true),
+            new String[] {
+                "Esta colônia mantém o enlace entre a Terra e nossas expedições. Sem as antenas, ninguém ouve um pedido de resgate.",
+                "Recolha as peças espalhadas e reative três sistemas. Os cilindros renovam o oxigênio; o gelo abastece a fabricação de munição.",
+                "Monte o rifle na base, neutralize os hostis e procure o portal. A equipe de Marte espera por você."
+            }, batch, assets);
         mission = world.getMission();
         restaurarCampanha();
 
@@ -215,6 +224,10 @@ public class LunarScreen implements Screen {
 
         worldRenderer.render(world, particleManager);
         combat.render(world);
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        lunarConversation.renderWorld(batch, astronauta);
+        batch.end();
         renderHitboxDebug();
 
         if (!pausado) {
@@ -231,6 +244,12 @@ public class LunarScreen implements Screen {
         overlay.renderDamageVignette(juice.getDamageFlashAlpha());
 
         if (pausado) pauseOverlay.render(world);
+        else {
+            batch.setProjectionMatrix(uiCamera.combined);
+            batch.begin();
+            lunarConversation.renderUi();
+            batch.end();
+        }
     }
 
     /**
@@ -286,6 +305,14 @@ public class LunarScreen implements Screen {
         if (pausado || gameOver || vitoria) return;
 
         delta = Math.min(delta, MAX_STEP);
+        if (lunarConversation.update(delta, astronauta, campaign.isDialogoLua(), () -> {
+            campaign.setDialogoLua(true);
+            feedback.showFor("Briefing recebido. Recolha peças e reative três sistemas.", 6f);
+        })) {
+            input.consumeInteractPressed();
+            input.consumeAttackPressed();
+            return;
+        }
         if (portalTraveling) {
             astronauta.getBody().setLinearVelocity(0f, 0f);
             world.getPortal().update(delta);
@@ -506,6 +533,7 @@ public class LunarScreen implements Screen {
     private void verificarGameOver() {
         if (!astronauta.isMorto()) return;
         gameOver = true;
+        guardarCampanha();
         astronauta.getBody().setLinearVelocity(0f, 0f);
         nextScreen = new GameOverScreen(game, astronauta.getTempoVivo());
     }

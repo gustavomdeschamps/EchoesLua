@@ -1,54 +1,54 @@
 
 ui.png
-size: 2454, 1086
+size: 2196, 946
 format: RGBA8888
-filter: MipMapLinearLinear, Linear
+filter: Linear, Linear
 repeat: none
 bar_fill
   rotate: false
-  xy: 1929, 695
+  xy: 1681, 625
   size: 256, 24
   orig: 256, 24
   offset: 0, 0
   index: -1
 bar_track
   rotate: false
-  xy: 1929, 665
+  xy: 1681, 595
   size: 256, 24
   orig: 256, 24
   offset: 0, 0
   index: -1
 button_disabled
   rotate: false
-  xy: 2191, 725
+  xy: 1681, 525
   size: 192, 64
   orig: 192, 64
   offset: 0, 0
   index: -1
 button_hover
   rotate: false
-  xy: 1929, 595
+  xy: 1681, 455
   size: 192, 64
   orig: 192, 64
   offset: 0, 0
   index: -1
 button_normal
   rotate: false
-  xy: 1929, 525
+  xy: 1681, 385
   size: 192, 64
   orig: 192, 64
   offset: 0, 0
   index: -1
 button_pressed
   rotate: false
-  xy: 1929, 455
+  xy: 1681, 315
   size: 192, 64
   orig: 192, 64
   offset: 0, 0
   index: -1
 damage_vignette
   rotate: false
-  xy: 1929, 795
+  xy: 1681, 655
   size: 512, 288
   orig: 512, 288
   offset: 0, 0
@@ -56,55 +56,76 @@ damage_vignette
 intro_keyart_v4
   rotate: false
   xy: 3, 3
-  size: 1920, 1080
-  orig: 1920, 1080
+  size: 1672, 940
+  orig: 1672, 940
   offset: 0, 0
   index: -1
 objective_marker
   rotate: false
-  xy: 2031, 385
+  xy: 1783, 143
   size: 64, 64
   orig: 64, 64
   offset: 0, 0
   index: -1
 panel_dialog
   rotate: false
-  xy: 1929, 353
+  xy: 1681, 213
   size: 96, 96
   orig: 96, 96
   offset: 0, 0
   index: -1
 panel_hud
   rotate: false
-  xy: 1929, 251
+  xy: 1681, 111
   size: 96, 96
   orig: 96, 96
   offset: 0, 0
   index: -1
 panel_modal
   rotate: false
-  xy: 1929, 149
+  xy: 1681, 9
   size: 96, 96
   orig: 96, 96
   offset: 0, 0
   index: -1
 resource_icons
   rotate: false
-  xy: 1929, 725
-  size: 256, 64
-  orig: 256, 64
+  xy: 1783, 73
+  size: 64, 64
+  orig: 64, 64
   offset: 0, 0
-  index: -1
+  index: 0
+resource_icons
+  rotate: false
+  xy: 1879, 525
+  size: 64, 64
+  orig: 64, 64
+  offset: 0, 0
+  index: 1
+resource_icons
+  rotate: false
+  xy: 1879, 455
+  size: 64, 64
+  orig: 64, 64
+  offset: 0, 0
+  index: 2
+resource_icons
+  rotate: false
+  xy: 1879, 385
+  size: 64, 64
+  orig: 64, 64
+  offset: 0, 0
+  index: 3
 ui_panel_frame
   rotate: false
-  xy: 1929, 47
+  xy: 1783, 213
   size: 96, 96
   orig: 96, 96
   offset: 0, 0
   index: -1
 white_pixel
   rotate: false
-  xy: 2447, 1079
+  xy: 1853, 203
   size: 4, 4
   orig: 4, 4
   offset: 0, 0

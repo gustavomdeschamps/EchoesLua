@@ -70,9 +70,11 @@ public final class MenuScreen implements Screen {
     }
 
     private void showMain(boolean animate) {
-        Table content = basePage();
-        content.add(title("ECHOES", 1.65f)).left().row();
-        content.add(label("FASE LUNAR  //  SINAL ORION", UiTheme.CYAN)).left().padBottom(44f).row();
+        Table content = basePage(510f, 600f);
+        content.setX(48f);
+        content.setBackground((com.badlogic.gdx.scenes.scene2d.utils.Drawable)null);
+        content.add(title("ECHOES", 2.2f)).left().row();
+        content.add(label("LUA  ·  MARTE  ·  TITÃ", UiTheme.CYAN)).left().padBottom(38f).row();
         content.add(button("NOVO JOGO", this::startGame)).width(410f).height(58f).padBottom(10f).row();
         if (new SaveManager().hasSave()) {
             content.add(button("CONTINUAR CAMPANHA", this::continueGame))
@@ -89,7 +91,7 @@ public final class MenuScreen implements Screen {
         content.add(title("COMO JOGAR", 1.2f)).left().colspan(2).padBottom(25f).row();
         helpCard(content, "MOVIMENTO", "WASD ou setas  ·  SHIFT para correr", UiTheme.CYAN);
         helpCard(content, "AÇÃO", "E interage  ·  ESPAÇO executa o dash", UiTheme.AMBER);
-        helpCard(content, "COMBATE", "Mouse aponta  ·  botão esquerdo dispara  ·  sem retículo", UiTheme.GREEN);
+        helpCard(content, "COMBATE", "Mouse aponta  ·  botão esquerdo dispara", UiTheme.GREEN);
         helpCard(content, "MISSÃO", "Reative três sistemas, fabrique a arma e abra o portal", UiTheme.RED);
         content.add(button("VOLTAR", () -> showMain(true))).width(210f).height(54f).left().colspan(2).padTop(24f).row();
         swap(content, animate);
@@ -127,7 +129,7 @@ public final class MenuScreen implements Screen {
         Table system = column();
         section(system, "INTERFACE");
         slider(system, "Escala do HUD", (settings.getHudScale() - .85f) / .35f,
-            value -> settings.setHudScale(.85f + value * .35f));
+            value -> settings.setHudScale(.85f + value * .35f), .85f, .35f);
         section(system, "ACESSIBILIDADE");
         toggle(system, "Tremor de câmera", settings.isShakeEnabled(), value -> {
             settings.setShakeEnabled(value);
@@ -167,15 +169,20 @@ public final class MenuScreen implements Screen {
      * porcentagem acompanha o arrasto em tempo real.
      */
     private void slider(Table column, String text, float value, FloatChange change) {
-        Slider control = new Slider(0f, 1f, .05f, false, skin);
+        slider(column, text, value, change, 0f, 1f);
+    }
+
+    private void slider(Table column, String text, float value, FloatChange change,
+                        float displayOffset, float displayRange) {
+        Slider control = new Slider(0f, 1f, .01f / displayRange, false, skin);
         control.setValue(value);
-        Label readout = label(percent(value), UiTheme.TEXT);
+        Label readout = label(percent(displayOffset + control.getValue() * displayRange), UiTheme.TEXT);
         readout.setFontScale(.7f);
         readout.setAlignment(Align.right);
         control.addListener(new ChangeListener() {
             @Override public void changed(ChangeEvent event, Actor actor) {
                 change.set(control.getValue());
-                readout.setText(percent(control.getValue()));
+                readout.setText(percent(displayOffset + control.getValue() * displayRange));
             }
         });
         column.add(rowLabel(text)).width(LABEL_WIDTH).left().padBottom(ROW_GAP);
@@ -379,9 +386,11 @@ public final class MenuScreen implements Screen {
             batch.setColor(.18f, .23f, .29f, 1f);
             batch.draw(game.getAssets().backgroundLuaTexture, 0f, 0f, getWidth(), getHeight());
             batch.setColor(.82f, .8f, .74f, .72f);
-            batch.draw(game.getAssets().introKeyArtTexture, 520f, 0f, 1280f, 720f);
+            batch.draw(game.getAssets().introKeyArtTexture, 0f, 0f, 1280f, 720f);
             batch.setColor(.015f, .025f, .035f, .63f);
             batch.draw(game.getAssets().uiWhiteTexture, 0f, 0f, getWidth(), getHeight());
+            batch.setColor(.012f, .023f, .031f, .75f);
+            batch.draw(game.getAssets().uiWhiteTexture, 0f, 0f, 580f, getHeight());
             batch.setColor(Color.WHITE);
         }
     }

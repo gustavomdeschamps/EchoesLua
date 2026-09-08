@@ -28,11 +28,16 @@ public final class Npc extends Entidade {
     private boolean talking;
 
     public Npc(float x, float y, String nome, Color tint, AssetManager assets) {
+        this(x, y, nome, tint, assets, false);
+    }
+
+    public Npc(float x, float y, String nome, Color tint, AssetManager assets, boolean ayla) {
         super(x, y, 54f, 76f);
         this.nome = nome;
         for (int row = 0; row < frames.length; row++) {
             for (int column = 0; column < frames[row].length; column++) {
-                frames[row][column] = assets.npcCommanderFrame(column, row);
+                frames[row][column] = ayla ? assets.npcAylaFrame(column, row)
+                    : assets.npcCommanderFrame(column, row);
             }
         }
         // Hitbox derivada do desenho: os pés, como no resto do jogo.
@@ -53,6 +58,8 @@ public final class Npc extends Entidade {
     }
 
     public void marcarConversado() { jaConversou = true; }
+
+    public TextureRegion getPortraitFrame() { return frames[0][0]; }
 
     public boolean jaConversou() { return jaConversou; }
 

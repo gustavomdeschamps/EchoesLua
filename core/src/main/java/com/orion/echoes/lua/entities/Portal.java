@@ -18,10 +18,15 @@ public class Portal extends Entidade {
     private boolean emerging;
 
     public Portal(float x, float y, AssetManager assets) {
+        this(x, y, assets, false);
+    }
+
+    protected Portal(float x, float y, AssetManager assets, boolean titan) {
         super(x, y, 190f, 220f);
         for (int row = 0; row < 4; row++) {
             for (int column = 0; column < 4; column++) {
-                frames[row][column] = assets.portalFrame(column, row);
+                frames[row][column] = titan ? assets.titanPortalFrame(column, row)
+                    : assets.portalFrame(column, row);
                 mirrored[row][column] = new TextureRegion(frames[row][column]);
                 mirrored[row][column].flip(true, false);
             }
@@ -41,14 +46,17 @@ public class Portal extends Entidade {
         int column = traveling
             ? Math.min(3, (int)(travelTime / (TRAVEL_DURATION / 4f)))
             : unlocked ? (int)(time / speed) % 4 : (int)(time / speed) % 2;
-        boolean flip = reversed ^ (traveling && travelTime > TRAVEL_DURATION * .52f);
+        boolean flip = reversed;
         TextureRegion frame = (flip ? mirrored : frames)[row][column];
         float pulse = unlocked ? 1f + MathUtils.sin(time * 4.2f) * .012f : 1f;
         if (traveling) pulse += MathUtils.sin(travelTime / TRAVEL_DURATION * MathUtils.PI) * .075f;
         float drawW = width * pulse;
         float drawH = height * pulse;
+        float previousColor = batch.getPackedColor();
+        if (!unlocked) batch.setColor(1f, .48f, .42f, 1f);
         batch.draw(frame, position.x + (width - drawW) / 2f,
             position.y + (height - drawH) / 2f, drawW, drawH);
+        batch.setPackedColor(previousColor);
     }
 
     public void setUnlocked(boolean value) {

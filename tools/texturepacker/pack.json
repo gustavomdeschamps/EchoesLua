@@ -10,7 +10,7 @@
   "stripWhitespaceX": false,
   "stripWhitespaceY": false,
   "alias": false,
-  "filterMin": "MipMapLinearLinear",
+  "filterMin": "Linear",
   "filterMag": "Linear",
   "format": "RGBA8888"
 }
