@@ -129,8 +129,8 @@ public final class GameConfig {
     // ==========================================
 
     public static final float BOSS_SPRITE_SIZE = 340f;
-    public static final float BOSS_MAX_HP = 420f;
-    public static final float BOSS_SPEED = 46f;
+    public static final float BOSS_MAX_HP = 900f;
+    public static final float BOSS_SPEED = 58f;
     public static final float BOSS_CHASE_RADIUS = 620f;
     /** Distancia em que ele para e comeca a preparar o golpe. */
     public static final float BOSS_ATTACK_RANGE = 250f;
@@ -143,9 +143,9 @@ public final class GameConfig {
     public static final float BOSS_DAMAGE = 22f;
     /** Geometria proporcional ao quadro desenhado do chefe. */
     public static final float BOSS_SPRITE_OFFSET_Y_RATIO = -0.10f;
-    public static final float BOSS_HITBOX_WIDTH_RATIO = 0.40f;
-    public static final float BOSS_HITBOX_HEIGHT_RATIO = 0.26f;
-    public static final float BOSS_HITBOX_BASE_RATIO = 0.12f;
+    public static final float BOSS_HITBOX_WIDTH_RATIO = 0.58f;
+    public static final float BOSS_HITBOX_HEIGHT_RATIO = 0.34f;
+    public static final float BOSS_HITBOX_BASE_RATIO = 0.17f;
 
     // ==========================================
     // LAYOUT DA TELA DE OPCOES
@@ -155,17 +155,17 @@ public final class GameConfig {
     // ficam aqui para o teste de layout poder conferir a conta.
     // ==========================================
 
-    public static final float SETTINGS_PANEL_WIDTH = 920f;
-    public static final float SETTINGS_PANEL_HEIGHT = 600f;
+    public static final float SETTINGS_PANEL_WIDTH = 1120f;
+    public static final float SETTINGS_PANEL_HEIGHT = 650f;
     /** Recuo interno do painel, aplicado dos dois lados. */
     public static final float SETTINGS_PANEL_PADDING = 38f;
-    public static final float SETTINGS_COLUMN_WIDTH = 360f;
-    public static final float SETTINGS_COLUMN_GAP = 56f;
-    public static final float SETTINGS_LABEL_WIDTH = 144f;
-    public static final float SETTINGS_CONTROL_WIDTH = 156f;
-    public static final float SETTINGS_VALUE_WIDTH = 42f;
-    public static final float SETTINGS_VALUE_PADDING = 10f;
-    public static final float SETTINGS_ROW_GAP = 9f;
+    public static final float SETTINGS_COLUMN_WIDTH = 460f;
+    public static final float SETTINGS_COLUMN_GAP = 32f;
+    public static final float SETTINGS_LABEL_WIDTH = 180f;
+    public static final float SETTINGS_CONTROL_WIDTH = 210f;
+    public static final float SETTINGS_VALUE_WIDTH = 50f;
+    public static final float SETTINGS_VALUE_PADDING = 8f;
+    public static final float SETTINGS_ROW_GAP = 7f;
 
     // ==========================================
     // HITBOXES

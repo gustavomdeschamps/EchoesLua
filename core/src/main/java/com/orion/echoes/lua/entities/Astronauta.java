@@ -52,6 +52,8 @@ public class Astronauta extends Entidade implements Interagivel {
     private boolean weaponEquipped;
     private int municao;
     private boolean sprinting;
+    /** Input real do quadro; evita alternar parado/andando pela inércia do Box2D. */
+    private boolean movementInputActive;
     private float invulnerabilityTimer;
     private float dashTimer;
     private float dashCooldown;
@@ -198,6 +200,9 @@ public class Astronauta extends Entidade implements Interagivel {
         if (!ativo) {
             return;
         }
+
+        movementInputActive = Math.abs(dirX) > .01f || Math.abs(dirY) > .01f;
+        if (movementInputActive) setAimDirection(dirX, dirY);
 
         // Direção visual
         if (dirX < 0) {
@@ -357,7 +362,7 @@ public class Astronauta extends Entidade implements Interagivel {
         if (damageTimer > 0f) return AnimationState.HURT;
         if (recoilTimer > 0f) return AnimationState.ATTACK;
         if (dashTimer > 0f) return AnimationState.DASH;
-        if (isMoving()) return sprinting ? AnimationState.RUN : AnimationState.WALK;
+        if (movementInputActive) return sprinting ? AnimationState.RUN : AnimationState.WALK;
         return AnimationState.IDLE;
     }
 
@@ -393,7 +398,8 @@ public class Astronauta extends Entidade implements Interagivel {
             centerY - 20.5f - MathUtils.sin(radians) * recoil);
         weaponSprite.setRotation(aimAngle);
         boolean upsideDown = aimAngle > 90f || aimAngle < -90f;
-        weaponSprite.setFlip(false, upsideDown);
+        // A arte original aponta para a esquerda; este flip fixa a direção-base.
+        weaponSprite.setFlip(true, upsideDown);
         weaponSprite.draw(batch);
     }
 
@@ -450,13 +456,11 @@ public class Astronauta extends Entidade implements Interagivel {
         this.weaponEquipped = weaponEquipped;
     }
 
-    public void setAimTarget(float worldX, float worldY) {
-        float centerX = position.x + WIDTH / 2f;
-        float centerY = position.y + HEIGHT * .48f;
-        aimAngle = MathUtils.atan2(worldY - centerY, worldX - centerX) * MathUtils.radiansToDegrees;
-        if (weaponEquipped && Math.abs(worldX - centerX) > 3f) {
-            viradoEsquerda = worldX < centerX;
-        }
+    /** Mira por direção de movimento/auto-alvo, sem depender do cursor do mouse. */
+    public void setAimDirection(float dirX, float dirY) {
+        if (dirX * dirX + dirY * dirY < .0001f) return;
+        aimAngle = MathUtils.atan2(dirY, dirX) * MathUtils.radiansToDegrees;
+        if (weaponEquipped && Math.abs(dirX) > .03f) viradoEsquerda = dirX < 0f;
     }
 
     public float getAimAngle() { return aimAngle; }

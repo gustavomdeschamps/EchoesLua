@@ -83,6 +83,7 @@ public class Enemy extends Entidade {
         shotCooldown = Math.max(0f, shotCooldown - delta);
         if (state == State.DYING) {
             if (stateTime >= .44f) ativo = false;
+            sincronizarHitbox();
             return;
         }
         if (!ativo) return;
@@ -134,6 +135,7 @@ public class Enemy extends Entidade {
                 }
             }
         }
+        sincronizarHitbox();
     }
 
     /** O atirador so ataca com o pulso recarregado. */
@@ -188,9 +190,14 @@ public class Enemy extends Entidade {
         return spriteX + (GameConfig.ENEMY_SPRITE_SIZE - hitboxWidth()) / 2f;
     }
 
-    private static float hitboxY(float originY) {
+    private float hitboxY(float originY) {
         float spriteY = originY + GameConfig.ENEMY_SPRITE_OFFSET_Y;
-        return spriteY + GameConfig.ENEMY_SPRITE_SIZE * GameConfig.ENEMY_HITBOX_BASE_RATIO;
+        return spriteY + telegraphPulse()
+            + GameConfig.ENEMY_SPRITE_SIZE * GameConfig.ENEMY_HITBOX_BASE_RATIO;
+    }
+
+    private float telegraphPulse() {
+        return state == State.TELEGRAPH ? MathUtils.sin(stateTime * 26f) * 2f : 0f;
     }
 
     private boolean isFree(float x, float y, Array<Obstacle> obstacles) {
@@ -230,7 +237,7 @@ public class Enemy extends Entidade {
         float alpha = state == State.DYING ? MathUtils.clamp(1f - stateTime / .5f, 0f, 1f) : 1f;
         if (state == State.HIT) batch.setColor(1f, .45f, .62f, alpha);
         else batch.setColor(behavior.tint.r, behavior.tint.g, behavior.tint.b, alpha);
-        float pulse = state == State.TELEGRAPH ? MathUtils.sin(stateTime * 26f) * 2f : 0f;
+        float pulse = telegraphPulse();
         batch.draw(currentFrame(),
             position.x + GameConfig.ENEMY_SPRITE_OFFSET_X,
             position.y + GameConfig.ENEMY_SPRITE_OFFSET_Y + pulse,

@@ -732,15 +732,16 @@ SHEET_GRIDS = {
     "lunar_enemy_sheet.png": (4, 4),
     "mars_drone_sheet.png": (4, 4),
     "mars_crawler_sheet.png": (4, 4),
-    "titan_enemy_sheet.png": (4, 4),
-    "titan_boss_sheet.png": (4, 4),
+    "titan_hunter_sheet_v2.png": (4, 4),
+    "titan_boss_sheet_v2.png": (4, 4),
+    "npc_commander_ayla_sheet.png": (4, 4),
     "lunar_obstacles.png": (3, 2),
     "mars_obstacles.png": (3, 2),
     "action_fx_sheet.png": (6, 4),
     "energy_fx_sheet.png": (6, 4),
     "landmarks.png": (4, 2),
     "mars_atlas_v4.png": (4, 3),
-    "titan_portal_sheet.png": (2, 1),
+    "titan_portal_vertical_v2.png": (4, 2),
 }
 
 
@@ -767,7 +768,8 @@ def validate_character_motion(minimum_mean_difference: float = 5.0) -> None:
     for name, (columns, rows) in {
         "astronauta_sheet.png": (4, 4),
         "astronaut_combat_sheet.png": (4, 3),
-        "titan_boss_sheet.png": (4, 4),
+        "titan_boss_sheet_v2.png": (4, 4),
+        "titan_hunter_sheet_v2.png": (4, 4),
     }.items():
         image = Image.open(TEXTURES / name).convert("RGBA")
         cell_w, cell_h = image.width // columns, image.height // rows

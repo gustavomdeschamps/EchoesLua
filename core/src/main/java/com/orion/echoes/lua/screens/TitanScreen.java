@@ -22,6 +22,7 @@ import com.orion.echoes.lua.entities.Pickup;
 import com.orion.echoes.lua.entities.TitanEnemy;
 import com.orion.echoes.lua.entities.TitanBoss;
 import com.orion.echoes.lua.entities.TitanPortal;
+import com.orion.echoes.lua.entities.TitanProjectile;
 import com.orion.echoes.lua.entities.Wall;
 import com.orion.echoes.lua.input.GameInputProcessor;
 import com.orion.echoes.lua.managers.AssetManager;
@@ -54,10 +55,11 @@ public final class TitanScreen implements Screen {
     private final CampaignState campaign;
     private final Array<TitanEnemy> enemies = new Array<>();
     private final Array<Pickup> suprimentos = new Array<>();
+    private final Array<TitanProjectile> projectiles = new Array<>();
     /** Refinaria de campo: e aqui que o gelo de Tita vira municao. */
     private final Rectangle refinaria = new Rectangle(430f, 150f, 148f, 132f);
-    private final Vector2 mouseWorld = new Vector2();
     private final Vector2 shotOrigin = new Vector2();
+    private final Vector2 shotEnd = new Vector2();
     private AssetManager assets;
     private SpriteBatch batch;
     private PhysicsWorld physics;
@@ -77,6 +79,7 @@ public final class TitanScreen implements Screen {
     private String message = "A atmosfera abafa o sinal. Explore com cautela.";
     private float messageTimer = 4f;
     private float missionTime;
+    private float shotTimer;
     private boolean paused;
     private boolean changingScreen;
 
@@ -162,7 +165,9 @@ public final class TitanScreen implements Screen {
         for (Pickup suprimento : suprimentos) suprimento.render(batch);
         desenharAvisoDoChefe();
         for (TitanEnemy enemy : enemies) enemy.render(batch);
+        for (TitanProjectile projectile : projectiles) projectile.render(batch);
         boss.render(batch);
+        renderPlayerShot();
         player.render(batch);
         batch.end();
         renderHitboxes();
@@ -190,23 +195,24 @@ public final class TitanScreen implements Screen {
         missionTime += delta;
         combat.update(delta);
         messageTimer = Math.max(0f, messageTimer - delta);
+        shotTimer = Math.max(0f, shotTimer - delta);
         Vector2 direction = input.getDirection();
         if (input.consumeDashPressed()) player.tryDash(direction.x, direction.y);
         player.move(direction.x, direction.y, input.isRunning(), delta);
         physics.update(delta);
         player.update(delta);
-        mouseWorld.set(Gdx.input.getX(), Gdx.input.getY());
-        viewport.unproject(mouseWorld);
-        player.setAimTarget(mouseWorld.x, mouseWorld.y);
         if (input.consumeAttackPressed()) shoot();
         for (TitanEnemy enemy : enemies) {
             enemy.update(delta, player, WORLD_W, WORLD_H);
+            if (enemy.consumeShot()) spawnEnemyShot(enemy.centerX(), enemy.centerY(),
+                enemy.shotDirectionX(), enemy.shotDirectionY(), 245f, 12f);
             if (enemy.canDamage(player)) {
                 player.receberDano(11f, enemy.centerX(), enemy.centerY());
                 feedback("Predador de metano atingiu o traje.");
             }
         }
         atualizarChefe(delta);
+        updateProjectiles(delta);
         returnPortal.update(delta);
         coletarSuprimentos(delta);
         if (input.consumeInteractPressed()) interagir();
@@ -232,21 +238,18 @@ public final class TitanScreen implements Screen {
      * so quem encostou - por isso o aviso importa.
      */
     private void atualizarChefe(float delta) {
-        if (boss == null || !boss.isAtivo()) return;
-        boss.update(delta, player, WORLD_W, WORLD_H);
-        if (!boss.isAtivo() && !vitoriaRegistrada) {
-            vitoriaRegistrada = true;
-            concluirCampanha();
+        if (boss == null) return;
+        if (!boss.isAtivo()) {
+            if (!vitoriaRegistrada) { vitoriaRegistrada = true; concluirCampanha(); }
             return;
         }
-        if (!boss.consumeSlam()) return;
-
-        if (boss.slamHits(player)) {
+        boss.update(delta, player, WORLD_W, WORLD_H);
+        if (boss.consumeSlam() && boss.slamHits(player)) {
             player.receberDano(GameConfig.BOSS_DAMAGE, boss.centerX(), boss.centerY());
             feedback("O impacto do chefe alcançou o traje.");
-        } else {
-            feedback("Impacto desviado.");
         }
+        if (boss.consumeVolley()) spawnBossVolley(false);
+        if (boss.consumeBurst()) spawnBossVolley(true);
     }
 
     /**
@@ -275,8 +278,9 @@ public final class TitanScreen implements Screen {
     private void desenharAvisoDoChefe() {
         if (boss == null || !boss.isTelegraphing()) return;
         float progresso = boss.getTelegraphProgress();
-        float raio = GameConfig.BOSS_SLAM_RADIUS * progresso;
-        batch.setColor(1f, .45f, .25f, .18f + progresso * .30f);
+        float raio = (boss.isBurstTelegraphing() ? 300f : GameConfig.BOSS_SLAM_RADIUS) * progresso;
+        batch.setColor(boss.isVolleyTelegraphing() ? .1f : 1f,
+            boss.isVolleyTelegraphing() ? .85f : .45f, .45f, .18f + progresso * .30f);
         batch.draw(assets.uiWhiteTexture, boss.centerX() - raio,
             boss.centerY() - 70f - raio * .34f, raio * 2f, raio * .68f);
         batch.setColor(Color.WHITE);
@@ -285,35 +289,92 @@ public final class TitanScreen implements Screen {
     private void shoot() {
         shotOrigin.set(player.getPosition().x + GameConfig.PLAYER_WIDTH / 2f,
             player.getPosition().y + GameConfig.PLAYER_HEIGHT * .48f);
-        float dirX = MathUtils.cosDeg(player.getAimAngle());
-        float dirY = MathUtils.sinDeg(player.getAimAngle());
         CombatTarget target = null;
         float closest = combat.getAlcance();
         for (TitanEnemy enemy : enemies) {
             if (!enemy.isAlive()) continue;
-            float along = alinhamento(enemy.centerX(), enemy.centerY(), dirX, dirY, closest, 48f);
-            if (along > 0f) {
+            float along = Vector2.dst(shotOrigin.x, shotOrigin.y, enemy.centerX(), enemy.centerY());
+            if (along < closest) {
                 target = enemy;
                 closest = along;
             }
         }
         // O chefe e alvo como qualquer outro, so que com corpo bem maior.
         if (boss != null && boss.isAlive()) {
-            float along = alinhamento(boss.centerX(), boss.centerY(), dirX, dirY, closest, 92f);
-            if (along > 0f) {
+            float along = Vector2.dst(shotOrigin.x, shotOrigin.y, boss.centerX(), boss.centerY());
+            if (along < closest) {
                 target = boss;
                 closest = along;
             }
         }
+        if (target != null) player.setAimDirection(target.centerX() - shotOrigin.x,
+            target.centerY() - shotOrigin.y);
+        float dirX = MathUtils.cosDeg(player.getAimAngle());
+        float dirY = MathUtils.sinDeg(player.getAimAngle());
+        shotOrigin.mulAdd(new Vector2(dirX, dirY), 30f);
+        shotEnd.set(target == null ? shotOrigin.x + dirX * combat.getAlcance() : target.centerX(),
+            target == null ? shotOrigin.y + dirY * combat.getAlcance() : target.centerY());
         combat.setMunicao(player.getMunicao());
         boolean fired = combat.tentarTiro(shotOrigin, target, campaign.hasWeapon());
         player.setMunicao(combat.getMunicao());
         if (fired) {
             player.triggerShot();
+            shotTimer = .14f;
             feedback(target == null ? "Disparo perdido na névoa de metano."
                 : !target.isAlive() ? "Predador neutralizado." : "Impacto confirmado.");
         } else if (player.getMunicao() <= 0) feedback("Sem munição.");
 
+    }
+
+    private void spawnEnemyShot(float x, float y, float dx, float dy, float speed, float damage) {
+        projectiles.add(new TitanProjectile(x, y, dx, dy, speed, damage,
+            assets.energyFxFrame(1, 0)));
+    }
+
+    private void spawnBossVolley(boolean radial) {
+        if (radial) {
+            for (int i = 0; i < 12; i++) {
+                float angle = i * 30f + missionTime * 35f;
+                spawnEnemyShot(boss.centerX(), boss.centerY(), MathUtils.cosDeg(angle),
+                    MathUtils.sinDeg(angle), 285f, 15f);
+            }
+            feedback("Rajada radial: encontre uma abertura!");
+            return;
+        }
+        float targetAngle = MathUtils.atan2(player.getPosition().y + 38f - boss.centerY(),
+            player.getPosition().x + 27f - boss.centerX()) * MathUtils.radiansToDegrees;
+        for (float offset : new float[] {-18f, -9f, 0f, 9f, 18f}) {
+            float angle = targetAngle + offset;
+            spawnEnemyShot(boss.centerX(), boss.centerY(), MathUtils.cosDeg(angle),
+                MathUtils.sinDeg(angle), 330f, 14f);
+        }
+        feedback("O Soberano lançou uma salva de cristais!");
+    }
+
+    private void updateProjectiles(float delta) {
+        for (int i = projectiles.size - 1; i >= 0; i--) {
+            TitanProjectile projectile = projectiles.get(i);
+            projectile.update(delta);
+            if (projectile.hits(player)) {
+                player.receberDano(projectile.getDamage(), projectile.x(), projectile.y());
+                feedback("Cristal de metano perfurou o traje.");
+            }
+            if (!projectile.isActive()) projectiles.removeIndex(i);
+        }
+    }
+
+    private void renderPlayerShot() {
+        if (shotTimer <= 0f) return;
+        float alpha = shotTimer / .14f;
+        float dx = shotEnd.x - shotOrigin.x, dy = shotEnd.y - shotOrigin.y;
+        float length = (float)Math.sqrt(dx * dx + dy * dy);
+        if (length <= .01f) return;
+        float angle = MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees;
+        batch.setColor(.3f, .95f, 1f, alpha);
+        batch.draw(assets.uiWhiteTexture, shotOrigin.x, shotOrigin.y - 2f,
+            0f, 2f, length, 4f, 1f, 1f, angle);
+        batch.draw(assets.energyFxFrame(1, 0), shotEnd.x - 12f, shotEnd.y - 12f, 24f, 24f);
+        batch.setColor(Color.WHITE);
     }
 
     /**

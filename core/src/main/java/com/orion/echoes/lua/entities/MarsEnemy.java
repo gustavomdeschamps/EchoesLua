@@ -40,6 +40,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
         damageCooldown = Math.max(0f, damageCooldown - delta);
         if (state == State.DYING) {
             if (stateTime >= .5f) ativo = false;
+            sincronizarHitbox();
             return;
         }
         if (!ativo) return;
@@ -67,6 +68,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
                 }
             }
         }
+        sincronizarHitbox();
     }
 
     private void move(float dx, float dy, float delta, Array<MarsObject> rocks) {
@@ -95,7 +97,8 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
 
     /** Deslocamento vertical do sprite; o drone paira, o crawler nao. */
     private float spriteBob() {
-        return drone ? 8f + MathUtils.sin(elapsed * 5f) * 3f : 0f;
+        float hover = drone ? 8f + MathUtils.sin(elapsed * 5f) * 3f : 0f;
+        return state == State.TELEGRAPH ? hover + MathUtils.sin(stateTime * 25f) * 2f : hover;
     }
 
     private float hitboxWidth() {
@@ -183,7 +186,6 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
         if (state == State.HIT) batch.setColor(1f, .55f, .35f, alpha);
         else batch.setColor(1f, 1f, 1f, alpha);
         float bob = spriteBob();
-        if (state == State.TELEGRAPH) bob += MathUtils.sin(stateTime * 25f) * 2f;
         float size = spriteSize();
         batch.draw(currentFrame(), centerX() - size / 2f,
             position.y + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y + bob, size, size);

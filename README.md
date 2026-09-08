@@ -50,7 +50,7 @@ barra, que ficam vermelhos quando a carga está baixa.
 | `WASD` / setas | mover |
 | `Shift` | correr (gasta mais energia) |
 | `Espaço` | dash (gasta energia) |
-| Mouse | mirar · botão esquerdo dispara |
+| F ou J | disparar na direção do movimento / alvo próximo |
 | `E` | reparar, montar, processar gelo, usar o portal |
 | `F5` / `F9` | salvar e carregar a campanha (nas três fases) |
 | `Esc` | pausar · `M` volta ao menu |

@@ -1,10 +1,7 @@
 package com.orion.echoes.lua.render;
 
-import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.OrthographicCamera;
-import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Vector2;
@@ -28,10 +25,6 @@ public final class MissionOverlay implements Disposable {
     /** Distancia da borda em que o marcador de objetivo encosta. */
     private static final float MARKER_MARGIN = 58f;
     private static final float MARKER_SIZE = 46f;
-    private static final float CURSOR_SIZE = 34f;
-    private static final float TARGET_SNAP = 60f;
-    /** A LibGDX exige pixmap de cursor com lado potencia de dois. */
-    private static final int BLANK_CURSOR_SIZE = 16;
 
     private final SpriteBatch batch;
     private final AssetManager assets;
@@ -40,7 +33,6 @@ public final class MissionOverlay implements Disposable {
     private final Vector2 objectiveTarget = new Vector2();
 
     private float markerPulse;
-    private Cursor blankCursor;
 
     public MissionOverlay(SpriteBatch batch, AssetManager assets,
                           OrthographicCamera worldCamera, OrthographicCamera uiCamera) {
@@ -48,7 +40,6 @@ public final class MissionOverlay implements Disposable {
         this.assets = assets;
         this.worldCamera = worldCamera;
         this.uiCamera = uiCamera;
-        hideSystemCursor();
     }
 
     public void update(float delta) {
@@ -149,28 +140,6 @@ public final class MissionOverlay implements Disposable {
         return true;
     }
 
-    /** Cursor autoral: muda de forma quando a mira encosta em um hostil. */
-    public void renderCursor(LunarWorld world, Vector2 aimWorld) {
-        float x = Gdx.input.getX() * GameConfig.WINDOW_WIDTH / (float) Gdx.graphics.getWidth();
-        float y = GameConfig.WINDOW_HEIGHT
-            - Gdx.input.getY() * GameConfig.WINDOW_HEIGHT / (float) Gdx.graphics.getHeight();
-        boolean onTarget = false;
-        for (Enemy enemy : world.getEnemies()) {
-            if (!enemy.isAtivo()) continue;
-            if (Vector2.dst(enemy.centerX(), enemy.centerY(), aimWorld.x, aimWorld.y) < TARGET_SNAP) {
-                onTarget = true;
-                break;
-            }
-        }
-        batch.setProjectionMatrix(uiCamera.combined);
-        batch.begin();
-        batch.setColor(1f, 1f, 1f, onTarget ? 1f : .8f);
-        batch.draw(onTarget ? assets.uiCursorTargetTexture : assets.uiCursorDefaultTexture,
-            x - CURSOR_SIZE / 2f, y - CURSOR_SIZE / 2f, CURSOR_SIZE, CURSOR_SIZE);
-        batch.setColor(Color.WHITE);
-        batch.end();
-    }
-
     public void renderDamageVignette(float alpha) {
         if (alpha <= 0f) return;
         batch.setProjectionMatrix(uiCamera.combined);
@@ -191,28 +160,6 @@ public final class MissionOverlay implements Disposable {
      * cursor. Se ainda assim a plataforma recusar, o jogo segue com o cursor
      * do sistema visivel: um detalhe cosmetico nao pode derrubar a fase.
      */
-    private void hideSystemCursor() {
-        Pixmap pixmap = new Pixmap(BLANK_CURSOR_SIZE, BLANK_CURSOR_SIZE, Pixmap.Format.RGBA8888);
-        try {
-            pixmap.setBlending(Pixmap.Blending.None);
-            pixmap.setColor(0f, 0f, 0f, 0f);
-            pixmap.fill();
-            blankCursor = Gdx.graphics.newCursor(pixmap, 0, 0);
-            if (blankCursor != null) Gdx.graphics.setCursor(blankCursor);
-        } catch (Exception failure) {
-            Gdx.app.error("MissionOverlay", "Cursor customizado indisponivel: "
-                + failure.getMessage());
-            blankCursor = null;
-        } finally {
-            pixmap.dispose();
-        }
-    }
-
     @Override
-    public void dispose() {
-        if (blankCursor == null) return;
-        Gdx.graphics.setSystemCursor(Cursor.SystemCursor.Arrow);
-        blankCursor.dispose();
-        blankCursor = null;
-    }
+    public void dispose() { }
 }

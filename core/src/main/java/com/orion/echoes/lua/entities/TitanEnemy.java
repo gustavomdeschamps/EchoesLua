@@ -9,20 +9,24 @@ import com.orion.echoes.lua.systems.CombatTarget;
 
 /** Predador anfíbio de Titã: espécie, silhueta e animação próprias. */
 public final class TitanEnemy extends Entidade implements CombatTarget {
-    public static final float MAX_HP = 80f;
-    public static final float SPEED = 70f;
-    public static final float CHASE_RADIUS = 160f;
-    private static final float SPRITE_SIZE = 126f;
+    public static final float MAX_HP = 110f;
+    public static final float SPEED = 82f;
+    public static final float CHASE_RADIUS = 520f;
+    private static final float SPRITE_SIZE = 144f;
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
     private float hp = MAX_HP;
     private float time;
     private float hitTimer;
     private float attackCooldown;
+    private float telegraphTimer;
+    private boolean shotPending;
+    private boolean moving;
+    private float deathTime;
     private boolean facingLeft;
 
     public TitanEnemy(float x, float y, AssetManager assets) {
-        super(x, y, 70f, 54f);
+        super(x, y, 90f, 70f);
         for (int row = 0; row < 4; row++) {
             for (int column = 0; column < 4; column++) {
                 frames[row][column] = assets.titanEnemyFrame(column, row);
@@ -34,20 +38,37 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     public void update(float delta, Astronauta player, float worldWidth, float worldHeight) {
         if (!ativo) return;
         time += delta;
+        if (hp <= 0f) {
+            deathTime += delta;
+            if (deathTime >= .72f) ativo = false;
+            return;
+        }
         hitTimer = Math.max(0f, hitTimer - delta);
         attackCooldown = Math.max(0f, attackCooldown - delta);
         direction.set(player.getBounds().x + player.getBounds().width / 2f - centerX(),
             player.getBounds().y + player.getBounds().height / 2f - centerY());
         float distance = direction.len();
-        if (distance <= CHASE_RADIUS && distance > .001f && hitTimer <= 0f) {
+        if (telegraphTimer > 0f) {
+            telegraphTimer -= delta;
+            moving = false;
+            if (telegraphTimer <= 0f) {
+                shotPending = true;
+                attackCooldown = 1.8f;
+            }
+        } else if (distance > 115f && distance <= CHASE_RADIUS && distance > .001f && hitTimer <= 0f) {
             direction.scl(1f / distance);
             facingLeft = direction.x < 0f;
             position.x = MathUtils.clamp(position.x + direction.x * SPEED * delta,
                 0f, worldWidth - width);
             position.y = MathUtils.clamp(position.y + direction.y * SPEED * delta,
                 0f, worldHeight - height);
-            syncBounds();
+            moving = true;
+        } else {
+            moving = false;
+            if (distance <= 450f && attackCooldown <= 0f && hitTimer <= 0f) telegraphTimer = .55f;
         }
+        // A hitbox acompanha inclusive os quadros de ataque e o leve bob visual.
+        syncBounds();
     }
 
     public boolean canDamage(Astronauta player) {
@@ -57,13 +78,15 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     }
 
     private void syncBounds() {
-        bounds.set(position.x + 10f, position.y + 6f, width - 20f, height - 12f);
+        bounds.set(centerX() - 43f, position.y + 14f + MathUtils.sin(time * 3f) * 2f,
+            86f, 48f);
     }
 
     private TextureRegion frame() {
         int row = hp <= 0f ? 3 : hitTimer > 0f ? 3
-            : direction.len() <= CHASE_RADIUS && direction.len2() > 1f ? 1 : 0;
-        int column = hp <= 0f ? 3 : (int)(time / (row == 1 ? .12f : .22f)) % 4;
+            : telegraphTimer > 0f ? 2 : moving ? 1 : 0;
+        int column = hp <= 0f ? Math.min(3, (int)(deathTime / .16f))
+            : (int)(time / (row == 1 ? .12f : .22f)) % 4;
         TextureRegion frame = frames[row][column];
         if (frame.isFlipX() != facingLeft) frame.flip(true, false);
         return frame;
@@ -73,11 +96,18 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
         if (!ativo || damage <= 0f) return false;
         hp = Math.max(0f, hp - damage);
         hitTimer = .16f;
-        if (hp == 0f) ativo = false;
         return hp == 0f;
     }
 
     @Override public boolean isAlive() { return ativo && hp > 0f; }
+    public boolean consumeShot() {
+        boolean result = shotPending;
+        shotPending = false;
+        return result;
+    }
+    public float shotDirectionX() { return direction.x; }
+    public float shotDirectionY() { return direction.y; }
+    public boolean isTelegraphing() { return telegraphTimer > 0f; }
     @Override public float centerX() { return position.x + width / 2f; }
     @Override public float centerY() { return position.y + height / 2f; }
     public float getHealthRatio() { return hp / MAX_HP; }
@@ -85,10 +115,10 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     @Override public void update(float delta) { }
 
     @Override public void render(SpriteBatch batch) {
-        if (!ativo && hp > 0f) return;
+        if (!ativo) return;
         if (hitTimer > 0f) batch.setColor(1f, .55f, .3f, 1f);
         batch.draw(frame(), centerX() - SPRITE_SIZE / 2f,
-            position.y - 28f, SPRITE_SIZE, SPRITE_SIZE);
+            position.y - 32f + MathUtils.sin(time * 3f) * 2f, SPRITE_SIZE, SPRITE_SIZE);
         batch.setColor(1f, 1f, 1f, 1f);
     }
 

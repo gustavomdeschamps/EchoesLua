@@ -18,7 +18,7 @@ import com.orion.echoes.lua.managers.AssetManager;
 
 /** Abertura curta, temporal e sempre pulável. */
 public final class IntroScreen implements Screen {
-    private static final float DURATION = 5.8f;
+    private static final float DURATION = 7.2f;
     /** Pulsos de radio disparados em sequencia a partir do receptor. */
     private static final int RADIO_PULSES = 4;
     private static final float SCANLINE_STEP = 4f;
@@ -69,17 +69,21 @@ public final class IntroScreen implements Screen {
         float artX = -24f - drift * 24f + jitter;
         float artY = -14f - drift * 12f;
         desenharKeyArt(artX, artY, artW, artH, signalKick);
-        drawAt(assets.font, "REGISTRO DE CAMPO  //  L-01", .62f, 1.05f, 3.7f, 884f, 644f,
+        // Véu só na área de texto: mantém o portal e o chefe completamente visíveis.
+        batch.setColor(.005f, .01f, .02f, .56f * envelope(.45f, 6.8f, .5f));
+        rect(42f, 430f, 570f, 225f);
+        batch.setColor(Color.WHITE);
+        drawAt(assets.font, "TRANSMISSÃO PRIORITÁRIA  //  TITÃ", .62f, 1.05f, 4.5f, 78f, 628f,
             new Color(.82f, .49f, .28f, 1f));
-        drawAt(assets.titleFont, "ECHOES", 2.05f, 3.35f, 5.8f, 882f, 596f, Color.WHITE);
-        drawAt(assets.titleFont, "FASE LUNAR", .68f, 3.55f, 5.8f, 888f, 538f,
+        drawAt(assets.titleFont, "ECHOES OF LUA", 1.72f, 1.45f, 6.85f, 76f, 570f, Color.WHITE);
+        drawAt(assets.titleFont, "O ÚLTIMO ECO", .68f, 2.0f, 6.85f, 82f, 512f,
             new Color(.78f, .8f, .76f, 1f));
-        drawAt(assets.font, "SINAL RECUPERADO  //  ORIGEM DESCONHECIDA", .64f,
-            1.52f, 4.95f, 80f, 92f, new Color(.38f, .78f, .77f, 1f));
+        drawAt(assets.font, "UM PORTAL DESPERTOU. ALGO RESPONDEU DO OUTRO LADO.", .62f,
+            2.35f, 6.35f, 80f, 112f, new Color(.38f, .78f, .77f, 1f));
         drawAt(assets.font, "RECONSTRUA  •  ATRAVESSE  •  SOBREVIVA", .72f,
-            2.15f, 5.3f, 80f, 68f, new Color(.9f, .91f, .86f, 1f));
+            3.05f, 6.65f, 80f, 82f, new Color(.9f, .91f, .86f, 1f));
         drawAt(assets.font, "ESPAÇO / ENTER  PULAR", .56f,
-            .55f, 5.45f, 1044f, 68f, new Color(.72f, .76f, .75f, 1f));
+            .55f, 6.85f, 1038f, 68f, new Color(.72f, .76f, .75f, 1f));
         batch.end();
 
         renderRadioArcs();

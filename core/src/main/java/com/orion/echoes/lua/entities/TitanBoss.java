@@ -25,7 +25,10 @@ import com.orion.echoes.lua.systems.CombatTarget;
 public final class TitanBoss extends Entidade implements CombatTarget {
 
     /** Vigia o território, avança, prepara, desaba, se recompõe. */
-    private enum State { GUARDA, AVANCA, PREPARA, IMPACTO, DANO, MORTO }
+    private enum State {
+        GUARDA, AVANCA, PREPARA, IMPACTO,
+        PREPARA_VOLLEY, VOLLEY, PREPARA_BURST, BURST, DANO, MORTO
+    }
 
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
@@ -37,6 +40,9 @@ public final class TitanBoss extends Entidade implements CombatTarget {
     private float attackCooldown;
     private boolean facingLeft;
     private boolean slamPending;
+    private boolean volleyPending;
+    private boolean burstPending;
+    private int attackCycle;
 
     public TitanBoss(float x, float y, AssetManager assets) {
         super(x, y, GameConfig.BOSS_SPRITE_SIZE * .42f, GameConfig.BOSS_SPRITE_SIZE * .30f);
@@ -87,11 +93,32 @@ public final class TitanBoss extends Entidade implements CombatTarget {
                     change(State.AVANCA);
                 }
             }
+            case PREPARA_VOLLEY -> {
+                if (stateTime >= .72f) { volleyPending = true; change(State.VOLLEY); }
+            }
+            case VOLLEY -> {
+                if (stateTime >= .38f) { attackCooldown = 1.65f; change(State.AVANCA); }
+            }
+            case PREPARA_BURST -> {
+                if (stateTime >= 1.0f) { burstPending = true; change(State.BURST); }
+            }
+            case BURST -> {
+                if (stateTime >= .5f) { attackCooldown = 1.35f; change(State.AVANCA); }
+            }
             case AVANCA -> {
                 if (distance > GameConfig.BOSS_CHASE_RADIUS) {
                     change(State.GUARDA);
-                } else if (distance <= GameConfig.BOSS_ATTACK_RANGE && attackCooldown <= 0f) {
-                    change(State.PREPARA);
+                } else if (attackCooldown <= 0f && distance <= 470f) {
+                    attackCycle++;
+                    if (hp <= GameConfig.BOSS_MAX_HP * .34f && attackCycle % 2 == 0) {
+                        change(State.PREPARA_BURST);
+                    } else if (hp <= GameConfig.BOSS_MAX_HP * .72f && attackCycle % 3 != 0) {
+                        change(State.PREPARA_VOLLEY);
+                    } else if (distance <= GameConfig.BOSS_ATTACK_RANGE) {
+                        change(State.PREPARA);
+                    } else {
+                        change(State.PREPARA_VOLLEY);
+                    }
                 } else {
                     move(direction.x, direction.y, delta, worldWidth, worldHeight);
                 }
@@ -138,6 +165,18 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         return pending;
     }
 
+    public boolean consumeVolley() {
+        boolean pending = volleyPending;
+        volleyPending = false;
+        return pending;
+    }
+
+    public boolean consumeBurst() {
+        boolean pending = burstPending;
+        burstPending = false;
+        return pending;
+    }
+
     /** O impacto é em área: alcança quem ficou perto, não só quem encostou. */
     public boolean slamHits(Astronauta player) {
         float dx = player.getBounds().x + player.getBounds().width / 2f - centerX();
@@ -145,12 +184,18 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         return dx * dx + dy * dy <= GameConfig.BOSS_SLAM_RADIUS * GameConfig.BOSS_SLAM_RADIUS;
     }
 
-    public boolean isTelegraphing() { return state == State.PREPARA; }
+    public boolean isTelegraphing() {
+        return state == State.PREPARA || state == State.PREPARA_VOLLEY
+            || state == State.PREPARA_BURST;
+    }
+    public boolean isBurstTelegraphing() { return state == State.PREPARA_BURST; }
+    public boolean isVolleyTelegraphing() { return state == State.PREPARA_VOLLEY; }
 
     /** 0 a 1 durante o aviso; alimenta o indicador no chão. */
     public float getTelegraphProgress() {
-        if (state != State.PREPARA) return 0f;
-        return MathUtils.clamp(stateTime / GameConfig.BOSS_TELEGRAPH_TIME, 0f, 1f);
+        float duration = state == State.PREPARA_BURST ? 1f
+            : state == State.PREPARA_VOLLEY ? .72f : GameConfig.BOSS_TELEGRAPH_TIME;
+        return isTelegraphing() ? MathUtils.clamp(stateTime / duration, 0f, 1f) : 0f;
     }
 
     @Override
@@ -161,7 +206,8 @@ public final class TitanBoss extends Entidade implements CombatTarget {
             change(State.MORTO);
             return true;
         }
-        if (state != State.PREPARA && state != State.IMPACTO) change(State.DANO);
+        if (!isTelegraphing() && state != State.IMPACTO && state != State.VOLLEY
+            && state != State.BURST) change(State.DANO);
         return false;
     }
 
@@ -184,18 +230,20 @@ public final class TitanBoss extends Entidade implements CombatTarget {
 
         // O aviso pisca; o impacto clareia. A cor conta o que vem.
         if (state == State.DANO) batch.setColor(1f, .55f, .5f, alpha);
-        else if (state == State.PREPARA) {
+        else if (isTelegraphing()) {
             float pulse = .6f + MathUtils.sin(stateTime * 26f) * .4f;
             batch.setColor(1f, .72f + pulse * .18f, .45f, alpha);
-        } else if (state == State.IMPACTO) batch.setColor(1f, .95f, .82f, alpha);
+        } else if (state == State.IMPACTO || state == State.VOLLEY || state == State.BURST)
+            batch.setColor(1f, .95f, .82f, alpha);
         else batch.setColor(.82f, .70f, .58f, alpha);
 
         // Recuo no aviso e avanço no golpe: peso de corpo grande.
         float lunge = state == State.IMPACTO
             ? -avanco(stateTime / GameConfig.BOSS_SLAM_TIME) * 14f
             : state == State.PREPARA ? getTelegraphProgress() * 10f : 0f;
-        int row = state == State.MORTO ? 3 : state == State.PREPARA ? 2
-            : state == State.IMPACTO ? 2 : state == State.DANO ? 3 : 1;
+        int row = state == State.MORTO ? 3 : isTelegraphing()
+            || state == State.IMPACTO || state == State.VOLLEY || state == State.BURST ? 2
+            : state == State.DANO ? 0 : state == State.AVANCA ? 1 : 0;
         int column = (int) (time / .2f) % 4;
         TextureRegion frame = frames[row][column];
         if (frame.isFlipX() != facingLeft) frame.flip(true, false);

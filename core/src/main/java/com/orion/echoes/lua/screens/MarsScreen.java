@@ -60,7 +60,6 @@ public final class MarsScreen implements Screen {
     private final Array<MarsObject> stations = new Array<>();
     private final Array<MarsEnemy> enemies = new Array<>();
     private final GlyphLayout layout = new GlyphLayout();
-    private final Vector2 mouseWorld = new Vector2();
     private final Vector2 shotStart = new Vector2();
     private final Vector2 shotEnd = new Vector2();
     private final Vector2 cameraTarget = new Vector2();
@@ -145,7 +144,7 @@ public final class MarsScreen implements Screen {
     private void buildColony() {
         habitat = prop(160f, 1020f, 330f, 275f, MarsObject.Kind.HABITAT);
         // Alguem de carne e osso para conversar, em vez de uma voz no radio.
-        oficial = new Npc(548f, 1060f, "OFICIAL DA COLÔNIA",
+        oficial = new Npc(548f, 1060f, "COMANDANTE AYLA",
             new Color(.72f, .86f, 1f, 1f), assets);
         stations.add(prop(700f, 1420f, 225f, 190f, MarsObject.Kind.SOLAR_STATION));
         stations.add(prop(1550f, 1330f, 225f, 190f, MarsObject.Kind.OXYGEN_STATION));
@@ -403,9 +402,6 @@ public final class MarsScreen implements Screen {
             player.recuperarOxigenio(9f * delta);
             player.recuperarEnergia(5f * delta);
         }
-        mouseWorld.set(Gdx.input.getX(), Gdx.input.getY());
-        viewport.unproject(mouseWorld);
-        player.setAimTarget(mouseWorld.x, mouseWorld.y);
         if (input.consumeAttackPressed()) shoot();
         if (Gdx.input.isKeyJustPressed(Input.Keys.E)) handleInteraction();
         // O portal de volta troca de tela e libera fisica e particulas; seguir
@@ -508,9 +504,9 @@ public final class MarsScreen implements Screen {
         if (!titanDialogue.isOpen() && oficial.isPlayerNear(player)
             && !campaign.isDialogoTita()) {
             titanDialogue.start(new String[] {
-                "O portal para Titã está instável. Saturno não perdoa improviso.",
-                "Traga prova de combate ou uma amostra de metano — qualquer uma serve.",
-                "Quando o selo central ficar azul, pode entrar."
+                "Explorador, a leitura veio de Titã. O Soberano do Metano despertou e está avançando contra a colônia.",
+                "Sua missão: valide uma amostra de metano ou neutralize um hostil marciano para calibrarmos o portal.",
+                "Depois atravesse o portal vertical ao nordeste, elimine os três caçadores e derrube o Soberano. Volte vivo."
             });
             sounds.tocarHoverUi();
             return;

@@ -89,7 +89,7 @@ public final class MenuScreen implements Screen {
         content.add(title("COMO JOGAR", 1.2f)).left().colspan(2).padBottom(25f).row();
         helpCard(content, "MOVIMENTO", "WASD ou setas  ·  SHIFT para correr", UiTheme.CYAN);
         helpCard(content, "AÇÃO", "E interage  ·  ESPAÇO executa o dash", UiTheme.AMBER);
-        helpCard(content, "COMBATE", "Mouse mira  ·  botão esquerdo dispara", UiTheme.GREEN);
+        helpCard(content, "COMBATE", "F / J dispara  ·  a mira acompanha seu movimento", UiTheme.GREEN);
         helpCard(content, "MISSÃO", "Reative três sistemas, fabrique a arma e abra o portal", UiTheme.RED);
         content.add(button("VOLTAR", () -> showMain(true))).width(210f).height(54f).left().colspan(2).padTop(24f).row();
         swap(content, animate);
@@ -106,7 +106,7 @@ public final class MenuScreen implements Screen {
     private void showSettings(boolean animate) {
         AppSettings settings = game.getSettings();
         Table content = basePage(SETTINGS_WIDTH, SETTINGS_HEIGHT);
-        content.add(title("CONFIGURAÇÕES", 1.15f)).left().colspan(2).padBottom(22f).row();
+        content.add(title("CONFIGURAÇÕES", 1.15f)).left().colspan(2).padBottom(16f).row();
 
         Table audio = column();
         section(audio, "ÁUDIO");
@@ -143,7 +143,7 @@ public final class MenuScreen implements Screen {
         content.add(audio).width(COLUMN_WIDTH).top().padRight(COLUMN_GAP);
         content.add(system).width(COLUMN_WIDTH).top().row();
         content.add(button("VOLTAR", () -> showMain(true)))
-            .width(210f).height(52f).left().colspan(2).padTop(26f).row();
+            .width(210f).height(50f).left().colspan(2).padTop(14f).row();
         swap(content, animate);
     }
 
@@ -159,7 +159,7 @@ public final class MenuScreen implements Screen {
         Label heading = label(text, UiTheme.AMBER);
         heading.setFontScale(.62f);
         boolean first = column.getCells().size == 0;
-        column.add(heading).left().colspan(3).padTop(first ? 0f : 18f).padBottom(6f).row();
+        column.add(heading).left().colspan(3).padTop(first ? 0f : 10f).padBottom(5f).row();
     }
 
     /**
@@ -212,8 +212,9 @@ public final class MenuScreen implements Screen {
     }
 
     private Label rowLabel(String text) {
-        Label item = label(text, UiTheme.TEXT_MUTED);
-        item.setFontScale(.78f);
+        Label item = label(text, UiTheme.TEXT);
+        item.setFontScale(.72f);
+        item.setAlignment(Align.left);
         return item;
     }
 
@@ -232,7 +233,8 @@ public final class MenuScreen implements Screen {
     private Table basePage(float width, float height) {
         Table content = new Table();
         content.setSize(width, height);
-        content.setPosition(52f, 38f);
+        content.setPosition((GameConfig.WINDOW_WIDTH - width) / 2f,
+            (GameConfig.WINDOW_HEIGHT - height) / 2f);
         content.align(Align.topLeft);
         content.pad(GameConfig.SETTINGS_PANEL_PADDING);
         content.setBackground(new NinePatchDrawable(game.getAssets().uiDialogPatch()));

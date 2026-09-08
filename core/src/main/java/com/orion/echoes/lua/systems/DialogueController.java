@@ -40,4 +40,6 @@ public final class DialogueController {
     public boolean isOpen() { return open; }
     public boolean isFinished() { return finished; }
     public String line() { return open && index < lines.length ? lines[index] : ""; }
+    public int lineNumber() { return open ? index + 1 : 0; }
+    public int lineCount() { return lines.length; }
 }

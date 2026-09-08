@@ -94,7 +94,6 @@ public class LunarScreen implements Screen {
     private boolean oxigenioCriticoAtivado, estavaNaBase, portalWasUnlocked;
     private float tempoPoeira, tempoPasso;
 
-    private final Vector2 mouseWorld = new Vector2();
     private final Vector2 cameraTarget = new Vector2();
     private Screen nextScreen;
 
@@ -230,7 +229,6 @@ public class LunarScreen implements Screen {
         overlay.renderDamageVignette(juice.getDamageFlashAlpha());
 
         if (pausado) pauseOverlay.render(world);
-        else overlay.renderCursor(world, mouseWorld);
     }
 
     /**
@@ -333,9 +331,6 @@ public class LunarScreen implements Screen {
     }
 
     private void apontarMira() {
-        mouseWorld.set(Gdx.input.getX(), Gdx.input.getY());
-        viewport.unproject(mouseWorld);
-        astronauta.setAimTarget(mouseWorld.x, mouseWorld.y);
         astronauta.setWeaponEquipped(mission.hasWeapon());
     }
 

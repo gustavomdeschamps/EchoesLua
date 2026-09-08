@@ -128,6 +128,13 @@ public class GameInputProcessor implements InputProcessor {
                 dashPressed = true;
                 break;
 
+            case Input.Keys.F:
+            case Input.Keys.J:
+            case Input.Keys.CONTROL_LEFT:
+            case Input.Keys.CONTROL_RIGHT:
+                attackPressed = true;
+                break;
+
             case Input.Keys.F5:
                 savePressed = true;
                 break;
@@ -186,10 +193,6 @@ public class GameInputProcessor implements InputProcessor {
         int pointer,
         int button
     ) {
-        if (button == Input.Buttons.LEFT) {
-            attackPressed = true;
-            return true;
-        }
         return false;
     }
 

@@ -117,7 +117,7 @@ public final class LoadingScreen implements Screen {
 
     /** Key art da abertura, carregada direto do arquivo porque o atlas ainda nao existe. */
     private static Texture carregarKeyArt() {
-        Texture texture = new Texture(Gdx.files.internal("textures/intro_keyart_v2.png"));
+        Texture texture = new Texture(Gdx.files.internal("textures/intro_keyart_v3.png"));
         texture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         return texture;
     }

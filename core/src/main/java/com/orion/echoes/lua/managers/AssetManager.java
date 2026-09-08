@@ -45,6 +45,7 @@ public final class AssetManager implements Disposable {
     public TextureRegion titanEnemySheetTexture;
     public TextureRegion titanBossSheetTexture;
     public TextureRegion titanPortalSheetTexture;
+    public TextureRegion npcCommanderSheetTexture;
     public Texture titanBackgroundTexture;
     public TextureRegion lunarObstaclesTexture;
     public TextureRegion marsObstaclesTexture;
@@ -65,8 +66,6 @@ public final class AssetManager implements Disposable {
     public TextureRegion uiDamageVignetteTexture;
     public TextureRegion uiWhiteTexture;
     public TextureRegion uiObjectiveMarkerTexture;
-    public TextureRegion uiCursorDefaultTexture;
-    public TextureRegion uiCursorTargetTexture;
     public BitmapFont font;
     public BitmapFont titleFont;
 
@@ -121,13 +120,14 @@ public final class AssetManager implements Disposable {
         lunarEnemySheetTexture = required(gameAtlas, "lunar_enemy_sheet");
         marsDroneSheetTexture = required(gameAtlas, "mars_drone_sheet");
         marsCrawlerSheetTexture = required(gameAtlas, "mars_crawler_sheet");
-        titanEnemySheetTexture = required(gameAtlas, "titan_enemy_sheet");
-        titanBossSheetTexture = required(gameAtlas, "titan_boss_sheet");
-        titanPortalSheetTexture = required(gameAtlas, "titan_portal_sheet");
+        titanEnemySheetTexture = required(gameAtlas, "titan_hunter_sheet_v2");
+        titanBossSheetTexture = required(gameAtlas, "titan_boss_sheet_v2");
+        titanPortalSheetTexture = required(gameAtlas, "titan_portal_vertical_v2");
+        npcCommanderSheetTexture = required(gameAtlas, "npc_commander_ayla_sheet");
         lunarObstaclesTexture = required(gameAtlas, "lunar_obstacles");
         marsObstaclesTexture = required(gameAtlas, "mars_obstacles");
         landmarksTexture = required(gameAtlas, "landmarks");
-        introKeyArtTexture = required(uiAtlas, "intro_keyart_v2");
+        introKeyArtTexture = required(uiAtlas, "intro_keyart_v3");
         uiPanelTexture = required(uiAtlas, "ui_panel_frame");
         uiPanelHudTexture = required(uiAtlas, "panel_hud");
         uiPanelDialogTexture = required(uiAtlas, "panel_dialog");
@@ -142,8 +142,6 @@ public final class AssetManager implements Disposable {
         uiDamageVignetteTexture = required(uiAtlas, "damage_vignette");
         uiWhiteTexture = required(uiAtlas, "white_pixel");
         uiObjectiveMarkerTexture = required(uiAtlas, "objective_marker");
-        uiCursorDefaultTexture = required(uiAtlas, "cursor_default");
-        uiCursorTargetTexture = required(uiAtlas, "cursor_target");
         actionFxTexture = required(fxAtlas, "action_fx_sheet");
         energyFxTexture = required(fxAtlas, "energy_fx_sheet");
         backgroundLuaTexture = loader.get(LUNAR_GROUND, Texture.class);
@@ -203,8 +201,12 @@ public final class AssetManager implements Disposable {
         return gridRegion(titanBossSheetTexture, 4, 4, column, row, 2);
     }
 
-    public TextureRegion titanPortalState(boolean unlocked) {
-        return gridRegion(titanPortalSheetTexture, 2, 1, unlocked ? 1 : 0, 0, 2);
+    public TextureRegion npcCommanderFrame(int column, int row) {
+        return gridRegion(npcCommanderSheetTexture, 4, 4, column, row, 2);
+    }
+
+    public TextureRegion titanPortalFrame(boolean unlocked, int column) {
+        return gridRegion(titanPortalSheetTexture, 4, 2, column, unlocked ? 1 : 0, 2);
     }
 
     public TextureRegion lunarObstacleRegion(int index) {

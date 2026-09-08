@@ -25,10 +25,10 @@ import com.orion.echoes.lua.ui.UiTheme;
  */
 public final class DialogBox {
 
-    private static final float X = 168f;
-    private static final float WIDTH = 944f;
-    private static final float Y = 214f;
-    private static final float HEIGHT = 190f;
+    private static final float X = 126f;
+    private static final float WIDTH = 1028f;
+    private static final float Y = 150f;
+    private static final float HEIGHT = 300f;
     private static final float PADDING = 36f;
     private static final float TEXT_SCALE = .84f;
     private static final float SHADOW_SPREAD = 8f;
@@ -73,20 +73,34 @@ public final class DialogBox {
         panel.setColor(Color.WHITE);
         batch.setColor(Color.WHITE);
 
-        float textWidth = WIDTH - PADDING * 2f;
+        float portraitX = X + 30f;
+        float portraitY = y + 42f;
+        batch.setColor(.12f, .9f, 1f, .18f * eased);
+        batch.draw(assets.uiWhiteTexture, portraitX - 5f, portraitY - 5f, 194f, 214f);
+        batch.setColor(1f, 1f, 1f, eased);
+        batch.draw(assets.npcCommanderFrame((int)(appear * 18f) % 4, 1),
+            portraitX, portraitY, 184f, 204f);
+
+        float textX = X + 252f;
+        float textWidth = WIDTH - 290f;
         font.getData().setScale(.66f);
         font.setColor(UiTheme.AMBER.r, UiTheme.AMBER.g, UiTheme.AMBER.b, eased);
-        font.draw(batch, falante, X + PADDING, y + HEIGHT - 26f);
+        font.draw(batch, falante, textX, y + HEIGHT - 34f);
+
+        font.getData().setScale(.56f);
+        font.setColor(UiTheme.CYAN.r, UiTheme.CYAN.g, UiTheme.CYAN.b, eased);
+        font.draw(batch, "BRIEFING DA MISSÃO  •  TITÃ", textX, y + HEIGHT - 68f);
 
         // Quebra dentro da largura útil: é isto que impede o texto de vazar.
         font.getData().setScale(TEXT_SCALE);
         font.setColor(UiTheme.TEXT.r, UiTheme.TEXT.g, UiTheme.TEXT.b, eased);
         layout.setText(font, dialog.line(), font.getColor(), textWidth, Align.left, true);
-        font.draw(batch, layout, X + PADDING, y + HEIGHT - 72f);
+        font.draw(batch, layout, textX, y + HEIGHT - 112f);
 
         font.getData().setScale(.62f);
         font.setColor(UiTheme.TEXT_MUTED.r, UiTheme.TEXT_MUTED.g, UiTheme.TEXT_MUTED.b, eased);
-        String dica = "ESPAÇO para continuar";
+        String dica = dialog.lineNumber() + "/" + dialog.lineCount()
+            + "    ESPAÇO para continuar";
         layout.setText(font, dica);
         font.draw(batch, dica, X + WIDTH - PADDING - layout.width, y + 32f);
 

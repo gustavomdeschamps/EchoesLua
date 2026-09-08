@@ -7,16 +7,17 @@ import com.orion.echoes.lua.managers.AssetManager;
 
 /** Portal de Titã com arte realmente distinta para bloqueado e liberado. */
 public final class TitanPortal extends Entidade {
-    private final TextureRegion blocked;
-    private final TextureRegion online;
+    private final TextureRegion[][] frames = new TextureRegion[2][4];
     private float time;
     private boolean unlocked;
 
     public TitanPortal(float x, float y, AssetManager assets) {
-        super(x, y, 220f, 158f);
-        blocked = assets.titanPortalState(false);
-        online = assets.titanPortalState(true);
-        bounds.set(x + 28f, y + 20f, width - 56f, height - 40f);
+        super(x, y, 180f, 250f);
+        for (int row = 0; row < 2; row++) for (int column = 0; column < 4; column++) {
+            frames[row][column] = assets.titanPortalFrame(row == 1, column);
+        }
+        // Interior da porta, não a base inteira.
+        bounds.set(x + 42f, y + 30f, width - 84f, height - 54f);
     }
 
     @Override public void update(float delta) { time += delta; }
@@ -28,7 +29,8 @@ public final class TitanPortal extends Entidade {
         float pulse = unlocked ? 1f + MathUtils.sin(time * 3.5f) * .015f : 1f;
         float drawW = width * pulse;
         float drawH = height * pulse;
-        batch.draw(unlocked ? online : blocked,
+        TextureRegion frame = frames[unlocked ? 1 : 0][(int)(time / (unlocked ? .10f : .22f)) % 4];
+        batch.draw(frame,
             position.x + (width - drawW) / 2f, position.y + (height - drawH) / 2f,
             drawW, drawH);
     }
