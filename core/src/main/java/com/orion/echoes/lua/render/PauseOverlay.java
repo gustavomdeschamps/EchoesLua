@@ -1,11 +1,14 @@
 package com.orion.echoes.lua.render;
 
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.ui.PauseSettingsModel;
 import com.orion.echoes.lua.ui.TerminalUi;
 import com.orion.echoes.lua.ui.UiTheme;
 
@@ -42,12 +45,73 @@ public final class PauseOverlay {
     private final TerminalUi ui;
     private float elapsed;
 
+    /*
+     * Opcoes dentro da pausa.
+     *
+     * Sem isto, mudar volume ou desligar o tremor exigia abandonar a partida
+     * e ir ao menu. O modelo e injetado por quem constroi a tela, entao a
+     * pausa nao conhece AppSettings nem carrega preferencia nenhuma.
+     */
+    private PauseSettingsModel settings;
+    private boolean settingsOpen;
+    private boolean quitRequested;
+
     public PauseOverlay(SpriteBatch batch, AssetManager assets) {
         this.ui = new TerminalUi(batch, assets);
     }
 
     /** Chame uma vez, na borda em que a pausa abre — reinicia a entrada em cena. */
-    public void open() { elapsed = 0f; }
+    public void open() {
+        elapsed = 0f;
+        settingsOpen = false;
+    }
+
+    public void setSettings(PauseSettingsModel model) { settings = model; }
+
+    public boolean isSettingsOpen() { return settingsOpen; }
+
+    /** True uma unica vez quando o jogador pede para sair pelo atalho da pausa. */
+    public boolean consumeQuitRequested() {
+        boolean pending = quitRequested;
+        quitRequested = false;
+        return pending;
+    }
+
+    /**
+     * Trata as teclas proprias da pausa e diz se consumiu a tecla.
+     *
+     * Fica aqui, e nao nas tres telas, porque o tratamento seria identico nas
+     * tres e ja havia triplicacao no ESC e no M. Quem chama roda isto antes do
+     * proprio tratamento de pausa: com as opcoes abertas, ESC fecha as opcoes
+     * em vez de despausar, e nenhuma tecla vaza para o gameplay.
+     */
+    public boolean handlePauseKeys() {
+        if (settingsOpen) {
+            if (settings != null) {
+                if (justPressed(Input.Keys.UP, Input.Keys.W)) settings.moveSelection(-1);
+                if (justPressed(Input.Keys.DOWN, Input.Keys.S)) settings.moveSelection(1);
+                if (justPressed(Input.Keys.RIGHT, Input.Keys.D)) settings.adjust(1);
+                if (justPressed(Input.Keys.LEFT, Input.Keys.A)) settings.adjust(-1);
+                if (justPressed(Input.Keys.ENTER, Input.Keys.SPACE)) settings.activate();
+            }
+            if (justPressed(Input.Keys.ESCAPE, Input.Keys.O)) settingsOpen = false;
+            // Consome tudo: com o painel aberto nada pode chegar ao gameplay.
+            return true;
+        }
+        if (settings != null && Gdx.input.isKeyJustPressed(Input.Keys.O)) {
+            settingsOpen = true;
+            return true;
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.Q)) {
+            quitRequested = true;
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean justPressed(int first, int second) {
+        return Gdx.input.isKeyJustPressed(first) || Gdx.input.isKeyJustPressed(second);
+    }
 
     /**
      * @param accent cor do mundo atual (ciano na Lua, óxido em Marte, âmbar em Titã)
@@ -76,7 +140,8 @@ public final class PauseOverlay {
         ui.text(flavorText, .74f, fade(UiTheme.TEXT_MUTED, subtitleIn), PANEL_X, 452f + rise(subtitleIn));
         ui.endText();
 
-        drawObjectivePanel(accent, panelIn, missionLabel);
+        if (settingsOpen) drawSettingsPanel(accent, panelIn);
+        else drawObjectivePanel(accent, panelIn, missionLabel);
         drawStatusPanel(accent, panelIn, statLabels, statValues);
         drawActions(accent, actionsIn);
 
@@ -96,6 +161,53 @@ public final class PauseOverlay {
             PANEL_X + 28f, PANEL_Y + PANEL_HEIGHT - 82f + rise(progress), PANEL_WIDTH - 56f);
         ui.text("Nenhum recurso é consumido enquanto a missão está pausada.",
             .64f, fade(UiTheme.TEXT_MUTED, progress), PANEL_X + 28f, PANEL_Y + 34f + rise(progress));
+        ui.endText();
+    }
+
+    /**
+     * Lista de opcoes, uma linha por ajuste.
+     *
+     * Cada linha mostra rotulo, barra e valor escrito. O valor em texto nao e
+     * redundancia: sem ele o jogador ajusta sem saber onde parou, e a leitura
+     * nao pode depender so da cor da barra.
+     */
+    private void drawSettingsPanel(Color accent, float progress) {
+        if (progress <= 0f || settings == null) return;
+        float lift = rise(progress);
+        ui.beginShapes();
+        ui.panel(PANEL_X, PANEL_Y + lift, PANEL_WIDTH, PANEL_HEIGHT, fade(accent, progress));
+        ui.endShapes();
+
+        float line = PANEL_Y + PANEL_HEIGHT - 78f + lift;
+        for (int index = 0; index < settings.size(); index++) {
+            boolean current = index == settings.getSelected();
+            ui.beginShapes();
+            if (current) {
+                ui.rect(PANEL_X + 18f, line - 9f, PANEL_WIDTH - 36f, 30f,
+                    fade(SELECTION, progress));
+            }
+            ui.rect(PANEL_X + 250f, line + 2f, BAR_WIDTH, 8f,
+                fade(UiTheme.TEXT_MUTED, progress * .45f));
+            ui.rect(PANEL_X + 250f, line + 2f, BAR_WIDTH * settings.ratio(index), 8f,
+                fade(current ? accent : UiTheme.TEXT_MUTED, progress));
+            ui.endShapes();
+
+            ui.beginText();
+            ui.text(settings.label(index), .70f,
+                fade(current ? UiTheme.TEXT : UiTheme.TEXT_MUTED, progress),
+                PANEL_X + 30f, line + 18f);
+            String value = settings.valueText(index);
+            ui.text(value, .64f, fade(current ? accent : UiTheme.TEXT_MUTED, progress),
+                PANEL_X + PANEL_WIDTH - 30f - ui.textWidth(value, .64f), line + 18f);
+            ui.endText();
+            line -= 38f;
+        }
+
+        ui.beginText();
+        ui.text("CONFIGURAÇÕES", .68f, fade(accent, progress),
+            PANEL_X + 28f, PANEL_Y + PANEL_HEIGHT - 40f + lift);
+        ui.text("Setas navegam e ajustam  ·  ESC volta ao painel da missão",
+            .62f, fade(UiTheme.TEXT_MUTED, progress), PANEL_X + 28f, PANEL_Y + 30f + lift);
         ui.endText();
     }
 
@@ -121,14 +233,33 @@ public final class PauseOverlay {
         ui.endText();
     }
 
+    /**
+     * Atalhos da pausa.
+     *
+     * Com as opcoes abertas a linha muda: ESC deixa de despausar e passa a
+     * fechar o painel, e anunciar RETOMAR ali seria mentira.
+     */
     private void drawActions(Color accent, float progress) {
         if (progress <= 0f) return;
+        float y = 96f + rise(progress);
         ui.beginText();
-        ui.text("RETOMAR", .84f, fade(UiTheme.TEXT, progress), PANEL_X, 96f + rise(progress));
-        ui.text("ESC ou ENTER", .62f, fade(accent, progress), PANEL_X + 190f, 96f + rise(progress));
-        ui.text("VOLTAR AO MENU", .72f, fade(UiTheme.TEXT_MUTED, progress), PANEL_X + 400f, 96f + rise(progress));
-        ui.text("M", .68f, fade(accent, progress), PANEL_X + 640f, 96f + rise(progress));
+        if (settingsOpen) {
+            action("VOLTAR", "ESC", accent, progress, PANEL_X, y);
+            action("AJUSTAR", "SETAS", accent, progress, PANEL_X + 260f, y);
+        } else {
+            action("RETOMAR", "ESC ou ENTER", accent, progress, PANEL_X, y);
+            action("CONFIGURAÇÕES", "O", accent, progress, PANEL_X + 340f, y);
+            action("MENU", "M", accent, progress, PANEL_X + 620f, y);
+            action("SAIR", "Q", accent, progress, PANEL_X + 780f, y);
+        }
         ui.endText();
+    }
+
+    private void action(String label, String key, Color accent, float progress,
+                        float x, float y) {
+        ui.text(label, .72f, fade(UiTheme.TEXT, progress), x, y);
+        ui.text(key, .62f, fade(accent, progress),
+            x + ui.textWidth(label, .72f) + 14f, y);
     }
 
     /*
@@ -148,6 +279,8 @@ public final class PauseOverlay {
     public void setReduceMotion(boolean value) { reduceMotion = value; }
 
     private static final Color SCRIM = new Color(.012f, .016f, .021f, .86f);
+    private static final Color SELECTION = new Color(1f, 1f, 1f, .09f);
+    private static final float BAR_WIDTH = 260f;
     private final Color faded = new Color();
 
     private boolean reduceMotion;

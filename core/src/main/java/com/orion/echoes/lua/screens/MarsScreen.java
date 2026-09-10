@@ -17,6 +17,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.orion.echoes.lua.EchoesLua;
+import com.orion.echoes.lua.config.AppSettings;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.entities.MarsEnemy;
@@ -45,6 +46,7 @@ import com.orion.echoes.lua.systems.JuiceSystem;
 import com.orion.echoes.lua.systems.DialogueController;
 import com.orion.echoes.lua.systems.TitanCombatSystem;
 import com.orion.echoes.lua.ui.HudLabel;
+import com.orion.echoes.lua.ui.PauseSettingsModel;
 import com.orion.echoes.lua.ui.UiTheme;
 import com.orion.echoes.lua.world.NpcSpawnSelector;
 
@@ -111,6 +113,7 @@ public final class MarsScreen implements Screen {
         batch = game.getBatch();
         panelPatch = assets.uiPanelPatch();
         pauseOverlay = new PauseOverlay(batch, assets);
+        pauseOverlay.setSettings(construirOpcoesDaPausa());
         physics = new PhysicsWorld();
         particles = new ParticleManager(assets);
         sounds = SoundManager.getInstance();
@@ -377,6 +380,12 @@ public final class MarsScreen implements Screen {
             return;
         }
         dialogBox.update(delta, false);
+        // Com a pausa aberta, o overlay tem prioridade: ESC pode estar fechando
+        // o painel de opcoes em vez de despausar.
+        if (paused && pauseOverlay.handlePauseKeys()) {
+            if (pauseOverlay.consumeQuitRequested()) Gdx.app.exit();
+            return;
+        }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
             || paused && Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             paused = !paused;
@@ -951,6 +960,61 @@ public final class MarsScreen implements Screen {
     @Override public void pause() { }
     @Override public void resume() { }
     @Override public void hide() { }
+
+    /**
+     * Opcoes disponiveis sem sair da partida.
+     *
+     * E um subconjunto do menu de proposito: o que o jogador quer ajustar no
+     * meio de uma missao e volume e acessibilidade. Escala de HUD, tela cheia
+     * e controles continuam so no menu, onde ha espaco para explicar.
+     */
+    private PauseSettingsModel construirOpcoesDaPausa() {
+        AppSettings settings = game.getSettings();
+        return new PauseSettingsModel()
+            .addSlider("Música", new PauseSettingsModel.FloatAccessor() {
+                @Override public float get() { return settings.getMusicVolume(); }
+                @Override public void set(float value) {
+                    settings.setMusicVolume(value);
+                    game.aplicarPreferenciasDeAudio();
+                }
+            })
+            .addSlider("Efeitos", new PauseSettingsModel.FloatAccessor() {
+                @Override public float get() { return settings.getSfxVolume(); }
+                @Override public void set(float value) {
+                    settings.setSfxVolume(value);
+                    game.aplicarPreferenciasDeAudio();
+                }
+            })
+            .addSlider("Ambiente", new PauseSettingsModel.FloatAccessor() {
+                @Override public float get() { return settings.getAmbientVolume(); }
+                @Override public void set(float value) {
+                    settings.setAmbientVolume(value);
+                    game.aplicarPreferenciasDeAudio();
+                }
+            })
+            .addToggle("Tremor de câmera", new PauseSettingsModel.BoolAccessor() {
+                @Override public boolean get() { return settings.isShakeEnabled(); }
+                @Override public void set(boolean value) {
+                    settings.setShakeEnabled(value);
+                    aplicarAcessibilidade();
+                }
+            })
+            .addToggle("Redução de movimento", new PauseSettingsModel.BoolAccessor() {
+                @Override public boolean get() { return settings.isReduceMotion(); }
+                @Override public void set(boolean value) {
+                    settings.setReduceMotion(value);
+                    aplicarAcessibilidade();
+                }
+            });
+    }
+
+    /** Reaplica as opcoes de acessibilidade sem esperar o proximo carregamento. */
+    private void aplicarAcessibilidade() {
+        juice.setShakeEnabled(game.getSettings().isShakeEnabled());
+        juice.setReduceMotion(game.getSettings().isReduceMotion());
+        pauseOverlay.setReduceMotion(game.getSettings().isReduceMotion());
+    }
+
     @Override public void dispose() {
         if (particles != null) { particles.dispose(); particles = null; }
         if (physics != null) { physics.dispose(); physics = null; }

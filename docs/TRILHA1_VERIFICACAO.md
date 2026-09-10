@@ -6,7 +6,7 @@ Não houve commit: o documento exige a travessia e os ensaios antes dele.
 ## Verificado nesta rodada
 
 - Compilação Gradle de core e launcher com dependências locais.
-- 113 testes JUnit passando, incluindo CampaignTransferTest: recursos parciais,
+- 122 testes JUnit passando, incluindo CampaignTransferTest: recursos parciais,
   tempo, fase, posição e flags de diálogo sobrevivem à serialização da campanha.
 - Menu com nova arte lunar, conferido em janela 1280×720.
 - Configurações: controles de áudio sem o botão comprimido usado como puxador.
@@ -165,6 +165,91 @@ célula em vez de estragar a folha. As folhas originais ficaram preservadas em
 `MachineSheetBaselineTest` lê os PNGs com ImageIO e trava as sete linhas
 corrigidas mais as do astronauta. Os três atlas foram reempacotados.
 
+## Quarta rodada: áudio medido
+
+`tools/audit_audio.py` mede pico, degrau de borda, continuidade de laço,
+atraso inicial e balanço de mix. `tools/repair_audio.py` corrige. A tarefa
+`validateAudio` roda o relatório no build e falha em modo estrito.
+
+**Três arquivos decodificavam acima de 1.0** — `alerta_oxigenio` em 1.121,
+`colisao_rocha` em 1.067, `passo_lunar` em 1.036. Isso é distorção antes de
+somar com qualquer outra coisa. Outros oito estavam gravados abaixo do papel
+que ocupam: o rugido do chefe final tinha pico 0.47, com metade da escala
+sobrando.
+
+**Duas medições minhas estavam erradas, e vale registrar.** Julgar clique pelo
+pico dos primeiros 64 samples acusa o transiente de ataque, que um passo deve
+ter; a métrica certa é a distância da primeira amostra até o zero, e por ela
+nenhum arquivo tem clique. E julgar laço por amplitude de borda acusa
+justamente o que prova que o laço está certo — conteúdo em laço começa em
+amplitude não-nula porque continua de onde parou. O degrau real de laço de
+todas as músicas é menor que 0.006; nenhuma foi tocada.
+
+**Reencodar Vorbis faz o pico crescer**, e não pouco: escrever com pico 0.89
+devolveu 1.026 na leitura de volta. O ganho agora é verificado — o arquivo é
+regravado, lido de volta e medido, e o ganho reduzido até o pico decodificado
+ficar sob o teto.
+
+### Mixagem
+
+Os ganhos estavam espalhados como literais, cada um escolhido isolado, e a
+escala tinha saído invertida. Medindo sonoridade de curto prazo (janela de
+300 ms, próxima do que o ouvido julga num disparo único) vezes o ganho:
+
+| | antes | depois |
+|---|---|---|
+| Alarme de oxigênio | 0.373 | **0.419** |
+| Rugido do chefe | 0.149 | 0.212 |
+| Pausa | **0.390** | 0.180 |
+| Hover da interface | 0.190 | 0.071 |
+| Passo lunar / Titã / Marte | 0.062 / 0.035 / 0.023 | 0.045 / 0.045 / 0.045 |
+
+O blip de pausa tocava mais alto que o alarme de suporte de vida, e o hover do
+menu mais alto que o chefe final. Os passos são o mesmo evento e soavam 2.7×
+diferente entre a Lua e Marte.
+
+### Sons órfãos
+
+`boss_rugido.ogg` e `boss_morte.ogg` estavam carregados e nunca eram tocados
+por ninguém: o chefe preparava o ataque em silêncio e morria sem som.
+`TitanBoss` ganhou `consumeRoar` e `consumeDeath`.
+
+Resultado: 34 → 0 problemas no relatório de áudio.
+
+## Quinta rodada: configurações e saída na pausa
+
+A pausa oferecia apenas retomar e voltar ao menu. Para mudar volume ou
+desligar o tremor de câmera o jogador tinha de abandonar a partida, ir ao
+menu e começar de novo — a configuração existia mas não estava ao alcance de
+quem estava jogando. O documento pede continuar, configurações, menu e sair.
+
+O menu principal monta suas opções em Scene2D. Trazer Scene2D para dentro do
+gameplay significaria um segundo processador de input disputando o teclado
+com o jogo, e o documento é explícito sobre não introduzir Scene2D só por
+causa de uma tela. Então a pausa desenha as opções no mesmo modo imediato do
+resto do overlay, e a navegação vive em `ui/PauseSettingsModel` — sem LibGDX
+gráfico, sem `Preferences`, só a regra de seleção e ajuste, que é o que pode
+quebrar em silêncio.
+
+Atalhos: `O` abre as opções, setas navegam e ajustam, `ESC` volta ao painel da
+missão, `M` vai ao menu, `Q` sai. O tratamento das teclas ficou em
+`PauseOverlay.handlePauseKeys`, num lugar só, em vez de triplicado — já havia
+duplicação no `ESC` e no `M` entre as três fases. Com o painel aberto o
+overlay consome tudo, então `ESC` fecha as opções em vez de despausar e
+nenhuma tecla vaza para o gameplay.
+
+As opções da pausa são um subconjunto do menu de propósito — volume de
+música, efeitos e ambiente, tremor de câmera e redução de movimento. Escala
+de HUD, tela cheia e controles continuam só no menu, onde há espaço para
+explicar. Mudar acessibilidade na pausa reaplica na hora, sem esperar o
+próximo carregamento.
+
+`PauseSettingsModelTest` cobre a volta na seleção, o limite da barra nas
+pontas, esquerda/direita significando a mesma coisa nos dois tipos de linha,
+e o valor escrito ao lado da barra — sem ele a leitura dependeria só da cor.
+
+Testes: 122.
+
 ## Implementado, mas ainda exige verificação visual completa
 
 - Conversa da pesquisadora em Titã, HUD de missão e áudio dessa fase.
@@ -180,7 +265,7 @@ corrigidas mais as do astronauta. Os três atlas foram reempacotados.
 - Inventário e limpeza final dos assets órfãos, distinguindo fontes de produção.
 - Todas as hitboxes e animações nos três mundos, em janela com debug ligado.
 - Validação de continuidade de carregamento/abertura em dez inicializações.
-- Vitória, opções e pausa em fullscreen e na sequência completa de retornos.
+- Vitória e pausa em fullscreen e na sequência completa de retornos.
 - Três sessões reais de cinco minutos cruzando Lua, Marte e Titã.
 - Suíte final e commit somente depois do aceite acima.
 
