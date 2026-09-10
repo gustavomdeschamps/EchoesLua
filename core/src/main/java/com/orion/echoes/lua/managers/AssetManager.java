@@ -28,11 +28,9 @@ public final class AssetManager implements Disposable {
     /*
      * Key art das aberturas por mundo (docs/NEW_VISUAL_ASSETS.md).
      *
-     * Ainda não foram fornecidas. Carregadas como Texture solta (como o
-     * terreno) em vez de via atlas, porque isso permite checar a existência do
-     * arquivo em disco e simplesmente não carregar nada quando falta — um
-     * findRegion() nulo no atlas exigiria que o TexturePacker já soubesse da
-     * imagem, que ainda não existe.
+     * Carregadas como Texture solta (como o terreno) porque são composições
+     * 1280x720 e não ganham nada dentro do atlas de sprites. A checagem de
+     * existência preserva o fallback para instalações antigas ou incompletas.
      */
     private static final String WORLD_INTRO_LUNAR = "textures/world_intro_lunar_v1.png";
     private static final String WORLD_INTRO_MARS = "textures/world_intro_mars_v1.png";
@@ -49,7 +47,7 @@ public final class AssetManager implements Disposable {
     private TextureRegion titanVerticalPortal;
     /** Folha de cada identidade de NPC, resolvida com fallback em bindLoadedAssets(). */
     private final Map<Npc.Visual, TextureRegion> npcVisualSheets = new EnumMap<>(Npc.Visual.class);
-    /** Nulo enquanto o PNG dedicado (docs/NEW_VISUAL_ASSETS.md) não for fornecido. */
+    /** Nulo apenas quando uma instalação não contém a folha dedicada. */
     private TextureRegion marsStationSheetTexture;
     private TextureRegion titanRefinerySheetTexture;
     private Texture worldIntroLunarTexture;
@@ -199,8 +197,8 @@ public final class AssetManager implements Disposable {
             if (sheet == null) throw new IllegalStateException("Nenhuma folha disponível para NPC: " + visual);
             npcVisualSheets.put(visual, sheet);
         }
-        // Ainda não fornecidos (docs/NEW_VISUAL_ASSETS.md): null é um estado válido,
-        // resolvido com fallback procedural em tempo de uso, não aqui.
+        // Null continua válido para instalações antigas; o runtime conserva
+        // os fallbacks procedurais em vez de interromper o carregamento.
         marsStationSheetTexture = optional(gameAtlas, "mars_station_sheet_v2");
         titanRefinerySheetTexture = optional(gameAtlas, "titan_refinery_sheet_v2");
 

@@ -55,6 +55,12 @@ def os = System.properties['os.name'].toLowerCase(Locale.ROOT)
 
 run {
   workingDir = rootProject.file('assets').path
+  // Permite abrir uma janela previsivel durante QA sem mudar o padrao fullscreen
+  // usado pelo jogador. A propriedade do Gradle precisa ser repassada ao JVM do jogo.
+  if (System.getProperty('echoes.windowed') != null ||
+      Boolean.parseBoolean(project.findProperty('windowedQa')?.toString() ?: 'false')) {
+    systemProperty 'echoes.windowed', 'true'
+  }
 // You can uncomment the next line if your IDE claims a build failure even when the app closed properly.
   //setIgnoreExitValue(true)
   jvmArgs += "--enable-native-access=ALL-UNNAMED"

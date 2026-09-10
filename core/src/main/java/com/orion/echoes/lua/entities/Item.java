@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.render.SpriteFit;
 
 public class Item extends Entidade implements Interagivel {
 
@@ -19,6 +20,7 @@ public class Item extends Entidade implements Interagivel {
 
     private final TipoItem tipo;
     private final Sprite sprite;
+    private final Rectangle visualBounds = new Rectangle();
 
     private boolean coletado = false;
 
@@ -95,15 +97,15 @@ public class Item extends Entidade implements Interagivel {
                 );
         }
 
-        sprite.setSize(
-            width,
-            height
-        );
+        // Cada arte tem uma silhueta diferente. O encaixe preserva a proporcao
+        // original em vez de esmagar cartucho, racao e gelo no mesmo quadrado.
+        SpriteFit.fit(sprite, x, y, width, height, visualBounds);
+        sprite.setSize(visualBounds.width, visualBounds.height);
 
         sprite.setOriginCenter();
 
         sprite.setPosition(
-            x,
+            visualBounds.x,
             y
         );
 
@@ -143,7 +145,7 @@ public class Item extends Entidade implements Interagivel {
             ) * 4f;
 
         sprite.setPosition(
-            position.x,
+            position.x + (width - sprite.getWidth()) / 2f,
             yOriginal + offsetY
         );
 
@@ -271,16 +273,11 @@ public class Item extends Entidade implements Interagivel {
     }
 
     public float getCenterX() {
-
-        return position.x
-            + width / 2f;
+        return sprite.getX() + sprite.getWidth() / 2f;
     }
 
     public float getCenterY() {
-
-        return yOriginal
-            + offsetY
-            + height / 2f;
+        return sprite.getY() + sprite.getHeight() / 2f;
     }
 
     @Override

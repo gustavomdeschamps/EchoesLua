@@ -7,10 +7,14 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
+import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.Align;
 import com.orion.echoes.lua.EchoesLua;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
@@ -34,7 +38,7 @@ import java.util.function.Supplier;
  */
 public final class WorldIntroScreen implements Screen {
 
-    private static final float DURATION = 3.4f;
+    private static final float DURATION = 4.6f;
     private static final float SKIP_DELAY = .35f;
     private static final float FADE_OUT = .5f;
 
@@ -46,6 +50,8 @@ public final class WorldIntroScreen implements Screen {
     private final OrthographicCamera camera = new OrthographicCamera();
     private final FitViewport viewport =
         new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, camera);
+    private final GlyphLayout layout = new GlyphLayout();
+    private final NinePatch briefingPanel;
 
     private float elapsed;
     private boolean finished;
@@ -56,6 +62,7 @@ public final class WorldIntroScreen implements Screen {
         this.assets = game.getAssets();
         this.world = world;
         this.nextScreenFactory = nextScreenFactory;
+        this.briefingPanel = assets.uiModalPatch();
         camera.position.set(GameConfig.WINDOW_WIDTH / 2f, GameConfig.WINDOW_HEIGHT / 2f, 0f);
         camera.update();
     }
@@ -125,11 +132,11 @@ public final class WorldIntroScreen implements Screen {
         };
     }
 
-    private Color backgroundTint() {
+    private String sectorCode() {
         return switch (world) {
-            case LUNAR -> new Color(.16f, .19f, .24f, 1f);
-            case MARS -> new Color(.42f, .22f, .15f, 1f);
-            case TITAN -> new Color(.28f, .21f, .13f, 1f);
+            case LUNAR -> "ENLACE // ORION-01";
+            case MARS -> "TEMPESTADE // ARES-07";
+            case TITAN -> "ÚLTIMO SINAL // KRONOS-03";
         };
     }
 
@@ -172,8 +179,13 @@ public final class WorldIntroScreen implements Screen {
 
     private void drawBackground() {
         float drift = Interpolation.sine.apply(MathUtils.clamp(elapsed / DURATION, 0f, 1f)) * 34f;
-        batch.setColor(backgroundTint());
-        batch.draw(background(), -drift, -drift * .5f,
+        Texture dedicated = assets.worldIntroTexture(world);
+        batch.setColor(dedicated == null ? switch (world) {
+            case LUNAR -> new Color(.42f, .46f, .52f, 1f);
+            case MARS -> new Color(.72f, .47f, .34f, 1f);
+            case TITAN -> new Color(.68f, .50f, .31f, 1f);
+        } : Color.WHITE);
+        batch.draw(dedicated == null ? background() : dedicated, -drift, -drift * .5f,
             GameConfig.WINDOW_WIDTH + drift * 2f, GameConfig.WINDOW_HEIGHT + drift);
         batch.setColor(Color.WHITE);
     }
@@ -280,8 +292,6 @@ public final class WorldIntroScreen implements Screen {
         batch.setColor(.03f, .035f, .045f, .58f);
         batch.draw(assets.uiDamageVignetteTexture, 0f, 0f,
             GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
-        batch.setColor(.01f, .012f, .016f, .5f);
-        batch.draw(assets.uiWhiteTexture, 0f, 0f, GameConfig.WINDOW_WIDTH, 190f);
         batch.setColor(Color.WHITE);
         batch.end();
     }
@@ -289,33 +299,52 @@ public final class WorldIntroScreen implements Screen {
     private void renderText() {
         String[] lines = titleLines();
         Color accent = accent();
+        float entrance = Interpolation.pow3Out.apply(MathUtils.clamp((elapsed - .08f) / .62f, 0f, 1f));
+        float panelX = -520f + 570f * entrance;
+        float contentX = panelX + 44f;
+        float contentWidth = 420f;
+        float panelAlpha = .94f * reveal(.05f, .35f);
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        drawAt(assets.font, lines[0], .78f, .1f, DURATION, 78f, 190f, accent);
-        drawAt(assets.titleFont, lines[1], 2.55f, .28f, DURATION, 74f, 118f, Color.WHITE);
-        drawAt(assets.font, lines[2], .82f, .5f, DURATION, 78f, 74f,
-            new Color(.86f, .87f, .84f, 1f));
-        drawAt(assets.font, subtitle(), .66f, .78f, DURATION, 78f, 42f, UiTheme.TEXT_MUTED);
-        drawAt(assets.font, "ESPAÇO / ENTER  PULAR", .56f, .7f, DURATION, 1010f, 22f,
-            new Color(.72f, .76f, .75f, 1f));
+        batch.setColor(1f, 1f, 1f, panelAlpha);
+        briefingPanel.draw(batch, panelX, 62f, 510f, 596f);
+        batch.setColor(Color.WHITE);
+
+        drawWrapped(assets.font, lines[0], .72f, .18f, contentX, 614f,
+            contentWidth, accent);
+        drawWrapped(assets.titleFont, lines[1], 1.72f, .34f, contentX, 548f,
+            contentWidth, Color.WHITE);
+        drawWrapped(assets.font, lines[2], .84f, .56f, contentX, 476f,
+            contentWidth, new Color(.91f, .91f, .87f, 1f));
+        drawWrapped(assets.font, subtitle(), .76f, .82f, contentX, 382f,
+            contentWidth, UiTheme.TEXT_MUTED);
+
+        float detailsAlpha = reveal(1.08f, .4f);
+        batch.setColor(accent.r, accent.g, accent.b, detailsAlpha * .92f);
+        for (int i = 0; i < 3; i++) {
+            float width = i == world.ordinal() ? 82f : 22f;
+            batch.draw(assets.uiWhiteTexture, contentX + i * 98f, 169f, width, 5f);
+        }
+        batch.setColor(Color.WHITE);
+        drawWrapped(assets.font, sectorCode(), .61f, 1.02f, contentX, 142f,
+            contentWidth, new Color(.76f, .79f, .78f, 1f));
         batch.end();
     }
 
-    private void drawAt(com.badlogic.gdx.graphics.g2d.BitmapFont font, String text, float scale,
-                        float start, float end, float x, float y, Color color) {
-        float alpha = envelope(start, end, .32f);
+    private void drawWrapped(BitmapFont font, String text, float scale, float start,
+                             float x, float y, float width, Color color) {
+        float alpha = reveal(start, .36f);
         if (alpha <= 0f) return;
         font.getData().setScale(scale);
-        font.setColor(color.r, color.g, color.b, alpha);
-        font.draw(batch, text, x, y);
+        Color drawColor = new Color(color.r, color.g, color.b, alpha);
+        layout.setText(font, text, drawColor, width, Align.left, true);
+        font.draw(batch, layout, x, y);
         font.getData().setScale(1f);
         font.setColor(Color.WHITE);
     }
 
-    private float envelope(float start, float end, float edge) {
-        if (elapsed <= start || elapsed >= end) return 0f;
-        return Math.min(MathUtils.clamp((elapsed - start) / edge, 0f, 1f),
-            MathUtils.clamp((end - elapsed) / edge, 0f, 1f));
+    private float reveal(float start, float duration) {
+        return Interpolation.pow2Out.apply(MathUtils.clamp((elapsed - start) / duration, 0f, 1f));
     }
 
     private void renderFade() {

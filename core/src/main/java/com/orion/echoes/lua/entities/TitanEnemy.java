@@ -11,9 +11,9 @@ import com.orion.echoes.lua.systems.CombatTarget;
 
 /** Predador anfíbio de Titã: espécie, silhueta e animação próprias. */
 public final class TitanEnemy extends Entidade implements CombatTarget {
-    public static final float MAX_HP = 110f;
-    public static final float SPEED = 82f;
-    public static final float CHASE_RADIUS = 520f;
+    public static final float MAX_HP = 125f;
+    public static final float SPEED = 90f;
+    public static final float CHASE_RADIUS = 590f;
     private static final float SPRITE_SIZE = 144f;
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
@@ -85,7 +85,8 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
             moving = false;
             if (distance <= 450f && attackCooldown <= 0f && hitTimer <= 0f) telegraphTimer = .55f;
         }
-        // A hitbox acompanha inclusive os quadros de ataque e o leve bob visual.
+        // A animação pode oscilar visualmente, mas a colisão continua apoiada
+        // no solo; uma hitbox que sobe e desce parece atravessar obstáculos.
         syncBounds();
     }
 
@@ -96,8 +97,7 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     }
 
     private void syncBounds() {
-        bounds.set(centerX() - 43f, position.y + 14f + MathUtils.sin(time * 3f) * 2f,
-            86f, 48f);
+        bounds.set(centerX() - 43f, position.y + 14f, 86f, 48f);
     }
 
     private void move(float dx, float dy, float delta, float worldWidth, float worldHeight,
@@ -109,8 +109,7 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     }
 
     private boolean free(float x, float y, Array<Rectangle> obstacles) {
-        movementBounds.set(x + width / 2f - 43f,
-            y + 14f + MathUtils.sin(time * 3f) * 2f, 86f, 48f);
+        movementBounds.set(x + width / 2f - 43f, y + 14f, 86f, 48f);
         for (Rectangle obstacle : obstacles) if (movementBounds.overlaps(obstacle)) return false;
         return true;
     }

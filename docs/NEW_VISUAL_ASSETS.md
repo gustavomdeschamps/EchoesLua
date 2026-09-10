@@ -1,4 +1,9 @@
-# Novos assets visuais — especificação para geração
+# Novos assets visuais — especificação e registro de integração
+
+> **Estado em 9 de setembro de 2026:** Ayla, Ayyub, Lira, estações lunares e
+> marcianas, refinaria, caçador, chefe, portal, formações e terreno de Titã
+> foram regenerados, normalizados e validados. As folhas animadas estão no
+> atlas; as aberturas permanecem como texturas soltas 1280×720.
 
 Este documento é o contrato entre o código já preparado e os PNGs que ainda
 precisam ser gerados. Cada seção descreve um arquivo completo: resolução,
@@ -20,24 +25,26 @@ cima e da esquerda, contorno azul-grafite (nunca preto absoluto), 8% de
 margem segura mínima por célula, fundo transparente real (sem checker, sem
 retângulo de cor sólida por trás do sujeito).
 
-## Reaproveitados sem alteração
+## Folhas regeneradas e integradas
 
-Estes assets já cumprem o contrato pedido e **não precisam ser regenerados**:
+Estes assets cumprem o contrato e já estão no atlas:
 
-- `npc_colony_officer_sheet_v2.png` — já é a folha dedicada do Oficial da
-  Colônia (Marte), 4×4, com identidade própria e distinta de Ayla.
-- `npc_commander_ayla_sheet.png` — já é a folha dedicada da Comandante Ayla
-  (Lua).
-- `lunar_repair_stations_v2.png` — a estrutura de 4 colunas × 4 linhas já
-  está correta; o problema era a máquina de estados no código (RepairStation),
-  não a arte. Já corrigido (ver seção "Estações lunares" abaixo).
+- `npc_colony_officer_sheet_v2.png` — Ayyub, engenheiro de Marte, 4×4.
+- `npc_commander_ayla_sheet.png` — Ayla, comandante lunar, 4×4.
+- `npc_researcher_lira_sheet_v2.png` — Lira, pesquisadora de Titã, 4×4.
+- `lunar_repair_stations_v2.png` — quatro máquinas × quatro estados.
+- `mars_station_sheet_v2.png` — três máquinas × quatro estados.
+- `titan_refinery_sheet_v2.png` — quatro estados de processamento.
+- `titan_hunter_sheet_v3.png`, `titan_boss_sheet_v3.png`,
+  `titan_portal_vertical_v2.png` e `titan_formations_v2.png` — conjunto final
+  de Titã com a mesma câmera, iluminação e família de materiais.
 
 ---
 
 ## 1. `npc_researcher_lira_sheet_v2.png` — Pesquisadora Lira (Titã)
 
-**Por quê**: hoje Titã reaproveita a folha do Oficial de Marte para Lira —
-elas aparecem como a mesma pessoa. Este é o asset de maior prioridade do
+**Por quê**: Titã reaproveitava a folha do antigo oficial de Marte para Lira —
+elas apareciam como a mesma pessoa. Este foi o asset de maior prioridade do
 manifesto.
 
 ```
@@ -76,15 +83,14 @@ apenas em cor.
 consumida por `TitanScreen` (constrói `Npc` com `Visual.LIRA`) e por
 `DialogBox`/`NpcConversation` para o portrait de diálogo.
 
-**Fallback atual**: `npc_colony_officer_sheet_v2.png` (Oficial de Marte). O
-jogo compila e roda normalmente; Lira só passa a ter identidade própria
-quando este arquivo for adicionado.
+**Fallback de segurança**: `npc_colony_officer_sheet_v2.png` (Oficial de
+Marte), usado somente se o arquivo final estiver ausente.
 
 ---
 
 ## 2. `mars_station_sheet_v2.png` — Estações marcianas animadas
 
-**Por quê**: hoje as três estações de Marte (solar, oxigênio, comunicação)
+**Por quê**: antes as três estações de Marte (solar, oxigênio, comunicação)
 são a mesma região estática do `mars_atlas_v4`, "animada" só por um
 `Sprite.setScale()` procedural. Isso não é uma animação de estação, e as três
 não são visualmente diferentes o bastante.
@@ -131,15 +137,14 @@ estrutura recolorida.
 consumida por `MarsObject` (estados `OFFLINE_IDLE`/`ACTIVATING`/`ONLINE_LOOP`,
 já implementados).
 
-**Fallback atual**: região estática de `mars_atlas_v4` + pulso procedural de
-escala (comportamento anterior, preservado). `AssetManager.hasMarsStationSheet()`
-retorna `false` até o arquivo existir.
+**Fallback de segurança**: região estática de `mars_atlas_v4` + pulso
+procedural de escala, usado somente se a folha final estiver ausente.
 
 ---
 
 ## 3. `titan_refinery_sheet_v2.png` — Refinaria de campo de Titã
 
-**Por quê**: a refinaria (gelo → munição) hoje usa a região genérica
+**Por quê**: a refinaria (gelo → munição) usava a região genérica
 `CRAFTING_TERMINAL` do atlas de missão lunar — importante demais na economia
 da fase para parecer um prop reciclado.
 
@@ -175,8 +180,8 @@ apenas repintada de âmbar.
 `TitanScreen.desenharRefinaria()` — já implementado, com máquina de estados
 `idle → boot → processing A/B → idle` disparada a cada refino bem-sucedido.
 
-**Fallback atual**: `MissionSprite.CRAFTING_TERMINAL` (região estática), sem
-animação.
+**Fallback de segurança**: `MissionSprite.CRAFTING_TERMINAL` (região
+estática), usado somente se a folha final estiver ausente.
 
 ---
 
@@ -202,38 +207,34 @@ Silêncio, isolamento, frio, tecnologia danificada. Regolito cinza-azulado,
 preto espacial, antena com cabo rompido ao fundo, luz fria vinda de cima à
 esquerda, pequenos sinais técnicos ciano discretos. Reaproveita a mesma
 direção de `intro_keyart_v4.png` (ver ART_BIBLE) em uma composição nova.
-**Fallback atual**: `textures/lunar_ground.png` tingido de ciano-frio e com
-leve deriva de câmera (já implementado em `WorldIntroScreen`).
+**Fallback de segurança**: `textures/lunar_ground.png` tingido de ciano-frio,
+usado somente se a key art final estiver ausente.
 
 ### 5. `world_intro_mars_v1.png`
 Óxido, laranja queimado, vermelho escuro, grafite. Colônia marciana entre
 camadas de poeira em movimento, silhueta de estrutura ao fundo, luz difusa
-por trás da tempestade. **Fallback atual**: `textures/mars_ground.png`
-tingido de óxido, com bandas de poeira procedurais (já implementado).
+por trás da tempestade. **Fallback de segurança**: `textures/mars_ground.png`
+tingido de óxido, usado somente se a key art final estiver ausente.
 
 ### 6. `world_intro_titan_v1.png`
 Âmbar, marrom profundo, grafite, névoa fria de metano, contraste baixo no
 horizonte. Silhuetas distantes muito discretas — **nunca** revelar a forma do
-Soberano do Metano, só sugerir uma presença longínqua. **Fallback atual**:
-`textures/titan_ground_v2.png` tingido de âmbar, com névoa em camadas e um
-sinal pulsante distante (já implementado).
+Soberano do Metano, só sugerir uma presença longínqua. **Fallback de segurança**:
+`textures/titan_ground_v2.png` tingido de âmbar, usado somente se a key art
+final estiver ausente.
 
 **Onde são usadas**: `AssetManager.worldIntroTexture(CampaignState.Phase)`;
 consumidas por `WorldIntroScreen`, que já implementa toda a apresentação
-(parallax, motivo por mundo, texto escalonado, skip, fade) e funciona hoje
-com o fallback de terreno tingido.
+(parallax, motivo por mundo, texto escalonado, skip e fade), com fallback de
+terreno tingido apenas para uma instalação sem as key arts.
 
 ---
 
-## Assets que NÃO precisam ser gerados agora
+## Assets preservados
 
-- Nova folha da Ayla: a atual já cumpre o contrato (identidade própria,
-  grade 4×4, sem folga de animação). Não solicitada.
-- Novo `npc_colony_officer_sheet_v2.png`: idem — já é a folha dedicada certa
-  para o Oficial de Marte.
-- Novos assets de portal: `campaign_portal_sheet_v2.png` e
-  `titan_portal_vertical_v2.png` já passam na QA de grade, bordas e
-  quantidade de regiões (`ProductionAtlasTest`); nenhum corte encontrado.
+- O protagonista não foi redesenhado neste lote, conforme o escopo pedido.
+- `campaign_portal_sheet_v2.png` continua sendo o portal comum da campanha;
+  Titã usa sua folha exclusiva regenerada.
 
 ---
 

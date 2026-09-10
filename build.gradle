@@ -55,6 +55,52 @@ allprojects {
  * No CI a rigidez volta: -PstrictAssetQa=true (ou a variavel CI) faz a falta
  * de dependencia virar erro, para ninguem publicar asset quebrado.
  */
+tasks.register('validateAudio') {
+  group = 'verification'
+  description = 'Valida picos, cliques, laços e balanço de mix do áudio. Pula se o Python não estiver pronto.'
+
+  def projectRoot = rootProject.projectDir
+  def strict = project.hasProperty('strictAssetQa')
+    ? Boolean.parseBoolean(project.property('strictAssetQa').toString())
+    : System.getenv('CI') != null
+
+  doLast {
+    def configuredPython = project.findProperty('assetQaPython')?.toString()
+      ?: System.getenv('ASSET_QA_PYTHON')
+    def interpreters = System.getProperty('os.name').toLowerCase().contains('windows')
+      ? ['python', 'py', 'python3']
+      : ['python3', 'python']
+    if (configuredPython) interpreters.add(0, configuredPython)
+
+    def runner = interpreters.find { candidate ->
+      try {
+        new ProcessBuilder(candidate, '-c', 'import numpy, soundfile')
+          .directory(projectRoot).redirectErrorStream(true).start().waitFor() == 0
+      } catch (Exception ignored) {
+        false
+      }
+    }
+
+    if (runner == null) {
+      def message = 'QA de áudio pulado: Python com NumPy e soundfile não encontrado. ' +
+        'Para habilitar: pip install numpy soundfile'
+      if (strict) throw new GradleException(message)
+      logger.quiet("AVISO: $message")
+      return
+    }
+
+    def process = new ProcessBuilder(runner, 'tools/audit_audio.py')
+      .directory(projectRoot).redirectErrorStream(true).start()
+    def output = process.inputStream.text
+    process.waitFor()
+    logger.quiet(output)
+    def failures = (output =~ /TOTAL DE PROBLEMAS: (\d+)/)
+    if (failures && failures[0][1].toInteger() > 0 && strict) {
+      throw new GradleException('QA de áudio encontrou problemas; veja o relatório acima.')
+    }
+  }
+}
+
 tasks.register('validateVisualAssets') {
   group = 'verification'
   description = 'Valida dimensões, grades e paleta dos assets. Pula se o Python não estiver pronto.'

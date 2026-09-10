@@ -56,12 +56,14 @@ class ProductionAtlasTest {
     }
 
     @Test void animationGroupsContainEveryIndividuallyPaddedFrame() {
-        Map<String, Integer> expected = Map.of(
-            "astronauta_sheet", 16, "astronaut_combat_sheet", 12,
-            "lunar_enemy_sheet", 16, "mars_drone_sheet", 16,
-            "mars_crawler_sheet", 16, "titan_hunter_sheet_v3", 16,
-            "titan_boss_sheet_v3", 16, "campaign_portal_sheet_v2", 16,
-            "titan_portal_vertical_v2", 8, "npc_commander_ayla_sheet", 16);
+        Map<String, Integer> expected = Map.ofEntries(
+            Map.entry("astronauta_sheet", 16), Map.entry("astronaut_combat_sheet", 12),
+            Map.entry("lunar_enemy_sheet", 16), Map.entry("mars_drone_sheet", 16),
+            Map.entry("mars_crawler_sheet", 16), Map.entry("titan_hunter_sheet_v3", 16),
+            Map.entry("titan_boss_sheet_v3", 16), Map.entry("campaign_portal_sheet_v2", 16),
+            Map.entry("titan_portal_vertical_v2", 8), Map.entry("npc_commander_ayla_sheet", 16),
+            Map.entry("npc_researcher_lira_sheet_v2", 16),
+            Map.entry("mars_station_sheet_v2", 12), Map.entry("titan_refinery_sheet_v2", 4));
         TextureAtlasData data = atlas("game");
         for (Map.Entry<String, Integer> entry : expected.entrySet()) {
             Set<Integer> indices = new HashSet<>();

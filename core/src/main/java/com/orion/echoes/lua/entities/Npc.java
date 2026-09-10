@@ -25,22 +25,15 @@ public final class Npc extends Entidade {
      * Identidade visual de um NPC.
      *
      * {@code sheetKey} é o nome da região no atlas de jogo. {@code fallbackKey}
-     * é usado quando a folha definitiva ainda não foi fornecida — o jogo nunca
-     * deixa de compilar ou de rodar por falta de um PNG que será adicionado
-     * depois pelo pipeline de arte (ver docs/NEW_VISUAL_ASSETS.md).
+     * só protege uma instalação incompleta; a produção inclui uma folha
+     * dedicada e compatível com a mesma grade para cada pessoa.
      */
     public enum Visual {
         /** Comandante Ayla — Lua. Folha própria, sempre presente. */
         AYLA("npc_commander_ayla_sheet", null, 0),
-        /** Oficial da colônia — Marte. Folha própria, sempre presente. */
+        /** Ayyub, engenheiro de campo — Marte. Folha própria, sempre presente. */
         MARS_OFFICER("npc_colony_officer_sheet_v2", null, 2),
-        /**
-         * Pesquisadora Lira — Titã. Folha própria ainda não fornecida: até
-         * chegar, usa a folha do oficial marciano como fallback seguro. Assim
-         * que {@code npc_researcher_lira_sheet_v2.png} existir e o pipeline
-         * rodar, Lira passa a ter identidade visual própria sem mudança de
-         * código.
-         */
+        /** Pesquisadora Lira — Titã. */
         LIRA("npc_researcher_lira_sheet_v2", "npc_colony_officer_sheet_v2", 2);
 
         private final String sheetKey;

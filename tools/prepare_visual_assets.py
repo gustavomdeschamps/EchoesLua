@@ -553,6 +553,69 @@ def _fit_cell(source: Image.Image, size: tuple[int, int], margin: float = 0.08) 
     return output
 
 
+def prepare_fitted_grid(source: str, destination: str, columns: int, rows: int,
+                        cell_size: int = 313, margin: float = 0.07) -> None:
+    """Normaliza uma folha com alpha real sem deformar nenhuma célula.
+
+    As gerações podem chegar em resoluções diferentes da folha final. Reduzir a
+    imagem inteira distorceria personagens e máquinas quando a célula de origem
+    não fosse quadrada; por isso cada sujeito é recortado, encaixado e apoiado
+    individualmente em uma célula quadrada de produção.
+    """
+    image = Image.open(_source_path(source)).convert("RGBA")
+    source_cell_w = image.width // columns
+    source_cell_h = image.height // rows
+    output = Image.new("RGBA", (columns * cell_size, rows * cell_size), (0, 0, 0, 0))
+    for row in range(rows):
+        for column in range(columns):
+            cell = image.crop((column * source_cell_w, row * source_cell_h,
+                               (column + 1) * source_cell_w,
+                               (row + 1) * source_cell_h))
+            fitted = _fit_cell(_remove_alpha_islands(cell),
+                               (cell_size, cell_size), margin)
+            output.alpha_composite(fitted, (column * cell_size, row * cell_size))
+    output.save(TEXTURES / destination, optimize=True)
+
+
+def validate_source_cell_clearance(source: str, columns: int, rows: int,
+                                   guard_ratio: float = 0.008) -> None:
+    """Rejeita geração já cortada antes que o normalizador esconda o defeito.
+
+    O encaixe em grade consegue criar margem externa, mas não recupera uma mão
+    ou antena que a imagem gerada cortou. Por isso a fonte precisa chegar com
+    uma faixa transparente contínua em cada célula.
+    """
+    image = Image.open(_source_path(source)).convert("RGBA")
+    cell_w, cell_h = image.width // columns, image.height // rows
+    guard = max(4, int(min(cell_w, cell_h) * guard_ratio))
+    errors: list[str] = []
+    for row in range(rows):
+        for column in range(columns):
+            alpha = image.getchannel("A").crop((column * cell_w, row * cell_h,
+                                                (column + 1) * cell_w,
+                                                (row + 1) * cell_h))
+            border = Image.new("L", alpha.size, 0)
+            border.paste(alpha.crop((0, 0, guard, cell_h)), (0, 0))
+            border.paste(alpha.crop((cell_w - guard, 0, cell_w, cell_h)),
+                         (cell_w - guard, 0))
+            border.paste(alpha.crop((0, 0, cell_w, guard)), (0, 0))
+            border.paste(alpha.crop((0, cell_h - guard, cell_w, cell_h)),
+                         (0, cell_h - guard))
+            visible = sum(border.histogram()[24:])
+            if visible:
+                errors.append(f"célula {row * columns + column + 1}: {visible} px na margem")
+    if errors:
+        raise SystemExit(f"Fonte cortada ({source}):\n- " + "\n- ".join(errors))
+
+
+def prepare_key_art(source: str, destination: str) -> None:
+    """Entrega a key art em 16:9 exato sem alongar a composição."""
+    image = Image.open(_source_path(source)).convert("RGB")
+    image = ImageOps.fit(image, (1280, 720), method=Image.Resampling.LANCZOS,
+                         centering=(0.5, 0.5))
+    image.save(TEXTURES / destination, optimize=True)
+
+
 def extract_common_assets() -> None:
     image = Image.open(_source_path("common_assets_realistic_candidate.png"))
     image = _checker_alpha_global(image)
@@ -973,6 +1036,31 @@ def validate_all() -> None:
     validate_cell_scale()
     validate_cell_borders()
 
+
+def prepare_latest_character_and_world_assets() -> None:
+    """Processa apenas o lote autoral mais recente, útil com o jogo aberto."""
+    make_tileable("titan_ground_v2_candidate.png", "titan_ground_v2.png")
+    prepare_fitted_grid("npc_ayla_v3_candidate.png",
+                        "npc_commander_ayla_sheet.png", 4, 4)
+    prepare_fitted_grid("npc_ayyub_v3_candidate.png",
+                        "npc_colony_officer_sheet_v2.png", 4, 4)
+    prepare_fitted_grid("npc_lira_v3_candidate.png",
+                        "npc_researcher_lira_sheet_v2.png", 4, 4)
+    prepare_fitted_grid("lunar_repair_stations_v3_candidate.png",
+                        "lunar_repair_stations_v2.png", 4, 4)
+    prepare_fitted_grid("mars_station_v3_candidate.png",
+                        "mars_station_sheet_v2.png", 4, 3)
+    prepare_fitted_grid("titan_refinery_v3_candidate.png",
+                        "titan_refinery_sheet_v2.png", 4, 1)
+    prepare_fitted_grid("titan_hunter_v4_candidate.png",
+                        "titan_hunter_sheet_v3.png", 4, 4)
+    prepare_fitted_grid("titan_boss_v4_candidate.png",
+                        "titan_boss_sheet_v3.png", 4, 4)
+    prepare_fitted_grid("titan_formations_v3_candidate.png",
+                        "titan_formations_v2.png", 3, 2)
+    prepare_fitted_grid("titan_portal_v3_candidate.png",
+                        "titan_portal_vertical_v2.png", 4, 2)
+
 def main() -> None:
     prepare_character_sheet("astronaut_movement_candidate.png", "astronauta_sheet.png",
                             4, 4, (1252, 1252))
@@ -1011,10 +1099,13 @@ def main() -> None:
                  "checker-global", clean_islands=True, output_size=(1024, 512),
                  clean_edge_fragments=True, normalize_cell_scale=True,
                  edge_guard_ratio=0.06)
+    prepare_latest_character_and_world_assets()
+    prepare_key_art("world_intro_lunar_candidate.png", "world_intro_lunar_v1.png")
+    prepare_key_art("world_intro_mars_candidate.png", "world_intro_mars_v1.png")
+    prepare_key_art("world_intro_titan_candidate.png", "world_intro_titan_v1.png")
     extract_common_assets()
     make_tileable("lunar_ground_realistic_candidate.png", "lunar_ground.png")
     make_tileable("mars_ground_realistic_candidate.png", "mars_ground.png")
-    make_tileable("titan_ground_candidate.png", "titan_ground.png")
     generate_ui_kit()
     validate_all()
 
@@ -1022,8 +1113,16 @@ def main() -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--validate-only", action="store_true")
+    parser.add_argument("--inspect-source", nargs=3, metavar=("FILE", "COLS", "ROWS"))
+    parser.add_argument("--latest-batch", action="store_true")
     args = parser.parse_args()
-    if args.validate_only:
+    if args.inspect_source:
+        validate_source_cell_clearance(args.inspect_source[0],
+                                       int(args.inspect_source[1]),
+                                       int(args.inspect_source[2]))
+    elif args.latest_batch:
+        prepare_latest_character_and_world_assets()
+    elif args.validate_only:
         validate_all()
     else:
         main()

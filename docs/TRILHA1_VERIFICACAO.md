@@ -1,12 +1,12 @@
-# Trilha 1 — registro de verificação, 8 de setembro de 2026
+# Trilha 1 — registro de verificação, 9 de setembro de 2026
 
 Este registro não substitui o checklist de aceite do documento do usuário.
 Não houve commit: o documento exige a travessia e os ensaios antes dele.
 
 ## Verificado nesta rodada
 
-- Compilação Java de core e launcher com dependências locais.
-- 57 testes JUnit passando, incluindo CampaignTransferTest: recursos parciais,
+- Compilação Gradle de core e launcher com dependências locais.
+- 113 testes JUnit passando, incluindo CampaignTransferTest: recursos parciais,
   tempo, fase, posição e flags de diálogo sobrevivem à serialização da campanha.
 - Menu com nova arte lunar, conferido em janela 1280×720.
 - Configurações: controles de áudio sem o botão comprimido usado como puxador.
@@ -17,7 +17,153 @@ Não houve commit: o documento exige a travessia e os ensaios antes dele.
 - Pausa lunar após o diálogo sem crash.
 - Tela de derrota exibindo oxigênio final 0%, corrigindo o relatório antigo.
 - Atlas de jogo em página única, frames separados e filtro Linear.
+- QA rigoroso dos assets com Pillow e NumPy, sem violações de alpha ou grade.
+- Novos suprimentos de oxigênio, comida e gelo com alpha real, silhuetas
+  distintas, cópia de atlas limitada a 128 px e desenho sem deformação.
+- Lira dedicada (16 quadros), três estações marcianas (12 quadros) e refinaria
+  de Titã (4 quadros) substituindo os fallbacks reaproveitados.
+- Key arts dedicadas 1280×720 para as entradas de Lua, Marte e Titã,
+  substituindo ampliações do terreno nas transições de campanha.
+- Portal de Titã separado do portal da campanha, com oito estados próprios,
+  bloqueio avermelhado e sem inversão brusca no meio da transição.
+- NPCs nomeados Ayla, Ayyub e Lira, com nascimento variável entre pontos
+  seguros e estável dentro da mesma campanha.
+- Corrida com trava de exaustão: manter Shift com energia vazia não alterna
+  mais os estados WALK/RUN; a caminhada recupera energia mais rapidamente.
+- Titã refeito com piso, seis formações, caçador, refinaria, portal e chefe da
+  mesma família visual; fase final com quatro caçadores e chefe mais agressivo.
+- Aberturas de mundo recompostas em painel alto, texto com quebra controlada,
+  entrada escalonada e key art sem escurecimento destrutivo.
+- IntelliJ reindexado: os 98 falsos erros de símbolos em `MenuScreen` sumiram;
+  a classe ficou apenas com avisos e sugestões.
 - `git diff --check` sem erros.
+
+## Rodada de correções de controle, mixagem e desempenho
+
+Quatro defeitos reais encontrados por auditoria do código em uso, todos
+corrigidos e cobertos por teste. A suíte passou de 77 para 95 testes.
+
+- **Rifle atravessado nas costas.** A orientação do corpo era escrita por duas
+  fontes: `move()` decidia pelo eixo do movimento e a arma girava pela mira.
+  Andando para a direita e mirando à esquerda o traje ficava com o rifle
+  cruzado. Agora a mira é a fonte de verdade enquanto a arma está equipada, e o
+  movimento só decide quando ela não está. `WeaponGeometry.resolveFacingLeft`
+  tem zona morta perto da vertical: varrer o cursor por cima do personagem
+  troca o lado uma vez, não a cada grau.
+- **Origem do tiro fora do cano.** O sprite da arma era desenhado na altura
+  `.44` do traje e o projétil nascia em `.48`, com avanço de 34 px na Lua,
+  33 px em Marte e 30 px em Titã. Desenho, mira, traço e muzzle flash agora
+  leem `WeaponGeometry.muzzle`, com distância constante em qualquer ângulo.
+- **Drone marciano passando pela quina da rocha.** A caixa de colisão com o
+  cenário era derivada do sprite, incluindo a flutuação senoidal do drone e o
+  tremor de 25 Hz do telegraph: passar ou não pela quina dependia da fase da
+  senoide. A pegada de colisão ficou estável e ancorada no chão; a caixa de
+  dano continua acompanhando o voo — que é visível —, mas não o tremor.
+- **Tela cheia e ambiente sem efeito.** `AppSettings.fullscreen` era gravada e
+  nunca lida por ninguém, e o barramento de ambiente recebia o volume dos
+  efeitos (`ambientVolume = settings.getSfxVolume()`), então passos e vento
+  subiam junto com o rifle. Ambos ganharam controle próprio em Configurações;
+  a tela cheia é aplicada em `EchoesLua.aplicarModoDeTela`, respeitando a flag
+  `echoes.windowed` usada no QA.
+- **Alocação por quadro nos três HUDs.** Sete `String.format`/concatenações por
+  quadro na Lua, cinco em Marte e duas compostas em Titã, mais um `new Color`
+  por painel. Trocados por `ui.HudLabel`, que só remonta o texto quando o
+  inteiro muda, e por uma `Color` reaproveitada.
+
+Testes adicionados: `WeaponGeometryTest` (8), `HudLabelTest` (6) e três novos
+casos de orçamento vertical em `SettingsLayoutTest`, que agora guarda a altura
+das colunas — a conta de largura já era guardada, a de altura não, e cada
+controle novo empurrava a coluna para o rodapé sem ninguém reclamar.
+
+## Segunda rodada: fase final, acessibilidade e pipeline
+
+- **Titã não tinha game feel nenhum.** Era a única fase sem `JuiceSystem` e
+  sem `CameraDirector`: a câmera grudava na posição do jogador com um clamp
+  cru, sem suavização nem lookahead, não havia hit-stop nem tremor, e a opção
+  "Tremor de câmera" das configurações não tinha efeito ali — justamente na
+  fase do chefe. Agora Titã usa os mesmos dois sistemas das outras fases,
+  com zoom de combate que abre antes para o chefe caber na tela, vinheta de
+  dano e partículas de impacto e abate que também faltavam.
+- **Presets próprios do chefe.** `BOSS_SLAM` e `BOSS_DEATH` cumprem a
+  hierarquia pedida no documento — "chefe: muito forte", "vitória final:
+  máxima" — acima do golpe comum e abaixo do teto de tremor.
+- **Redução de movimento não existia.** O documento pede a opção junto do
+  tremor de câmera; não havia nada. Foi implementada de ponta a ponta:
+  preferência persistida, controle em Configurações, e efeito real em
+  `JuiceSystem` (sem empurrão de zoom, sem câmera lenta), `CameraDirector`
+  (sem lookahead, sem zoom contextual) e nas entradas de painel da pausa e
+  das telas de resultado. O hit-stop e a vinheta de dano ficam de propósito:
+  seguram o quadro e piscam, mas não deslocam a imagem — tirá-los junto
+  trocaria acessibilidade por perda de informação.
+- **Passada da Lua ignorava a corrida.** A poeira já lia `isSprinting` e o som
+  não: correndo, o traje levantava poeira a cada 105 ms e pisava a cada
+  480 ms. Passo e partícula passaram a ler o mesmo estado.
+- **QA de assets estava pulando em silêncio.** `validateVisualAssets` procura
+  um Python com Pillow e NumPy e, não achando, apenas avisa e segue. Nesta
+  máquina o NumPy não estava instalado, então a verificação que o documento
+  exige nunca rodava. Com o NumPy instalado, a QA roda por padrão e passou em
+  modo estrito (`-PstrictAssetQa=true`); os três atlas foram reempacotados.
+- **Cópia aninhada removida.** `EchoesLua/` — 123 MB e 230 arquivos
+  versionados — saiu do índice e do disco. Nada no `settings.gradle` ou no
+  código a referenciava; os únicos dois arquivos exclusivos eram
+  `assets/atlases/game2.png`, página do atlas antigo de duas páginas, e um
+  `gradle-daemon-jvm.properties` gerado.
+- **Alocação por quadro fora do gameplay.** `PauseOverlay`, `DialogBox` e
+  `MissionResultScreen` pediam um `Color` novo por rótulo desenhado.
+
+Um NPE foi introduzido e corrigido dentro desta rodada: em `LunarScreen` a
+chamada de `pauseOverlay.setReduceMotion` ficou antes da criação do overlay,
+o que derrubaria a fase lunar ao carregar.
+
+Testes: 107 (eram 77 no início da trilha). `JuiceSystemTest` cobre a
+hierarquia de impacto, o teto de tremor, o respeito às duas opções de
+acessibilidade e o decaimento até o repouso.
+
+## Terceira rodada: auditoria medida dos assets
+
+O QA automatizado só passou a rodar nesta máquina depois de instalar o NumPy,
+então as folhas nunca tinham sido medidas aqui. `tools/audit_spritesheets.py`
+corta cada folha pela grade que o `AssetManager` usa em runtime e mede célula
+vazia, alpha real, conteúdo encostado na borda, oscilação de baseline e
+variação de escala dentro da linha.
+
+**Resultado das regras duras do §12: todas passam.** Nenhum quadro cortado,
+nenhuma célula vazia, nenhum conteúdo encostando na borda, nenhuma folha sem
+alpha. As margens vão de 12% a 33%. O pipeline anterior funcionou.
+
+O que sobrou foi deriva de baseline, e a primeira medição estava errada: usar
+a caixa cheia fazia vapor e brilho — que têm alpha baixo — contarem como corpo
+da máquina. Medindo só pixels opacos (alpha > 200), o quadro mudou:
+
+| Folha | Antes | Depois | Motivo |
+|---|---|---|---|
+| Refinaria de Titã, linha 0 | 28 px | 0 px | §19 exige geometria externa idêntica |
+| Estações de Marte, linha 2 | 23 px | 0 px | §18; linhas 0 e 1 já estavam em 0–2 px |
+| Estações lunares, linhas 1–3 | 7–13 px | 0 px | §17: corpo, base e escala idênticos na linha |
+| Caçador de Titã, linha 3 | 37 px | 0 px | a linha serve também para reação a dano |
+| Chefe de Titã, linha 1 | 10 px | 0 px | ciclo de caminhada derivando, não bob |
+
+O caçador merece nota: o código escolhe a linha 3 tanto para a queda quanto
+para a reação a dano, e o quadro 0 estava 37 px acima do chão — levar um tiro
+fazia a criatura saltar, o oposto do "não pode flutuar" do §21. O chefe subia
+10 px de forma monotônica ao longo dos quatro quadros da caminhada e voltava
+de uma vez ao reiniciar o laço: não era o sobe-e-desce de um passo.
+
+**O que foi deixado de propósito.** A linha 2 do chefe (27 px) e a linha 2 do
+caçador (18 px) são telegraph: a criatura se ergue antes do golpe, e isso é
+animação, não defeito. Folhas de formações, landmarks e obstáculos têm um
+objeto diferente por célula, e as folhas de VFX crescem por natureza — medir
+deriva nelas não significa nada. O astronauta já estava correto: 0 a 2 px em
+todas as linhas, nas duas folhas.
+
+A correção é `tools/anchor_machine_rows.py`, deliberadamente conservadora:
+apenas translação vertical, nunca reescala, alvo na mediana da linha medida em
+pixels opacos, e aborta se algum deslocamento fosse encostar na borda da
+célula em vez de estragar a folha. As folhas originais ficaram preservadas em
+`tools/source_assets/*_pre_anchor.png`.
+
+`MachineSheetBaselineTest` lê os PNGs com ImageIO e trava as sete linhas
+corrigidas mais as do astronauta. Os três atlas foram reempacotados.
 
 ## Implementado, mas ainda exige verificação visual completa
 
@@ -31,10 +177,7 @@ Não houve commit: o documento exige a travessia e os ensaios antes dele.
 
 ## Pendências do documento original
 
-- Remoção da cópia aninhada: tentativa anterior bloqueada pela revisão de
-  segurança; nenhuma exclusão dessa pasta foi feita nesta rodada.
 - Inventário e limpeza final dos assets órfãos, distinguindo fontes de produção.
-- Diferenciação do segundo portal com a arte vertical solicitada.
 - Todas as hitboxes e animações nos três mundos, em janela com debug ligado.
 - Validação de continuidade de carregamento/abertura em dez inicializações.
 - Vitória, opções e pausa em fullscreen e na sequência completa de retornos.
@@ -43,6 +186,8 @@ Não houve commit: o documento exige a travessia e os ensaios antes dele.
 
 ## Ambiente
 
-O Gradle apresentou `Unable to establish loopback connection` nesta máquina.
-Compilação e JUnit foram executados diretamente com as dependências já presentes
-no cache local. Saves de teste usam `build/test-home`, separados do save do jogador.
+O erro `Unable to establish loopback connection` vinha do caminho curto de TEMP
+usado pelos sockets Unix do JDK no Windows. `tools/gradle-local.ps1` define um
+diretório canônico dentro de `build/socket-tmp` para o wrapper e para o daemon;
+Gradle, TexturePacker, compilação e JUnit voltaram a funcionar normalmente.
+Saves de teste usam `build/test-home`, separados do save do jogador.

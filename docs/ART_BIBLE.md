@@ -107,6 +107,57 @@ dos módulos lunares sem cair em fonte monoespaçada de “terminal genérico”
 arquivos vieram do catálogo Google Fonts e são distribuídos sob SIL Open Font
 License 1.1, preservada em `assets/fonts/OFL-ChakraPetch.txt`.
 
+## Suprimentos de campo
+
+Oxigênio, comida e gelo foram redesenhados como objetos completos, sem texto e
+com alpha verdadeiro. Os três compartilham luz superior esquerda e acabamento
+pictórico realista, mas não a mesma silhueta: `oxigenio.png` é um cartucho baixo
+de cerâmica com gaiola e manômetro azul; `comida.png` é uma bolsa rígida larga
+com cinta têxtil ocre; `gelo.png` é um conjunto baixo de três massas fraturadas
+com base mineral escura. Essa diferença permite reconhecer o recurso pela forma
+mesmo sem cor.
+
+As fontes mestras foram geradas em 1254×1254 com margem transparente. O pipeline
+recorta apenas o alpha útil, preserva quatro pixels de respiro e reduz a cópia de
+atlas para no máximo 128 px. O jogo encaixa cada imagem sem deformar e calcula a
+área de coleta a partir do mesmo retângulo visual. Não adicionar sombra projetada,
+halo ou partículas diretamente nesses PNGs; esses sinais pertencem ao VFX de
+coleta e devem continuar animados em tempo real.
+
+## Identidade dos novos props e NPC de campanha
+
+- **Ayla / Lua:** traje de comando em marfim e grafite, luzes ciano e mochila
+  de rádio; postura direta e gestos de briefing.
+- **Ayyub / Marte:** engenheiro de campo de cabelo cacheado, traje oxidado e
+  cachecol contra poeira. O nome exibido é sempre Ayyub.
+- **Lira / Titã:** traje científico estreito em creme e grafite, visor âmbar e
+  instrumentos de amostragem. As 16 poses se dividem entre respiração, fala,
+  explicação científica e inspeção do visor; não reutiliza mais o Oficial de
+  Marte.
+- **Estações / Marte:** solar, oxigênio e comunicação têm silhuetas físicas
+  próprias. Cada uma possui quatro estados — desligada, inicialização e dois
+  quadros online — e usa ferrugem estrutural como material, não como filtro
+  aplicado sobre a imagem inteira.
+- **Refinaria / Titã:** máquina humana blindada para frio, com coletor de gelo,
+  mangueiras reforçadas e câmara âmbar. Seus quatro quadros comunicam standby,
+  boot e duas fases de processamento sem alterar o volume externo da máquina.
+
+As fontes de alta resolução ficam em `tools/source_assets` e as folhas finais
+em `assets/textures`. `prepare_fitted_grid` recorta e encaixa cada sujeito em
+uma célula 313×313 separadamente; isso impede que uma folha larga seja
+esticada para caber no contrato do atlas.
+
+Todo sujeito ocupa no máximo cerca de 62% da célula final. A QA rejeita alpha
+na faixa externa; braços, antenas, pernas, fumaça e efeitos não podem depender
+da célula vizinha. Os NPCs usam a mesma altura de base e a mesma câmera entre
+os três mundos, mudando materiais e função, não o estilo de renderização.
+
+As transições de mundo usam três composições 16:9 próprias: silêncio técnico e
+antena rompida na Lua, colônia parcialmente engolida por poeira em Marte e
+refinaria sob névoa de metano em Titã. Todas deixam a metade esquerda escura e
+sem assunto principal para a tipografia do jogo; nenhuma contém personagem,
+texto ou interface gravados na imagem.
+
 ## Trilha e desenho de som
 
 O som segue a mesma lógica funcional da paleta: cada camada tem um papel e não
