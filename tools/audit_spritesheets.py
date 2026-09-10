@@ -4,7 +4,8 @@
 Percorre cada folha de producao, corta pela grade que o AssetManager usa em
 runtime e mede o que so aparece na tela: celula vazia, folha sem alpha real,
 conteudo encostado na borda (residuo da celula vizinha ou quadro cortado),
-oscilacao de baseline e variacao de escala dentro da mesma linha.
+oscilacao de baseline e variacao de escala dentro da mesma linha, e
+conteudo mais perto da borda que o inset aplicado em runtime.
 
 Nem toda oscilacao e defeito. Numa folha de formacoes ou de landmarks cada
 celula e um objeto diferente e a variacao e esperada; numa folha de maquina
@@ -87,6 +88,15 @@ def audit(path, cols, rows, inset):
             if right >= cw - 1 - EDGE_BAND: touch.append("direita")
             if touch:
                 problems.append("BORDA c%d,l%d encosta em: %s" % (c, r, ", ".join(touch)))
+
+            # O runtime recorta `inset` px de cada borda antes de entregar a
+            # regiao. Conteudo mais perto da borda que isso sai cortado em
+            # jogo, e o corte nao aparece olhando a folha.
+            slack = min(top, ch - 1 - bottom, left, cw - 1 - right)
+            if inset and slack < inset:
+                problems.append(
+                    "INSET c%d,l%d: conteudo a %dpx da borda, inset recorta %dpx"
+                    % (c, r, slack, inset))
             baselines.append((r, c, bottom))
             heights.append((r, c, bottom - top + 1))
             widths.append((r, c, right - left + 1))

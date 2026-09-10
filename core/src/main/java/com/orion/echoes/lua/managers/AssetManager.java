@@ -43,7 +43,6 @@ public final class AssetManager implements Disposable {
     private final java.util.IdentityHashMap<TextureRegion,
         com.badlogic.gdx.utils.Array<TextureAtlas.AtlasRegion>> frameGroups =
         new java.util.IdentityHashMap<>();
-    private TextureRegion npcAyla;
     private TextureRegion titanVerticalPortal;
     /** Folha de cada identidade de NPC, resolvida com fallback em bindLoadedAssets(). */
     private final Map<Npc.Visual, TextureRegion> npcVisualSheets = new EnumMap<>(Npc.Visual.class);
@@ -162,7 +161,6 @@ public final class AssetManager implements Disposable {
         repairStationsSheetTexture = required(gameAtlas, "lunar_repair_stations_v2");
         titanFormationsTexture = required(gameAtlas, "titan_formations_v2");
         npcCommanderSheetTexture = required(gameAtlas, "npc_colony_officer_sheet_v2");
-        npcAyla = required(gameAtlas, "npc_commander_ayla_sheet");
         titanVerticalPortal = required(gameAtlas, "titan_portal_vertical_v2");
         lunarObstaclesTexture = required(gameAtlas, "lunar_obstacles");
         marsObstaclesTexture = required(gameAtlas, "mars_obstacles");
@@ -288,9 +286,6 @@ public final class AssetManager implements Disposable {
         return gridRegion(npcCommanderSheetTexture, 4, 4, column, row, 2);
     }
 
-    public TextureRegion npcAylaFrame(int column, int row) {
-        return gridRegion(npcAyla, 4, 4, column, row, 0);
-    }
 
     /** Resolve o quadro de um NPC pela identidade tipada, com fallback já embutido. */
     public TextureRegion npcVisualFrame(Npc.Visual visual, int column, int row) {

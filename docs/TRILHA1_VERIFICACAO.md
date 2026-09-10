@@ -250,6 +250,44 @@ e o valor escrito ao lado da barra — sem ele a leitura dependeria só da cor.
 
 Testes: 122.
 
+## Sexta rodada: inventário gerado
+
+`docs/INVENTARIO_ASSETS.md` passou a existir, gerado por
+`tools/generate_asset_inventory.py` em vez de escrito à mão. Um inventário
+escrito envelhece na primeira renomeação e passa a afirmar coisas que o código
+não faz mais — e o próprio documento avisa para não usar documentação como
+substituto de implementação.
+
+As três fontes são lidas de verdade: o `AssetManager`, para saber de qual
+atlas cada textura sai e qual método entrega os quadros; o PNG em disco, para
+medir grade, célula, quadros e margem; e o resto de `core/src/main`, para
+descobrir quem chama cada método. A regra do documento é que nome de arquivo
+não decide uso — a busca por referência decide.
+
+**Achado: dois acessores sem chamador.** `npcAylaFrame` era código morto — a
+folha da Ayla era carregada duas vezes, uma pelo campo dedicado e outra pelo
+enum `Visual.AYLA`, que veio depois no refactor. Campo, carregamento e acessor
+foram removidos. `resourceIcon` continua sem chamador: o HUD mostra o
+inventário como texto, não como ícone. Não removi — o documento é explícito
+sobre não apagar asset só por parecer órfão —, e agora ele aparece listado.
+
+**Correção de um número que eu havia relatado melhor do que é.** A rodada
+anterior falou em "margens de 12% a 33%": era a folga medida no nível da
+folha. A folga da célula mais apertada é bem menor — de 3,5% a 16%, ou 11 a
+49 px. Isso não é quadro cortado: nenhuma célula encosta na borda em folha
+nenhuma, e isso continua verificado. É a folga real ficando abaixo da meta de
+18% do contrato de sprites na célula mais cheia. Fechar a diferença não é
+reescala mecânica: encolher o conteúdo dentro da célula encolheria o sprite em
+jogo, porque o tamanho de desenho é o tamanho da célula, e desalinharia as
+hitboxes derivadas dele. É trabalho de refazer a fonte com mais respiro.
+
+**Um risco checado e descartado.** Os acessores aplicam `inset` de 2 a 3 px,
+que recorta a borda da célula antes de entregar a região. Se a margem em
+pixels fosse menor que o inset, o jogo desenharia o sprite cortado e o corte
+não apareceria olhando a folha. Medido: nenhuma folha tem esse problema, e a
+mais apertada é o portal da campanha, com 8 px de sobra. A checagem entrou em
+`audit_spritesheets.py` para não voltar em silêncio.
+
 ## Implementado, mas ainda exige verificação visual completa
 
 - Conversa da pesquisadora em Titã, HUD de missão e áudio dessa fase.
@@ -262,7 +300,6 @@ Testes: 122.
 
 ## Pendências do documento original
 
-- Inventário e limpeza final dos assets órfãos, distinguindo fontes de produção.
 - Todas as hitboxes e animações nos três mundos, em janela com debug ligado.
 - Validação de continuidade de carregamento/abertura em dez inicializações.
 - Vitória e pausa em fullscreen e na sequência completa de retornos.
