@@ -48,6 +48,73 @@ class SettingsLayoutTest {
             "folga de apenas " + columnSlack + "px entre as colunas e a borda");
     }
 
+    /** Altura util das colunas, ja descontados titulo, rodape e recuos. */
+    private static float usableColumnHeight() {
+        return GameConfig.SETTINGS_PANEL_HEIGHT
+            - GameConfig.SETTINGS_PANEL_PADDING * 2f
+            - GameConfig.SETTINGS_TITLE_BLOCK
+            - GameConfig.SETTINGS_FOOTER_BLOCK;
+    }
+
+    private static float sliderRow() {
+        return GameConfig.SETTINGS_SLIDER_HEIGHT + GameConfig.SETTINGS_ROW_GAP;
+    }
+
+    private static float toggleRow() {
+        return GameConfig.SETTINGS_TOGGLE_HEIGHT + GameConfig.SETTINGS_ROW_GAP;
+    }
+
+    /** Cabecalho de secao; o primeiro da coluna nao paga o respiro de cima. */
+    private static float sectionRow(boolean first) {
+        return GameConfig.SETTINGS_SECTION_HEIGHT
+            + (first ? 0f : GameConfig.SETTINGS_SECTION_SPACING);
+    }
+
+    /**
+     * Coluna de audio: musica, efeitos, interface e ambiente.
+     *
+     * O barramento de ambiente era o unico sem controle proprio - herdava o
+     * volume dos efeitos -, e passos e vento subiam junto com o rifle.
+     */
+    @Test
+    @DisplayName("A coluna de áudio cabe na altura do painel")
+    void audioColumnFitsInsideThePanel() {
+        float needed = sectionRow(true) + sliderRow() * 4f;
+        assertTrue(needed <= usableColumnHeight(),
+            "a coluna de áudio ocupa " + needed + "px numa altura útil de "
+                + usableColumnHeight() + "px");
+    }
+
+    /**
+     * Coluna da direita: video, interface, acessibilidade e controles.
+     *
+     * A opcao de tela cheia ja existia em AppSettings e era gravada, mas nao
+     * tinha controle nenhum na tela nem era aplicada.
+     */
+    @Test
+    @DisplayName("A coluna de vídeo e acessibilidade cabe na altura do painel")
+    void systemColumnFitsInsideThePanel() {
+        float needed = sectionRow(true) + toggleRow()
+            + sectionRow(false) + sliderRow()
+            + sectionRow(false) + toggleRow() * 3f
+            + sectionRow(false) + toggleRow();
+        assertTrue(needed <= usableColumnHeight(),
+            "a coluna da direita ocupa " + needed + "px numa altura útil de "
+                + usableColumnHeight() + "px");
+    }
+
+    @Test
+    @DisplayName("Sobra altura para mais um controle sem refazer o painel")
+    void columnsKeepVerticalHeadroom() {
+        float tallest = sectionRow(true) + toggleRow()
+            + sectionRow(false) + sliderRow()
+            + sectionRow(false) + toggleRow() * 3f
+            + sectionRow(false) + toggleRow();
+        assertTrue(usableColumnHeight() - tallest >= toggleRow(),
+            "a coluna mais alta deixa só " + (usableColumnHeight() - tallest)
+                + "px de folga");
+    }
+
     @Test
     @DisplayName("O painel cabe na janela do jogo")
     void panelFitsInsideTheWindow() {

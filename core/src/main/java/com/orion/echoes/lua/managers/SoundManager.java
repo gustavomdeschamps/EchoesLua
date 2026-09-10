@@ -82,7 +82,9 @@ public class SoundManager implements Disposable {
     public void applySettings(AppSettings settings) {
         sfxVolume = settings.getSfxVolume();
         uiVolume = settings.getUiVolume();
-        ambientVolume = settings.getSfxVolume();
+        // Ambiente tem barramento proprio: passos, vento e maquinario nao podem
+        // subir junto com o disparo so porque o jogador quer ouvir o rifle.
+        ambientVolume = settings.getAmbientVolume();
         music.setBusVolume(settings.getMusicVolume());
     }
 
@@ -160,25 +162,66 @@ public class SoundManager implements Disposable {
         tocar(name, bus, gain, pitch, pan);
     }
 
+    /*
+     * Tabela de mixagem.
+     *
+     * Os ganhos estavam espalhados como literais em cada metodo, cada um
+     * escolhido isolado, e a escala tinha saido invertida. Medindo a
+     * sonoridade de curto prazo (janela de 300ms, que e o que o ouvido julga
+     * num som de disparo unico) vezes o ganho, o hover do menu chegava a
+     * 0.190 contra 0.149 do rugido do chefe final, e o blip de pausa batia
+     * 0.390 contra 0.373 do alarme de oxigenio: a interface abafava o
+     * suporte de vida e o chefe.
+     *
+     * A ordem agora segue a hierarquia do documento -- alarme de suporte de
+     * vida no topo, portal e chefe logo abaixo, fabricacao e coleta no meio,
+     * passos ao fundo e interface subordinada a tudo. Os passos usam o mesmo
+     * alvo nos tres mundos: era o mesmo evento soando 2.7x diferente entre a
+     * Lua e Marte.
+     *
+     * Alguns ficam no teto de 1.0 porque o material e esparso demais para
+     * chegar ao alvo; foram elevados no arquivo ate o mesmo pico dos outros
+     * por tools/repair_audio.py, e o que sobra e limite da gravacao.
+     */
+    private static final float GAIN_ALERTA_OXIGENIO = .90f;
+    private static final float GAIN_BOSS = 1f;
+    private static final float GAIN_PORTAL = 1f;
+    private static final float GAIN_MENU_INICIAR = .57f;
+    private static final float GAIN_PROCESSAR_GELO = .54f;
+    private static final float GAIN_SEM_GELO = .44f;
+    private static final float GAIN_COLETA_OXIGENIO = .47f;
+    private static final float GAIN_COLETA_COMIDA = .47f;
+    private static final float GAIN_COLETA_GELO = .50f;
+    private static final float GAIN_COLETA = .49f;
+    private static final float GAIN_DISPARO = 1f;
+    private static final float GAIN_IMPACTO = 1f;
+    private static final float GAIN_PAUSE = .30f;
+    private static final float GAIN_COLISAO_ROCHA = .46f;
+    private static final float GAIN_DIALOGO = 1f;
+    private static final float GAIN_HOVER_UI = .13f;
+    private static final float GAIN_PASSO_LUNAR = .16f;
+    private static final float GAIN_PASSO_MARTE = .47f;
+    private static final float GAIN_PASSO_TITA = .33f;
+
     // =========================================
     // COLETAS
     // =========================================
 
-    public void tocarColeta() { tocarVariado("coleta", Bus.SFX, .65f); }
-    public void tocarOxigenio() { tocarVariado("coleta_oxigenio", Bus.SFX, .85f); }
-    public void tocarComida() { tocarVariado("coleta_comida", Bus.SFX, .75f); }
-    public void tocarGelo() { tocarVariado("coleta_gelo", Bus.SFX, .85f); }
+    public void tocarColeta() { tocarVariado("coleta", Bus.SFX, GAIN_COLETA); }
+    public void tocarOxigenio() { tocarVariado("coleta_oxigenio", Bus.SFX, GAIN_COLETA_OXIGENIO); }
+    public void tocarComida() { tocarVariado("coleta_comida", Bus.SFX, GAIN_COLETA_COMIDA); }
+    public void tocarGelo() { tocarVariado("coleta_gelo", Bus.SFX, GAIN_COLETA_GELO); }
 
     public void tocarColetaEspacial(float x, float y) {
-        tocarEspacial("coleta", Bus.SFX, .65f, x, y);
+        tocarEspacial("coleta", Bus.SFX, GAIN_COLETA, x, y);
     }
 
     // =========================================
     // BASE
     // =========================================
 
-    public void tocarProcessarGelo() { tocarVariado("processar_gelo", Bus.SFX, .9f); }
-    public void tocarSemGelo() { tocarVariado("sem_gelo", Bus.SFX, .75f); }
+    public void tocarProcessarGelo() { tocarVariado("processar_gelo", Bus.SFX, GAIN_PROCESSAR_GELO); }
+    public void tocarSemGelo() { tocarVariado("sem_gelo", Bus.SFX, GAIN_SEM_GELO); }
     public void tocarBaseRecarregando() { tocar("base_recarregando", Bus.AMBIENT, .55f); }
 
     /** Stinger de sistema reparado: mixa a frente abaixando a trilha. */
@@ -198,16 +241,16 @@ public class SoundManager implements Disposable {
 
     public void tocarAlertaOxigenio() {
         music.duck(GameConfig.MUSIC_DUCK_LIGHT, GameConfig.MUSIC_DUCK_TIME);
-        tocar("alerta_oxigenio", Bus.UI, .8f);
+        tocar("alerta_oxigenio", Bus.UI, GAIN_ALERTA_OXIGENIO);
     }
 
     // =========================================
     // TELAS
     // =========================================
 
-    public void tocarInicio() { tocar("menu_iniciar", Bus.UI, .8f); }
-    public void tocarPause() { tocar("pause", Bus.UI, .65f); }
-    public void tocarUnpause() { tocar("unpause", Bus.UI, .65f); }
+    public void tocarInicio() { tocar("menu_iniciar", Bus.UI, GAIN_MENU_INICIAR); }
+    public void tocarPause() { tocar("pause", Bus.UI, GAIN_PAUSE); }
+    public void tocarUnpause() { tocar("unpause", Bus.UI, GAIN_PAUSE); }
 
     public void tocarGameOver() {
         music.duck(GameConfig.MUSIC_DUCK_STRONG, 2.5f);
@@ -223,26 +266,26 @@ public class SoundManager implements Disposable {
     // MUNDO
     // =========================================
 
-    public void tocarPassoLunar() { tocarVariado("passo_lunar", Bus.AMBIENT, .22f); }
-    public void tocarPassoMarte() { tocarVariado("passo_marte", Bus.AMBIENT, .24f); }
-    public void tocarPassoTita() { tocarVariado("passo_tita", Bus.AMBIENT, .26f); }
-    public void tocarDialogo() { tocarVariado("dialogo", Bus.UI, .3f); }
-    public void tocarPortal() { tocar("portal_ativar", Bus.SFX, .65f); }
+    public void tocarPassoLunar() { tocarVariado("passo_lunar", Bus.AMBIENT, GAIN_PASSO_LUNAR); }
+    public void tocarPassoMarte() { tocarVariado("passo_marte", Bus.AMBIENT, GAIN_PASSO_MARTE); }
+    public void tocarPassoTita() { tocarVariado("passo_tita", Bus.AMBIENT, GAIN_PASSO_TITA); }
+    public void tocarDialogo() { tocarVariado("dialogo", Bus.UI, GAIN_DIALOGO); }
+    public void tocarPortal() { tocar("portal_ativar", Bus.SFX, GAIN_PORTAL); }
     public void tocarBoss(String evento, float x, float y) {
-        tocarEspacial("boss_" + evento, Bus.SFX, .7f, x, y);
+        tocarEspacial("boss_" + evento, Bus.SFX, GAIN_BOSS, x, y);
     }
 
-    public void tocarColisaoRocha() { tocarVariado("colisao_rocha", Bus.SFX, .35f); }
+    public void tocarColisaoRocha() { tocarVariado("colisao_rocha", Bus.SFX, GAIN_COLISAO_ROCHA); }
 
     public void tocarColisaoRocha(float x, float y) {
-        tocarEspacial("colisao_rocha", Bus.SFX, .45f, x, y);
+        tocarEspacial("colisao_rocha", Bus.SFX, GAIN_COLISAO_ROCHA, x, y);
     }
 
-    public void tocarDisparo() { tocarVariado("disparo_pulso", Bus.SFX, .72f); }
+    public void tocarDisparo() { tocarVariado("disparo_pulso", Bus.SFX, GAIN_DISPARO); }
 
     /** Impacto no inimigo: mesmo sample do disparo, mais curto e agudo. */
     public void tocarImpacto(float x, float y) {
-        tocarEspacial("impacto_hostil", Bus.SFX, .65f, x, y);
+        tocarEspacial("impacto_hostil", Bus.SFX, GAIN_IMPACTO, x, y);
     }
 
     public void tocarMorteInimigo(float x, float y) {
@@ -261,7 +304,7 @@ public class SoundManager implements Disposable {
     // UI
     // =========================================
 
-    public void tocarHoverUi() { tocar("hover_ui", Bus.UI, .35f); }
+    public void tocarHoverUi() { tocar("hover_ui", Bus.UI, GAIN_HOVER_UI); }
 
     // =========================================
     // MUSICA

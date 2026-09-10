@@ -16,6 +16,7 @@ import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.systems.MissionState;
+import com.orion.echoes.lua.ui.HudLabel;
 import com.orion.echoes.lua.ui.UiTheme;
 
 /** HUD compacto que libera o centro da tela e fica translucido quando o jogador passa por baixo. */
@@ -40,8 +41,25 @@ public final class Hud implements Disposable {
     private static final float TOAST_PADDING_Y = 16f;
     private static final float TOAST_Y = 104f;
 
-    /** Reaproveitada a cada sombra para nao alocar Color por frame. */
+    /** Reaproveitadas a cada painel para nao alocar Color por frame. */
     private final Color shadowColor = new Color();
+    private final Color panelColor = new Color();
+
+    /*
+     * Rotulos numericos do HUD.
+     *
+     * Eram sete String.format/concatenacoes por quadro - 420 strings por
+     * segundo a 60fps - para mostrar numeros que mudam poucas vezes por
+     * partida. O texto so e remontado quando o valor inteiro muda.
+     */
+    private final HudLabel oxygenLabel = new HudLabel("", "%");
+    private final HudLabel energyLabel = new HudLabel("", "%");
+    private final HudLabel ammoLabel = new HudLabel("", "");
+    private final HudLabel oxygenStock = new HudLabel("O2  ", "");
+    private final HudLabel foodStock = new HudLabel("COMIDA  ", "");
+    private final HudLabel iceStock = new HudLabel("GELO  ", "");
+    private final HudLabel questLabel =
+        new HudLabel("LUA · ", "/" + MissionState.QUEST_TOTAL_STEPS);
 
     private static final float SHADOW_SPREAD = 6f;
     private static final float SHADOW_OFFSET = 3f;
@@ -140,24 +158,26 @@ public final class Hud implements Disposable {
         batch.begin();
         centered(batch, mission.getObjective(player.getOxigenio()), .86f, UiTheme.TEXT, 640f,
             objectiveY + 44f, objectiveAlpha);
-        text(batch, String.format("LUA · %d/%d", mission.getQuestStep(player.getOxigenio()),
-                MissionState.QUEST_TOTAL_STEPS),
+        text(batch, questLabel.of(mission.getQuestStep(player.getOxigenio())),
             .62f, UiTheme.AMBER, 372f, objectiveY + 17f, objectiveAlpha);
         centered(batch, mission.getQuestTitle(player.getOxigenio()), .64f, UiTheme.TEXT_MUTED,
             660f, objectiveY + 17f, objectiveAlpha * .9f);
         text(batch, "O2", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 71f, vitalsAlpha);
-        text(batch, String.format("%.0f%%", player.getOxigenio()), .75f,
+        text(batch, oxygenLabel.of(Math.round(player.getOxigenio())), .75f,
             player.getOxigenio() <= 25f ? UiTheme.RED : UiTheme.TEXT, 216f, lowerY + 69f, vitalsAlpha);
         text(batch, "EN", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 49f, vitalsAlpha);
-        text(batch, String.format("%.0f%%", player.getEnergia()), .72f, UiTheme.TEXT, 216f,
+        text(batch, energyLabel.of(Math.round(player.getEnergia())), .72f, UiTheme.TEXT, 216f,
             lowerY + 47f, vitalsAlpha);
         boolean lowAmmo = player.getMunicao() <= GameConfig.AMMO_LOW;
         text(batch, "MUN", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 25f, vitalsAlpha);
-        text(batch, String.format("%d", player.getMunicao()), .78f,
+        text(batch, ammoLabel.of(player.getMunicao()), .78f,
             lowAmmo ? UiTheme.RED : UiTheme.GREEN, 216f, lowerY + 25f, vitalsAlpha);
-        text(batch, "O2  " + player.getOxigenioColetado(), .8f, UiTheme.CYAN, 958f, lowerY + 33f, inventoryAlpha);
-        text(batch, "COMIDA  " + player.getComidaColetada(), .8f, UiTheme.AMBER, 1035f, lowerY + 33f, inventoryAlpha);
-        text(batch, "GELO  " + player.getGeloColetado(), .8f, UiTheme.TEXT, 1163f, lowerY + 33f, inventoryAlpha);
+        text(batch, oxygenStock.of(player.getOxigenioColetado()), .8f, UiTheme.CYAN,
+            958f, lowerY + 33f, inventoryAlpha);
+        text(batch, foodStock.of(player.getComidaColetada()), .8f, UiTheme.AMBER,
+            1035f, lowerY + 33f, inventoryAlpha);
+        text(batch, iceStock.of(player.getGeloColetado()), .8f, UiTheme.TEXT,
+            1163f, lowerY + 33f, inventoryAlpha);
         if (toastVisible) {
             desenharToast(batch, message, toastAlpha);
         }
@@ -191,8 +211,9 @@ public final class Hud implements Disposable {
                        float alpha, Color accent) {
         sombra(batch, x, y, width, height, SHADOW_SPREAD, SHADOW_OFFSET, .16f * alpha);
         sombra(batch, x, y, width, height, SHADOW_SPREAD * .45f, SHADOW_OFFSET * .55f, .24f * alpha);
-        panelPatch.setColor(new Color(accent.r * .42f + .58f, accent.g * .42f + .58f,
-            accent.b * .42f + .58f, alpha));
+        panelColor.set(accent.r * .42f + .58f, accent.g * .42f + .58f,
+            accent.b * .42f + .58f, alpha);
+        panelPatch.setColor(panelColor);
         panelPatch.draw(batch, x, y, width, height);
         panelPatch.setColor(Color.WHITE);
     }

@@ -42,6 +42,7 @@ import com.orion.echoes.lua.systems.JuiceSystem;
 import com.orion.echoes.lua.systems.MissionState;
 import com.orion.echoes.lua.ui.UiTheme;
 import com.orion.echoes.lua.world.LunarWorld;
+import com.orion.echoes.lua.world.NpcSpawnSelector;
 
 /**
  * Fase lunar.
@@ -55,7 +56,15 @@ public class LunarScreen implements Screen {
 
     private static final float MAX_STEP = 1f / 30f;
     private static final float OXYGEN_CRITICAL = 25f;
+    /*
+     * Cadencia da passada.
+     *
+     * A poeira ja lia isSprinting e o som nao: correndo, o traje levantava
+     * poeira a cada 105ms e pisava a cada 480ms. Passo e particula tem de
+     * ler o mesmo estado, senao a corrida parece mais lenta do que e.
+     */
     private static final float FOOTSTEP_INTERVAL = .48f;
+    private static final float FOOTSTEP_INTERVAL_RUNNING = .30f;
     private static final float ENEMY_CONTACT_MESSAGE_TIME = 5f;
 
     private final EchoesLua game;
@@ -140,14 +149,18 @@ public class LunarScreen implements Screen {
 
         juice = new JuiceSystem();
         juice.setShakeEnabled(game.getSettings().isShakeEnabled());
+        juice.setReduceMotion(game.getSettings().isReduceMotion());
         cameraDirector = new CameraDirector(camera, viewport, juice,
             GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT);
 
         world = new LunarWorld(campaign.getSeed(), assets, physicsWorld);
         astronauta = world.getPlayer();
+        Vector2 aylaSpawn = NpcSpawnSelector.choose(campaign.getSeed(), "ayla", new float[][] {
+            {245f, 395f}, {540f, 330f}, {285f, 690f}, {665f, 610f}
+        });
         lunarConversation = new com.orion.echoes.lua.systems.NpcConversation(
-            new com.orion.echoes.lua.entities.Npc(astronauta.getPosition().x + 65f,
-                astronauta.getPosition().y + 10f, "COMANDANTE AYLA", com.badlogic.gdx.graphics.Color.WHITE,
+            new com.orion.echoes.lua.entities.Npc(aylaSpawn.x, aylaSpawn.y,
+                "Ayla", com.badlogic.gdx.graphics.Color.WHITE,
                 assets, com.orion.echoes.lua.entities.Npc.Visual.AYLA),
             new String[] {
                 "Esta colônia mantém o enlace entre a Terra e nossas expedições. Sem as antenas, ninguém ouve um pedido de resgate.",
@@ -165,6 +178,7 @@ public class LunarScreen implements Screen {
         worldRenderer = new WorldRenderer(batch, assets, camera);
         overlay = new MissionOverlay(batch, assets, camera, uiCamera);
         pauseOverlay = new PauseOverlay(batch, assets);
+        pauseOverlay.setReduceMotion(game.getSettings().isReduceMotion());
         hitboxDebug = new HitboxDebugRenderer(batch, assets);
     }
 
@@ -499,7 +513,9 @@ public class LunarScreen implements Screen {
             return;
         }
         tempoPasso += delta;
-        if (tempoPasso < FOOTSTEP_INTERVAL) return;
+        float intervalo = astronauta.isSprinting()
+            ? FOOTSTEP_INTERVAL_RUNNING : FOOTSTEP_INTERVAL;
+        if (tempoPasso < intervalo) return;
         tempoPasso = 0f;
         sounds.tocarPassoLunar();
     }

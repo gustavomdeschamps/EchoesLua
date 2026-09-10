@@ -1,11 +1,13 @@
 package com.orion.echoes.lua;
 
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.SoundManager;
 import com.orion.echoes.lua.config.AppSettings;
+import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.systems.CampaignState;
 import com.orion.echoes.lua.screens.LoadingScreen;
 
@@ -32,6 +34,7 @@ public class EchoesLua extends Game {
 
         settings = new AppSettings();
         campaign = new CampaignState();
+        aplicarModoDeTela();
 
         sounds =
             SoundManager.getInstance();
@@ -87,6 +90,25 @@ public class EchoesLua extends Game {
     /** Reaplica o mixer depois de qualquer mudanca na tela de opcoes. */
     public void aplicarPreferenciasDeAudio() {
         if (sounds != null) sounds.applySettings(settings);
+    }
+
+    /**
+     * Aplica a preferencia de tela cheia.
+     *
+     * A opcao existia em AppSettings e era gravada, mas nada a lia: o jogo
+     * abria sempre no modo do launcher e o botao nao mudava nada. Trocar de
+     * modo so quando o estado difere evita recriar o contexto a toa.
+     */
+    public void aplicarModoDeTela() {
+        if (settings == null || Gdx.graphics == null) return;
+        // QA abre em janela de proposito; a preferencia salva nao pode desfazer isso.
+        if (Boolean.getBoolean("echoes.windowed")) return;
+        if (Gdx.graphics.isFullscreen() == settings.isFullscreen()) return;
+        if (settings.isFullscreen()) {
+            Gdx.graphics.setFullscreenMode(Gdx.graphics.getDisplayMode());
+        } else {
+            Gdx.graphics.setWindowedMode(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
+        }
     }
 
     @Override

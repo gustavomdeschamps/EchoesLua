@@ -44,7 +44,9 @@ import com.orion.echoes.lua.systems.CampaignState;
 import com.orion.echoes.lua.systems.JuiceSystem;
 import com.orion.echoes.lua.systems.DialogueController;
 import com.orion.echoes.lua.systems.TitanCombatSystem;
+import com.orion.echoes.lua.ui.HudLabel;
 import com.orion.echoes.lua.ui.UiTheme;
+import com.orion.echoes.lua.world.NpcSpawnSelector;
 
 /** Segunda missão jogável: restaura a base marciana e alcança a plataforma. */
 public final class MarsScreen implements Screen {
@@ -121,6 +123,8 @@ public final class MarsScreen implements Screen {
         viewport = new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, camera);
         juice = new JuiceSystem();
         juice.setShakeEnabled(game.getSettings().isShakeEnabled());
+        juice.setReduceMotion(game.getSettings().isReduceMotion());
+        pauseOverlay.setReduceMotion(game.getSettings().isReduceMotion());
         cameraDirector = new CameraDirector(camera, viewport, juice, WORLD_W, WORLD_H);
         hitboxDebug = new HitboxDebugRenderer(batch, assets);
         uiCamera = new OrthographicCamera();
@@ -149,8 +153,11 @@ public final class MarsScreen implements Screen {
 
     private void buildColony() {
         habitat = prop(160f, 1020f, 330f, 275f, MarsObject.Kind.HABITAT);
-        // Alguem de carne e osso para conversar, em vez de uma voz no radio.
-        oficial = new Npc(548f, 1060f, "OFICIAL DA COLÔNIA",
+        // Ayyub muda de posto seguro a cada campanha, mas nunca nasce sobre rochas ou máquinas.
+        Vector2 ayyubSpawn = NpcSpawnSelector.choose(campaign.getSeed(), "ayyub", new float[][] {
+            {535f, 1080f}, {350f, 1320f}, {600f, 1260f}, {360f, 820f}
+        });
+        oficial = new Npc(ayyubSpawn.x, ayyubSpawn.y, "Ayyub",
             new Color(.72f, .86f, 1f, 1f), assets, Npc.Visual.MARS_OFFICER);
         stations.add(prop(700f, 1420f, 225f, 190f, MarsObject.Kind.SOLAR_STATION));
         stations.add(prop(1550f, 1330f, 225f, 190f, MarsObject.Kind.OXYGEN_STATION));
@@ -676,9 +683,19 @@ public final class MarsScreen implements Screen {
             object.getBounds().y + object.getBounds().height / 2f);
     }
 
+    /* HUD sem alocacao por quadro: o texto so muda quando o inteiro muda. */
+    private final Color panelColor = new Color();
+    private final HudLabel hudOxygen = new HudLabel("", "%");
+    private final HudLabel hudEnergy = new HudLabel("", "%");
+    private final HudLabel hudAmmo = new HudLabel("", "");
+    private final HudLabel hudMinerals = new HudLabel("NÚCLEOS  ", "");
+    private final HudLabel hudStations = new HudLabel("ESTAÇÕES  ", "/3");
+
     private void shoot() {
-        float x = player.getPosition().x + 27f;
-        float y = player.getPosition().y + GameConfig.PLAYER_HEIGHT * .48f;
+        // Mesma origem do rifle desenhado, igual às outras duas fases.
+        player.muzzle(shotStart);
+        float x = shotStart.x;
+        float y = shotStart.y;
         float dx = MathUtils.cosDeg(player.getAimAngle());
         float dy = MathUtils.sinDeg(player.getAimAngle());
         MarsEnemy target = null;
@@ -694,7 +711,6 @@ public final class MarsScreen implements Screen {
                 closest = along;
             }
         }
-        shotStart.set(x + dx * 33f, y + dy * 33f);
         shotEnd.set(x + dx * titanCombat.getAlcance(), y + dy * titanCombat.getAlcance());
         titanCombat.setMunicao(player.getMunicao());
         boolean fired = titanCombat.tentarTiro(shotStart, target, campaign.hasWeapon());
@@ -830,14 +846,14 @@ public final class MarsScreen implements Screen {
         }
         batch.setColor(Color.WHITE);
         text("O2", .72f, UiTheme.TEXT_MUTED, 50f, 88f, 1f);
-        text(String.format("%.0f%%", player.getOxigenio()), .7f, UiTheme.TEXT, 275f, 87f, 1f);
+        text(hudOxygen.of(Math.round(player.getOxigenio())), .7f, UiTheme.TEXT, 275f, 87f, 1f);
         text("EN", .72f, UiTheme.TEXT_MUTED, 50f, 61f, 1f);
-        text(String.format("%.0f%%", player.getEnergia()), .7f, UiTheme.TEXT, 275f, 60f, 1f);
+        text(hudEnergy.of(Math.round(player.getEnergia())), .7f, UiTheme.TEXT, 275f, 60f, 1f);
         text("MUN", .72f, UiTheme.TEXT_MUTED, 50f, 40f, 1f);
-        text(String.format("%d", player.getMunicao()), .7f,
+        text(hudAmmo.of(player.getMunicao()), .7f,
             player.getMunicao() <= GameConfig.AMMO_LOW ? UiTheme.RED : UiTheme.GREEN, 275f, 39f, 1f);
-        text("NÚCLEOS  " + minerals, .74f, UiTheme.AMBER, 944f, 84f, 1f);
-        text("ESTAÇÕES  " + activeStations + "/3", .74f, UiTheme.CYAN, 1050f, 84f, 1f);
+        text(hudMinerals.of(minerals), .74f, UiTheme.AMBER, 944f, 84f, 1f);
+        text(hudStations.of(activeStations), .74f, UiTheme.CYAN, 1050f, 84f, 1f);
         text("HOSTIS  " + hostilesDefeated + "/" + enemies.size, .72f, UiTheme.TEXT_MUTED, 944f, 55f, 1f);
         // Gelo fica ao lado dos hostis: e o insumo que vira municao no habitat.
         text("GELO  " + player.getGelo(), .72f,
@@ -899,8 +915,9 @@ public final class MarsScreen implements Screen {
     }
 
     private void drawUiPanel(float x, float y, float w, float h, Color accent, float alpha) {
-        panelPatch.setColor(new Color(accent.r * .38f + .62f, accent.g * .38f + .62f,
-            accent.b * .38f + .62f, alpha));
+        panelColor.set(accent.r * .38f + .62f, accent.g * .38f + .62f,
+            accent.b * .38f + .62f, alpha);
+        panelPatch.setColor(panelColor);
         panelPatch.draw(batch, x, y, w, h);
         panelPatch.setColor(Color.WHITE);
     }

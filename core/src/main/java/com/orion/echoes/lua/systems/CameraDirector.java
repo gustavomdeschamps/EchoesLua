@@ -26,13 +26,21 @@ public final class CameraDirector {
     }
 
     public void update(Vector2 target, Vector2 velocity, boolean combat, float delta) {
-        float wantedZoom = combat ? GameConfig.CAMERA_COMBAT_ZOOM
+        /*
+         * Com reducao de movimento a camera para de se mexer sozinha: sem
+         * lookahead e sem zoom contextual. Ela continua seguindo o jogador -
+         * o que some e o movimento que ninguem pediu.
+         */
+        boolean reduceMotion = juice.isReduceMotion();
+        float wantedZoom = combat && !reduceMotion ? GameConfig.CAMERA_COMBAT_ZOOM
             : GameConfig.CAMERA_EXPLORATION_ZOOM;
         float zoomResponse = 1f - (float) Math.exp(-GameConfig.CAMERA_ZOOM_RESPONSE * delta);
         camera.zoom = MathUtils.lerp(camera.zoom, wantedZoom - juice.getZoomPunch(), zoomResponse);
 
-        float targetX = target.x + velocity.x * GameConfig.PPM * GameConfig.CAMERA_LOOKAHEAD_X;
-        float targetY = target.y + velocity.y * GameConfig.PPM * GameConfig.CAMERA_LOOKAHEAD_Y;
+        float lookaheadX = reduceMotion ? 0f : GameConfig.CAMERA_LOOKAHEAD_X;
+        float lookaheadY = reduceMotion ? 0f : GameConfig.CAMERA_LOOKAHEAD_Y;
+        float targetX = target.x + velocity.x * GameConfig.PPM * lookaheadX;
+        float targetY = target.y + velocity.y * GameConfig.PPM * lookaheadY;
         float halfWidth = viewport.getWorldWidth() * camera.zoom / 2f;
         float halfHeight = viewport.getWorldHeight() * camera.zoom / 2f;
         targetX = MathUtils.clamp(targetX, halfWidth, worldWidth - halfWidth);

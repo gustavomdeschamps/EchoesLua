@@ -62,8 +62,7 @@ public final class PauseOverlay {
         elapsed += Math.min(com.badlogic.gdx.Gdx.graphics.getDeltaTime(), 1f / 30f);
 
         ui.beginShapes();
-        ui.rect(0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT,
-            new Color(.012f, .016f, .021f, .86f));
+        ui.rect(0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, SCRIM);
         ui.endShapes();
 
         float titleIn = appear(DELAY_TITLE);
@@ -132,14 +131,38 @@ public final class PauseOverlay {
         ui.endText();
     }
 
+    /*
+     * Entrada escalonada da pausa.
+     *
+     * Com reducao de movimento os blocos aparecem prontos: o fade continua
+     * (nao desloca nada na tela), mas o deslize de 18px de cada bloco some.
+     * Sem isto a opcao de acessibilidade so valeria dentro do gameplay, e a
+     * tela de pausa - que o jogador abre justamente para descansar a vista -
+     * continuaria deslizando.
+     */
     private float appear(float delay) {
+        if (reduceMotion) return 1f;
         return Interpolation.pow3Out.apply(MathUtils.clamp((elapsed - delay) / APPEAR_TIME, 0f, 1f));
     }
 
-    private float rise(float progress) { return (1f - progress) * APPEAR_RISE; }
+    public void setReduceMotion(boolean value) { reduceMotion = value; }
 
+    private static final Color SCRIM = new Color(.012f, .016f, .021f, .86f);
+    private final Color faded = new Color();
+
+    private boolean reduceMotion;
+
+    private float rise(float progress) {
+        return reduceMotion ? 0f : (1f - progress) * APPEAR_RISE;
+    }
+
+    /*
+     * A pausa desenha por volta de dez rotulos por quadro e cada um pedia um
+     * Color novo so para variar o alpha da entrada. A instancia e reusada:
+     * o valor e consumido dentro da mesma chamada de desenho.
+     */
     private Color fade(Color base, float progress) {
-        return new Color(base.r, base.g, base.b, base.a * progress);
+        return faded.set(base.r, base.g, base.b, base.a * progress);
     }
 
     public void resize(int width, int height) { ui.resize(width, height); }

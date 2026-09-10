@@ -9,6 +9,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 
 import com.orion.echoes.lua.config.GameConfig;
+import com.orion.echoes.lua.systems.SprintGate;
+import com.orion.echoes.lua.systems.WeaponGeometry;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 import com.orion.echoes.lua.save.GameSaveData;
@@ -52,6 +54,8 @@ public class Astronauta extends Entidade implements Interagivel {
     private boolean weaponEquipped;
     private int municao;
     private boolean sprinting;
+    /** Trava a corrida até recuperar uma reserva mínima; impede flicker WALK/RUN. */
+    private final SprintGate sprintGate = new SprintGate();
     /** Input real do quadro; evita alternar parado/andando pela inércia do Box2D. */
     private boolean movementInputActive;
     private float invulnerabilityTimer;
@@ -202,19 +206,21 @@ public class Astronauta extends Entidade implements Interagivel {
         }
 
         movementInputActive = Math.abs(dirX) > .01f || Math.abs(dirY) > .01f;
-        if (movementInputActive) setAimDirection(dirX, dirY);
 
-        // Direção visual
-        if (dirX < 0) {
-            viradoEsquerda = true;
-        }
-
-        if (dirX > 0) {
-            viradoEsquerda = false;
+        /*
+         * Fonte de verdade da orientação: sem arma o corpo segue o movimento;
+         * com o rifle equipado quem manda é a mira, resolvida em setAimDirection.
+         * Antes as duas escreviam em viradoEsquerda e dava para andar à direita
+         * mirando à esquerda, com o rifle atravessado nas costas do traje.
+         */
+        if (!weaponEquipped) {
+            if (movementInputActive) setAimDirection(dirX, dirY);
+            if (dirX < 0) viradoEsquerda = true;
+            if (dirX > 0) viradoEsquerda = false;
         }
 
         // Pixels/s -> metros/s
-        sprinting = wantsToRun && energia > 1f && (dirX != 0f || dirY != 0f);
+        sprinting = sprintGate.resolve(wantsToRun, movementInputActive, energia);
         float currentSpeed = velocidade * (sprinting ? GameConfig.PLAYER_RUN_MULTIPLIER : 1f);
 
         float velocidadeX =
@@ -247,8 +253,9 @@ public class Astronauta extends Entidade implements Interagivel {
 
         if (dirX != 0 || dirY != 0) {
             // Caminhar recupera o fôlego do traje; só corrida e dash drenam.
-            if (sprinting) energia -= 3.4f * delta;
-            else energia = Math.min(GameConfig.MAX_ENERGY, energia + 2.2f * delta);
+            if (sprinting) energia -= GameConfig.PLAYER_RUN_ENERGY_DRAIN * delta;
+            else energia = Math.min(GameConfig.MAX_ENERGY,
+                energia + GameConfig.PLAYER_WALK_ENERGY_RECOVERY * delta);
             if (energia < 0) energia = 0;
         }
     }
@@ -390,8 +397,8 @@ public class Astronauta extends Entidade implements Interagivel {
     }
 
     private void drawWeapon(SpriteBatch batch) {
-        float centerX = position.x + WIDTH / 2f;
-        float centerY = position.y + HEIGHT * .44f;
+        float centerX = WeaponGeometry.gripX(position.x);
+        float centerY = WeaponGeometry.gripY(position.y);
         float recoil = recoilTimer > 0f ? recoilTimer / .12f * 5f : 0f;
         float radians = aimAngle * MathUtils.degreesToRadians;
         weaponSprite.setPosition(centerX - 13f - MathUtils.cos(radians) * recoil,
@@ -460,13 +467,25 @@ public class Astronauta extends Entidade implements Interagivel {
     public void setAimDirection(float dirX, float dirY) {
         if (dirX * dirX + dirY * dirY < .0001f) return;
         aimAngle = MathUtils.atan2(dirY, dirX) * MathUtils.radiansToDegrees;
+        if (weaponEquipped) alinharCorpoComAMira();
     }
+
+    /** Vira o traje para o lado da mira; a regra e a zona morta vivem em WeaponGeometry. */
+    private void alinharCorpoComAMira() {
+        viradoEsquerda = WeaponGeometry.resolveFacingLeft(viradoEsquerda, aimAngle);
+    }
+
+    /** Boca do cano no mundo: origem única do traço, do flash e do desenho. */
+    public Vector2 muzzle(Vector2 out) {
+        return WeaponGeometry.muzzle(position.x, position.y, aimAngle, out);
+    }
+
+    public boolean isViradoEsquerda() { return viradoEsquerda; }
 
     /** Aponta pelo mouse sem desenhar retículo customizado. */
     public void setAimTarget(float worldX, float worldY) {
-        float centerX = position.x + WIDTH / 2f;
-        float centerY = position.y + HEIGHT * .48f;
-        setAimDirection(worldX - centerX, worldY - centerY);
+        setAimDirection(worldX - WeaponGeometry.gripX(position.x),
+            worldY - WeaponGeometry.gripY(position.y));
     }
 
     public float getAimAngle() { return aimAngle; }

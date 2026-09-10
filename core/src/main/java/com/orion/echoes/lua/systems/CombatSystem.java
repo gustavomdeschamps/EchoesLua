@@ -122,8 +122,10 @@ public final class CombatSystem {
             sounds.tocarSemGelo();
             return;
         }
-        float x = player.getPosition().x + GameConfig.PLAYER_WIDTH / 2f;
-        float y = player.getPosition().y + GameConfig.PLAYER_HEIGHT * .48f;
+        // Uma origem só: o cano desenhado. O raio, o traço e o flash partem dela.
+        player.muzzle(shotStart);
+        float x = shotStart.x;
+        float y = shotStart.y;
         float dirX = MathUtils.cosDeg(player.getAimAngle());
         float dirY = MathUtils.sinDeg(player.getAimAngle());
 
@@ -141,7 +143,6 @@ public final class CombatSystem {
             }
         }
 
-        shotStart.set(x + dirX * 34f, y + dirY * 34f);
         shotEnd.set(x + dirX * SHOT_RANGE, y + dirY * SHOT_RANGE);
         if (target != null) {
             shotEnd.set(target.centerX(), target.centerY());

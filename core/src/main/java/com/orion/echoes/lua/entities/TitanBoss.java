@@ -158,10 +158,18 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         return true;
     }
 
+    private boolean roarPending;
+    private boolean deathPending;
+
     private void change(State next) {
         if (state == next) return;
         state = next;
         stateTime = 0f;
+        if (next == State.PREPARA || next == State.PREPARA_VOLLEY
+            || next == State.PREPARA_BURST) {
+            roarPending = true;
+        }
+        if (next == State.MORTO) deathPending = true;
     }
 
     /** Hitbox derivada do desenho: o corpo apoiado, não o quadro inteiro. */
@@ -178,6 +186,27 @@ public final class TitanBoss extends Entidade implements CombatTarget {
     // =====================================================
     // ATAQUE
     // =====================================================
+
+    /**
+     * True uma unica vez quando o chefe comeca a telegrafar um golpe.
+     *
+     * Existe para o rugido: `boss_rugido.ogg` estava carregado e nunca era
+     * tocado por ninguem: o chefe preparava o ataque em silencio, e o unico
+     * aviso era visual. O documento pede que o telegraph informe quem vai
+     * atacar, e som e metade dessa leitura.
+     */
+    public boolean consumeRoar() {
+        boolean pending = roarPending;
+        roarPending = false;
+        return pending;
+    }
+
+    /** True uma unica vez na morte; `boss_morte.ogg` tambem era um som orfao. */
+    public boolean consumeDeath() {
+        boolean pending = deathPending;
+        deathPending = false;
+        return pending;
+    }
 
     /** True uma única vez por golpe, no frame do impacto. */
     public boolean consumeSlam() {

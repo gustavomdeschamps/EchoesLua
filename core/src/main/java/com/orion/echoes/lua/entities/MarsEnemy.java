@@ -95,10 +95,22 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
         return drone ? GameConfig.MARS_DRONE_SPRITE_SIZE : GameConfig.MARS_CRAWLER_SPRITE_SIZE;
     }
 
-    /** Deslocamento vertical do sprite; o drone paira, o crawler nao. */
+    /** Deslocamento vertical do desenho: flutuacao do drone mais o tremor do aviso. */
     private float spriteBob() {
-        float hover = drone ? 8f + MathUtils.sin(elapsed * 5f) * 3f : 0f;
-        return state == State.TELEGRAPH ? hover + MathUtils.sin(stateTime * 25f) * 2f : hover;
+        return hoverOffset()
+            + (state == State.TELEGRAPH ? MathUtils.sin(stateTime * 25f) * 2f : 0f);
+    }
+
+    /**
+     * Flutuacao real do drone, sem o tremor do telegraph.
+     *
+     * A caixa de dano acompanha o voo - senao mirar no sprite erra o alvo -,
+     * mas nao pode acompanhar o tremor de aviso a 25Hz: a 2px de amplitude ele
+     * fazia a caixa piscar de posicao justamente no quadro em que o jogador
+     * tenta acertar o drone.
+     */
+    private float hoverOffset() {
+        return drone ? 8f + MathUtils.sin(elapsed * 5f) * 3f : 0f;
     }
 
     private float hitboxWidth() {
@@ -114,12 +126,25 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
     }
 
     private float hitboxY(float originY) {
-        float spriteY = originY + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y + spriteBob();
+        float spriteY = originY + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y + hoverOffset();
         return spriteY + spriteSize() * GameConfig.ENEMY_HITBOX_BASE_RATIO;
     }
 
+    /**
+     * Pegada de colisao com o cenario: estavel, ancorada no chao.
+     *
+     * Usar a caixa de dano aqui deixava a colisao subir e descer junto com a
+     * flutuacao, e o drone passava pela quina da rocha ou nao dependendo da
+     * fase da senoide. O que encosta na pedra e a base, nao o voo.
+     */
+    private void footprint(float x, float y) {
+        float spriteY = y + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y;
+        testBounds.set(hitboxX(x), spriteY + spriteSize() * GameConfig.ENEMY_HITBOX_BASE_RATIO,
+            hitboxWidth(), hitboxHeight());
+    }
+
     private boolean free(float x, float y, Array<MarsObject> rocks) {
-        testBounds.set(hitboxX(x), hitboxY(y), hitboxWidth(), hitboxHeight());
+        footprint(x, y);
         for (MarsObject rock : rocks) {
             if (rock.isBlocking() && testBounds.overlaps(rock.getCollisionBounds())) return false;
         }
@@ -173,7 +198,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
     public float centerX() { return position.x + width / 2f; }
 
     public float centerY() {
-        return position.y + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y + spriteBob() + spriteSize() / 2f;
+        return position.y + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y + hoverOffset() + spriteSize() / 2f;
     }
     public float getHealthRatio() { return hp / 3f; }
     public boolean consumeTelegraphStarted() {

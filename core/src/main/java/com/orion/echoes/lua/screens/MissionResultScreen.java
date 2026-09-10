@@ -101,16 +101,31 @@ abstract class MissionResultScreen implements Screen {
      * simplesmente aparecer pronta no primeiro frame.
      */
     private float appear(float delay) {
+        if (reduceMotion()) return 1f;
         return Interpolation.pow3Out.apply(
             MathUtils.clamp((elapsed - delay) / APPEAR_TIME, 0f, 1f));
     }
 
-    private float rise(float progress) {
-        return (1f - progress) * APPEAR_RISE;
+    /** Le a preferencia na hora: a tela pode abrir logo apos o jogador troca-la. */
+    private boolean reduceMotion() {
+        return game.getSettings() != null && game.getSettings().isReduceMotion();
     }
 
+    private static final Color SUCCESS_TINT = new Color(.52f, .32f, .21f, 1f);
+    private static final Color FAILURE_TINT = new Color(.13f, .11f, .14f, 1f);
+
+    private float rise(float progress) {
+        return reduceMotion() ? 0f : (1f - progress) * APPEAR_RISE;
+    }
+
+    /*
+     * Instancia reusada: cada cor e consumida na chamada de desenho seguinte,
+     * e nenhuma linha pede dois fade() ao mesmo tempo.
+     */
+    private final Color faded = new Color();
+
     private Color fade(Color base, float progress) {
-        return new Color(base.r, base.g, base.b, base.a * progress);
+        return faded.set(base.r, base.g, base.b, base.a * progress);
     }
 
     // =====================================================
@@ -122,9 +137,7 @@ abstract class MissionResultScreen implements Screen {
         Texture background = success
             ? game.getAssets().marsBackgroundTexture
             : game.getAssets().backgroundLuaTexture;
-        Color tint = success
-            ? new Color(.52f, .32f, .21f, 1f)
-            : new Color(.13f, .11f, .14f, 1f);
+        Color tint = success ? SUCCESS_TINT : FAILURE_TINT;
 
         float drift = Interpolation.sine.apply(MathUtils.clamp(elapsed / 14f, 0f, 1f)) * 26f;
         ui.clear(UiTheme.VOID);

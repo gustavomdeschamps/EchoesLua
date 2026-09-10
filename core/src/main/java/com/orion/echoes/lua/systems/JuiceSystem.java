@@ -6,7 +6,13 @@ import com.orion.echoes.lua.config.GameConfig;
 
 /** Relógio único para impactos; nunca altera diretamente as regras de gameplay. */
 public final class JuiceSystem {
-    public enum Preset { SHOT_HIT, ENEMY_KILL, PLAYER_HURT, DASH, COLLECT, REPAIR, CRAFT }
+    public enum Preset {
+        SHOT_HIT, ENEMY_KILL, PLAYER_HURT, DASH, COLLECT, REPAIR, CRAFT,
+        /** Impacto do chefe de Tita: acima de qualquer golpe comum. */
+        BOSS_SLAM,
+        /** Queda do chefe: o unico momento com camera lenta longa. */
+        BOSS_DEATH
+    }
 
     private final Vector2 cameraOffset = new Vector2();
     private float hitStopTimer;
@@ -17,6 +23,15 @@ public final class JuiceSystem {
     private float flashTimer;
     private float flashDuration;
     private boolean shakeEnabled = true;
+    /*
+     * Reducao de movimento.
+     *
+     * Corta o que move a imagem sem o jogador ter pedido - empurrao de zoom e
+     * camera lenta. O hit-stop fica: ele nao desloca nada na tela, so segura
+     * o quadro, e e a leitura de que o golpe acertou. Tirar isso junto
+     * transformaria a acessibilidade em perda de informacao.
+     */
+    private boolean reduceMotion;
 
     public void trigger(Preset preset) {
         switch (preset) {
@@ -37,6 +52,13 @@ public final class JuiceSystem {
             case CRAFT -> apply(0f, GameConfig.JUICE_CRAFT_TRAUMA,
                 GameConfig.JUICE_CRAFT_ZOOM, GameConfig.JUICE_CRAFT_SLOW_TIME,
                 GameConfig.JUICE_CRAFT_TIME_SCALE, 0f);
+            case BOSS_SLAM -> apply(GameConfig.JUICE_BOSS_SLAM_HITSTOP,
+                GameConfig.JUICE_BOSS_SLAM_TRAUMA, GameConfig.JUICE_BOSS_SLAM_ZOOM,
+                0f, 1f, GameConfig.JUICE_HURT_FLASH_TIME);
+            case BOSS_DEATH -> apply(GameConfig.JUICE_BOSS_DEATH_HITSTOP,
+                GameConfig.JUICE_BOSS_DEATH_TRAUMA, GameConfig.JUICE_BOSS_DEATH_ZOOM,
+                GameConfig.JUICE_BOSS_DEATH_SLOW_TIME,
+                GameConfig.JUICE_BOSS_DEATH_TIME_SCALE, 0f);
         }
     }
 
@@ -44,6 +66,14 @@ public final class JuiceSystem {
                        float slowTime, float timeScale, float flash) {
         hitStopTimer = Math.max(hitStopTimer, hitStop);
         trauma = MathUtils.clamp(Math.max(trauma, addedTrauma), 0f, 1f);
+        if (reduceMotion) {
+            zoomPunch = 0f;
+            if (flash > flashTimer) {
+                flashTimer = flash;
+                flashDuration = flash;
+            }
+            return;
+        }
         zoomPunch = Math.max(zoomPunch, zoom);
         if (slowTime > slowMotionTimer) {
             slowMotionTimer = slowTime;
@@ -85,4 +115,13 @@ public final class JuiceSystem {
         if (!enabled) cameraOffset.setZero();
     }
     public boolean isShakeEnabled() { return shakeEnabled; }
+
+    public void setReduceMotion(boolean enabled) {
+        reduceMotion = enabled;
+        if (!enabled) return;
+        zoomPunch = 0f;
+        slowMotionTimer = 0f;
+        slowMotionScale = 1f;
+    }
+    public boolean isReduceMotion() { return reduceMotion; }
 }

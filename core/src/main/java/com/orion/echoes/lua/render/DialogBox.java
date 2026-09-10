@@ -25,6 +25,9 @@ import com.orion.echoes.lua.ui.UiTheme;
  */
 public final class DialogBox {
 
+    /** Reaproveitada por quadro enquanto a caixa esta aberta. */
+    private final Color panelColor = new Color();
+
     private static final float X = 126f;
     private static final float WIDTH = 1028f;
     private static final float Y = 150f;
@@ -73,7 +76,8 @@ public final class DialogBox {
 
         sombra(X, y, WIDTH, HEIGHT, SHADOW_SPREAD, SHADOW_OFFSET, .18f * eased);
         sombra(X, y, WIDTH, HEIGHT, SHADOW_SPREAD * .45f, SHADOW_OFFSET * .55f, .26f * eased);
-        panel.setColor(new Color(1f, 1f, 1f, eased));
+        panelColor.set(1f, 1f, 1f, eased);
+        panel.setColor(panelColor);
         panel.draw(batch, X, y, WIDTH, HEIGHT);
         panel.setColor(Color.WHITE);
         batch.setColor(Color.WHITE);

@@ -31,6 +31,11 @@ public final class GameConfig {
 
     public static final float PLAYER_SPEED = 180f;
     public static final float PLAYER_RUN_MULTIPLIER = 1.28f;
+    /** Evita alternar WALK/RUN a cada quadro quando a energia encosta em zero. */
+    public static final float PLAYER_RUN_RESUME_ENERGY = 12f;
+    public static final float PLAYER_RUN_ENERGY_DRAIN = 3.4f;
+    /** Recuperação em caminhada; rápida o bastante para não travar o ritmo. */
+    public static final float PLAYER_WALK_ENERGY_RECOVERY = 3.4f;
     public static final float PLAYER_VISUAL_SIZE = 104f;
     public static final int PLAYER_ANIMATION_FRAMES = 4;
     public static final float PLAYER_IDLE_FRAME_TIME = 0.22f;
@@ -48,6 +53,25 @@ public final class GameConfig {
     public static final float PLAYER_LUNAR_DECEL_TIME = 0.24f;
     public static final float PLAYER_MARS_ACCEL_TIME = 0.11f;
     public static final float PLAYER_MARS_DECEL_TIME = 0.075f;
+
+    /**
+     * Altura do punho da arma, em fração da altura do traje.
+     *
+     * O sprite do rifle era desenhado em .44 e o projétil nascia em .48: o
+     * traço saía acima do cano. Desenho, muzzle e disparo leem esta constante.
+     */
+    public static final float PLAYER_WEAPON_PIVOT_RATIO = 0.44f;
+
+    /** Distância do punho até a boca do cano, em pixels de mundo. */
+    public static final float PLAYER_MUZZLE_DISTANCE = 46f;
+
+    /**
+     * Zona morta do cosseno da mira para virar o corpo.
+     *
+     * Mirando quase na vertical o lado fica indefinido; sem esta folga o traje
+     * alternava esquerda/direita a cada pixel de mouse.
+     */
+    public static final float PLAYER_AIM_FACING_DEADZONE = 0.18f;
 
     // ==========================================
     // GAME FEEL E CÂMERA
@@ -84,6 +108,22 @@ public final class GameConfig {
     public static final float JUICE_CRAFT_ZOOM = 0.04f;
     public static final float JUICE_CRAFT_SLOW_TIME = 0.22f;
     public static final float JUICE_CRAFT_TIME_SCALE = 0.72f;
+
+    /*
+     * Impacto do chefe de Tita.
+     *
+     * A hierarquia do documento pede "chefe: muito forte" e "vitoria final:
+     * maxima". Os valores ficam acima do golpe comum e abaixo do teto de
+     * shake, para o impacto pesar sem tirar a leitura da arena.
+     */
+    public static final float JUICE_BOSS_SLAM_HITSTOP = 0.11f;
+    public static final float JUICE_BOSS_SLAM_TRAUMA = 0.95f;
+    public static final float JUICE_BOSS_SLAM_ZOOM = 0.05f;
+    public static final float JUICE_BOSS_DEATH_HITSTOP = 0.16f;
+    public static final float JUICE_BOSS_DEATH_TRAUMA = 1f;
+    public static final float JUICE_BOSS_DEATH_ZOOM = 0.07f;
+    public static final float JUICE_BOSS_DEATH_SLOW_TIME = 0.9f;
+    public static final float JUICE_BOSS_DEATH_TIME_SCALE = 0.32f;
 
     // ==========================================
     // SOBREVIVÊNCIA
@@ -129,18 +169,18 @@ public final class GameConfig {
     // ==========================================
 
     public static final float BOSS_SPRITE_SIZE = 340f;
-    public static final float BOSS_MAX_HP = 900f;
-    public static final float BOSS_SPEED = 58f;
-    public static final float BOSS_CHASE_RADIUS = 620f;
+    public static final float BOSS_MAX_HP = 1100f;
+    public static final float BOSS_SPEED = 66f;
+    public static final float BOSS_CHASE_RADIUS = 700f;
     /** Distancia em que ele para e comeca a preparar o golpe. */
     public static final float BOSS_ATTACK_RANGE = 250f;
     /** Aviso antes do impacto: e a janela para o jogador escapar. */
-    public static final float BOSS_TELEGRAPH_TIME = 0.85f;
+    public static final float BOSS_TELEGRAPH_TIME = 0.72f;
     public static final float BOSS_SLAM_TIME = 0.30f;
-    public static final float BOSS_ATTACK_COOLDOWN = 2.4f;
+    public static final float BOSS_ATTACK_COOLDOWN = 2.0f;
     /** Raio do impacto no chao; maior que o alcance para punir quem so recua. */
-    public static final float BOSS_SLAM_RADIUS = 210f;
-    public static final float BOSS_DAMAGE = 22f;
+    public static final float BOSS_SLAM_RADIUS = 230f;
+    public static final float BOSS_DAMAGE = 26f;
     /** Geometria proporcional ao quadro desenhado do chefe. */
     public static final float BOSS_SPRITE_OFFSET_Y_RATIO = -0.10f;
     public static final float BOSS_HITBOX_WIDTH_RATIO = 0.58f;
@@ -166,6 +206,22 @@ public final class GameConfig {
     public static final float SETTINGS_VALUE_WIDTH = 50f;
     public static final float SETTINGS_VALUE_PADDING = 8f;
     public static final float SETTINGS_ROW_GAP = 7f;
+
+    /*
+     * Orcamento vertical da tela de opcoes.
+     *
+     * A conta de largura ja era guardada por teste; a de altura nao, e cada
+     * controle novo (ambiente, tela cheia) empurra a coluna mais alta para
+     * perto do rodape sem que nada reclame ate alguem abrir a tela.
+     */
+    public static final float SETTINGS_SLIDER_HEIGHT = 28f;
+    public static final float SETTINGS_TOGGLE_HEIGHT = 38f;
+    /** Rotulo da secao mais o respiro antes e depois dela. */
+    public static final float SETTINGS_SECTION_HEIGHT = 21f;
+    public static final float SETTINGS_SECTION_SPACING = 10f;
+    /** Titulo da tela e o botao VOLTAR, que dividem a altura com as colunas. */
+    public static final float SETTINGS_TITLE_BLOCK = 52f;
+    public static final float SETTINGS_FOOTER_BLOCK = 64f;
 
     // ==========================================
     // HITBOXES

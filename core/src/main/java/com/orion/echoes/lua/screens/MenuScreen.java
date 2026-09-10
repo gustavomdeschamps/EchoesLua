@@ -50,6 +50,8 @@ public final class MenuScreen implements Screen {
     private static final float CONTROL_WIDTH = GameConfig.SETTINGS_CONTROL_WIDTH;
     private static final float VALUE_WIDTH = GameConfig.SETTINGS_VALUE_WIDTH;
     private static final float ROW_GAP = GameConfig.SETTINGS_ROW_GAP;
+    private static final float SLIDER_HEIGHT = GameConfig.SETTINGS_SLIDER_HEIGHT;
+    private static final float TOGGLE_HEIGHT = GameConfig.SETTINGS_TOGGLE_HEIGHT;
 
     public MenuScreen(EchoesLua game) { this.game = game; }
 
@@ -125,8 +127,17 @@ public final class MenuScreen implements Screen {
             game.aplicarPreferenciasDeAudio();
             game.getSounds().tocarHoverUi();
         });
+        slider(audio, "Ambiente", settings.getAmbientVolume(), value -> {
+            settings.setAmbientVolume(value);
+            game.aplicarPreferenciasDeAudio();
+        });
 
         Table system = column();
+        section(system, "VÍDEO");
+        toggle(system, "Tela cheia", settings.isFullscreen(), value -> {
+            settings.setFullscreen(value);
+            game.aplicarModoDeTela();
+        });
         section(system, "INTERFACE");
         slider(system, "Escala do HUD", (settings.getHudScale() - .85f) / .35f,
             value -> settings.setHudScale(.85f + value * .35f), .85f, .35f);
@@ -136,6 +147,8 @@ public final class MenuScreen implements Screen {
         });
         toggle(system, "Modo daltônico", settings.isColorblindEnabled(),
             settings::setColorblindEnabled);
+        toggle(system, "Redução de movimento", settings.isReduceMotion(),
+            settings::setReduceMotion);
         section(system, "CONTROLES");
         toggle(system, "Mover pelas setas", settings.isArrowMovement(),
             settings::setArrowMovement);
@@ -159,7 +172,8 @@ public final class MenuScreen implements Screen {
         Label heading = label(text, UiTheme.AMBER);
         heading.setFontScale(.62f);
         boolean first = column.getCells().size == 0;
-        column.add(heading).left().colspan(3).padTop(first ? 0f : 10f).padBottom(5f).row();
+        column.add(heading).left().colspan(3)
+            .padTop(first ? 0f : GameConfig.SETTINGS_SECTION_SPACING).padBottom(5f).row();
     }
 
     /**
@@ -186,7 +200,7 @@ public final class MenuScreen implements Screen {
             }
         });
         column.add(rowLabel(text)).width(LABEL_WIDTH).left().padBottom(ROW_GAP);
-        column.add(control).width(CONTROL_WIDTH).height(28f).padBottom(ROW_GAP);
+        column.add(control).width(CONTROL_WIDTH).height(SLIDER_HEIGHT).padBottom(ROW_GAP);
         column.add(readout).width(VALUE_WIDTH).right().padLeft(GameConfig.SETTINGS_VALUE_PADDING).padBottom(ROW_GAP).row();
     }
 
@@ -212,7 +226,7 @@ public final class MenuScreen implements Screen {
             }
         });
         column.add(rowLabel(text)).width(LABEL_WIDTH).left().padBottom(ROW_GAP);
-        column.add(control).width(CONTROL_WIDTH).height(38f).padBottom(ROW_GAP);
+        column.add(control).width(CONTROL_WIDTH).height(TOGGLE_HEIGHT).padBottom(ROW_GAP);
         column.add(label("", UiTheme.TEXT)).width(VALUE_WIDTH).padLeft(GameConfig.SETTINGS_VALUE_PADDING).padBottom(ROW_GAP).row();
     }
 
