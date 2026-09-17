@@ -43,6 +43,7 @@ public final class PauseOverlay {
     private static final float SIDE_WIDTH = GameConfig.WINDOW_WIDTH - SIDE_X - 74f;
 
     private final TerminalUi ui;
+    private final com.badlogic.gdx.graphics.g2d.NinePatch buttonPatch;
     private float elapsed;
 
     /*
@@ -55,15 +56,22 @@ public final class PauseOverlay {
     private PauseSettingsModel settings;
     private boolean settingsOpen;
     private boolean quitRequested;
+    private boolean resumeRequested;
+    private boolean menuRequested;
+    private final com.badlogic.gdx.math.Vector2 pointer = new com.badlogic.gdx.math.Vector2();
+    public boolean consumeResumeRequested() { boolean value=resumeRequested;resumeRequested=false;return value; }
+    public boolean consumeMenuRequested() { boolean value=menuRequested;menuRequested=false;return value; }
 
     public PauseOverlay(SpriteBatch batch, AssetManager assets) {
         this.ui = new TerminalUi(batch, assets);
+        this.buttonPatch = assets.uiButtonPatch();
     }
 
     /** Chame uma vez, na borda em que a pausa abre — reinicia a entrada em cena. */
     public void open() {
         elapsed = 0f;
         settingsOpen = false;
+        resumeRequested=false; menuRequested=false; quitRequested=false;
     }
 
     public void setSettings(PauseSettingsModel model) { settings = model; }
@@ -86,6 +94,20 @@ public final class PauseOverlay {
      * em vez de despausar, e nenhuma tecla vaza para o gameplay.
      */
     public boolean handlePauseKeys() {
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            ui.unproject(pointer.set(Gdx.input.getX(),Gdx.input.getY()));
+            if (pointer.y>=54 && pointer.y<=124) {
+                int index=(int)((pointer.x-PANEL_X)/280);
+                if(pointer.x>=PANEL_X && index<(settingsOpen?2:4)
+                    && pointer.x-PANEL_X-index*280<=264) {
+                    if(settingsOpen) { if(index==0)settingsOpen=false; else if(settings!=null)settings.activate(); return true; }
+                    if(index==0)resumeRequested=true;
+                    if(index==1) {settingsOpen=true;return true;}
+                    if(index==2)menuRequested=true;
+                    if(index==3) {quitRequested=true;return true;}
+                }
+            }
+        }
         if (settingsOpen) {
             if (settings != null) {
                 if (justPressed(Input.Keys.UP, Input.Keys.W)) settings.moveSelection(-1);
@@ -136,8 +158,8 @@ public final class PauseOverlay {
 
         ui.beginText();
         ui.text(worldTag, .68f, fade(accent, titleIn), PANEL_X, 640f + rise(titleIn));
-        ui.title("MISSÃO\nPAUSADA", 1.55f, fade(UiTheme.TEXT, titleIn), PANEL_X - 4f, 588f + rise(titleIn));
-        ui.text(flavorText, .74f, fade(UiTheme.TEXT_MUTED, subtitleIn), PANEL_X, 452f + rise(subtitleIn));
+        ui.title("JOGO PAUSADO", 1.35f, fade(UiTheme.TEXT, titleIn), PANEL_X - 4f, 588f + rise(titleIn));
+        ui.text(flavorText, .74f, fade(UiTheme.TEXT_MUTED, subtitleIn), PANEL_X, 512f + rise(subtitleIn));
         ui.endText();
 
         if (settingsOpen) drawSettingsPanel(accent, panelIn);
@@ -242,24 +264,30 @@ public final class PauseOverlay {
     private void drawActions(Color accent, float progress) {
         if (progress <= 0f) return;
         float y = 96f + rise(progress);
+        ui.beginShapes();
+        int count = settingsOpen ? 2 : 4;
+        for (int i=0;i<count;i++)
+            ui.patch(buttonPatch,PANEL_X+i*280f,y-42f,264f,70f,fade(Color.WHITE,progress));
+        ui.endShapes();
         ui.beginText();
         if (settingsOpen) {
             action("VOLTAR", "ESC", accent, progress, PANEL_X, y);
-            action("AJUSTAR", "SETAS", accent, progress, PANEL_X + 260f, y);
+            action("AJUSTAR", "SETAS", accent, progress, PANEL_X + 280f, y);
         } else {
             action("RETOMAR", "ESC ou ENTER", accent, progress, PANEL_X, y);
-            action("CONFIGURAÇÕES", "O", accent, progress, PANEL_X + 340f, y);
-            action("MENU", "M", accent, progress, PANEL_X + 620f, y);
-            action("SAIR", "Q", accent, progress, PANEL_X + 780f, y);
+            action("CONFIGURAÇÕES", "O", accent, progress, PANEL_X + 280f, y);
+            action("MENU", "M", accent, progress, PANEL_X + 560f, y);
+            action("SAIR", "Q", accent, progress, PANEL_X + 840f, y);
         }
         ui.endText();
     }
 
     private void action(String label, String key, Color accent, float progress,
                         float x, float y) {
-        ui.text(label, .72f, fade(UiTheme.TEXT, progress), x, y);
-        ui.text(key, .62f, fade(accent, progress),
-            x + ui.textWidth(label, .72f) + 14f, y);
+        ui.text(label, .68f, fade(UiTheme.TEXT, progress),
+            x+(264f-ui.textWidth(label,.68f))*.5f, y+7f);
+        ui.text(key, .52f, fade(UiTheme.CYAN, progress),
+            x+(264f-ui.textWidth(key,.52f))*.5f, y-18f);
     }
 
     /*

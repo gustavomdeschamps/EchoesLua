@@ -1,5 +1,18 @@
 # Echoes — direção visual de produção
 
+## Revisão integrada em 16/09/2026
+
+O lote ativo é `tools/source_assets/rework_20260914/manifest.json`; ele substitui
+as referências de importação históricas abaixo. A troca abrange o mundo, atores,
+objetos, efeitos e ilustrações de abertura, preservando os PNGs e o layout do HUD.
+O astronauta mantém cabelo cacheado, óculos e traje claro com painel azul; suas
+folhas de movimento e combate foram refeitas no mesmo acabamento das colônias.
+`install_rework_20260914.py` separa silhuetas completas, normaliza para células
+313×313 com base em y=278 e registra os hashes de produção em `installed.json`.
+`pack_visual_atlases.py` reconstrói os atlas com TexturePacker e offsets de trim.
+As fontes antigas permanecem somente em `tools/source_assets`, fora do runtime.
+Detalhes e verificação: `docs/REWORK_ASSETS_20260916.md`.
+
 O `tools/source_assets/astronaut_turnaround_v2.png` é a referência aprovada do
 personagem. Todo asset jogável novo deve parecer pintado pela mesma equipe e
 observado pela mesma câmera.

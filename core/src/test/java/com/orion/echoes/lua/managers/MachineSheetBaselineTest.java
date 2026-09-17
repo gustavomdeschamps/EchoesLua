@@ -28,8 +28,8 @@ import org.junit.jupiter.api.Test;
  */
 class MachineSheetBaselineTest {
 
-    /** Corpo solido; vapor, glow e particulas ficam abaixo deste limiar. */
-    private static final int OPAQUE = 200;
+    /** Mesmo limiar do normalizador: qualquer pixel realmente visível conta. */
+    private static final int OPAQUE = 10;
 
     /** Folga aceita: um pixel de reamostragem, nao a maquina mudando de lugar. */
     private static final int MAX_DRIFT = 3;

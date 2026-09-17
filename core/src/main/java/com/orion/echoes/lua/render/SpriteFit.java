@@ -21,6 +21,16 @@ public final class SpriteFit {
 
     private SpriteFit() { }
 
+    /** Allocation-free, aspect-preserving draw for scenery that needs no output bounds. */
+    public static void draw(SpriteBatch batch, TextureRegion region, float x, float y,
+                            float boxWidth, float boxHeight) {
+        float width = AtlasRegionRenderer.originalWidth(region);
+        float height = AtlasRegionRenderer.originalHeight(region);
+        float scale = Math.min(boxWidth / width, boxHeight / height);
+        AtlasRegionRenderer.draw(batch, region, x + (boxWidth-width*scale)*.5f, y,
+            width*scale, height*scale);
+    }
+
     /**
      * Calcula o retangulo de desenho que cabe no espaco pedido sem deformar.
      *
@@ -28,8 +38,8 @@ public final class SpriteFit {
      */
     public static Rectangle fit(TextureRegion region, float x, float y,
                                 float boxWidth, float boxHeight, Rectangle out) {
-        float regionWidth = region.getRegionWidth();
-        float regionHeight = region.getRegionHeight();
+        float regionWidth = AtlasRegionRenderer.originalWidth(region);
+        float regionHeight = AtlasRegionRenderer.originalHeight(region);
         if (regionWidth <= 0f || regionHeight <= 0f) {
             return out.set(x, y, boxWidth, boxHeight);
         }
@@ -45,7 +55,7 @@ public final class SpriteFit {
                                  float x, float y, float boxWidth, float boxHeight,
                                  Rectangle out) {
         fit(region, x, y, boxWidth, boxHeight, out);
-        batch.draw(region, out.x, out.y, out.width, out.height);
+        AtlasRegionRenderer.draw(batch, region, out.x, out.y, out.width, out.height);
         return out;
     }
 }

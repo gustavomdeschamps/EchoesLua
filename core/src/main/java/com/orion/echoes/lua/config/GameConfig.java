@@ -169,7 +169,7 @@ public final class GameConfig {
     // ==========================================
 
     public static final float BOSS_SPRITE_SIZE = 340f;
-    public static final float BOSS_MAX_HP = 1100f;
+    public static final float BOSS_MAX_HP = 180f;
     public static final float BOSS_SPEED = 66f;
     public static final float BOSS_CHASE_RADIUS = 700f;
     /** Distancia em que ele para e comeca a preparar o golpe. */

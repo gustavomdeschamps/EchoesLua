@@ -77,7 +77,11 @@ public class GameSaveData {
      * detecta a versão antiga e deriva um default seguro do progresso já
      * registrado, em vez de reapresentar a cinematic completa.
      */
-    public static final int CURRENT_VERSION = 5;
+    public static final int CURRENT_VERSION = 6;
+    public String[] inventario;
+    public int comidaGuardada, nivelArma, nivelArmadura;
+    public int formaBossCalisto = 1;
+    public float hpBossCalisto = 100f;
 
     public String fase = "LUA";
     public long semente;

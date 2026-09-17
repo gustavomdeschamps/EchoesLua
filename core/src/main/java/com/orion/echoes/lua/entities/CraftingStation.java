@@ -6,6 +6,7 @@ import com.badlogic.gdx.physics.box2d.Body;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.MissionSprite;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.render.AtlasSpriteFactory;
 
 public class CraftingStation extends Entidade {
     private final Sprite sprite;
@@ -13,7 +14,7 @@ public class CraftingStation extends Entidade {
 
     public CraftingStation(float x, float y, AssetManager assets, PhysicsWorld physics) {
         super(x, y, 118f, 88f);
-        sprite = new Sprite(assets.missionRegion(MissionSprite.CRAFTING_TERMINAL));
+        sprite = AtlasSpriteFactory.create(assets.missionRegion(MissionSprite.CRAFTING_TERMINAL));
         sprite.setSize(width, height);
         sprite.setPosition(x, y);
         bounds.set(x - 20f, y - 16f, width + 40f, height + 34f);

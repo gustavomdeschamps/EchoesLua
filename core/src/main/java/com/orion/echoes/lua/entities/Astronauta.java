@@ -13,9 +13,17 @@ import com.orion.echoes.lua.systems.SprintGate;
 import com.orion.echoes.lua.systems.WeaponGeometry;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
+import com.orion.echoes.lua.render.AtlasSpriteFactory;
 import com.orion.echoes.lua.save.GameSaveData;
 
 public class Astronauta extends Entidade implements Interagivel {
+    private com.orion.echoes.lua.systems.Inventario inventario;
+    public void setInventario(com.orion.echoes.lua.systems.Inventario value) { inventario = value; }
+    public void guardarComida() {
+        if (inventario != null) inventario.add("COMIDA");
+        else recuperarEnergia(30f);
+    }
 
     public enum SurfaceProfile { LUNAR, MARS }
 
@@ -36,6 +44,7 @@ public class Astronauta extends Entidade implements Interagivel {
     private static final float FOOTPRINT_WIDTH = 30f;
     private static final float FOOTPRINT_HEIGHT = 22f;
     private static final float BODY_CENTER_Y = 17f;
+    private final Rectangle hurtbox = new Rectangle();
     private enum AnimationState { IDLE, WALK, RUN, DASH, ATTACK, HURT, DEAD }
     private final TextureRegion[][] movementFrames =
         new TextureRegion[4][GameConfig.PLAYER_ANIMATION_FRAMES];
@@ -145,9 +154,11 @@ public class Astronauta extends Entidade implements Interagivel {
                 combatFramesLeft[row][column] = mirrored(combatFrames[row][column]);
             }
         }
-        weaponSprite = new Sprite(assets.pulseRifleTexture);
-        weaponSprite.setSize(62f, 41f);
-        weaponSprite.setOrigin(13f, 20.5f);
+        weaponSprite = AtlasSpriteFactory.create(assets.pulseRifleTexture);
+        float weaponHeight = 62f * AtlasRegionRenderer.originalHeight(assets.pulseRifleTexture)
+            / AtlasRegionRenderer.originalWidth(assets.pulseRifleTexture);
+        weaponSprite.setSize(62f, weaponHeight);
+        weaponSprite.setOrigin(13f, weaponHeight * .5f);
 
         // ======================================
         // POSIÇÃO
@@ -160,6 +171,7 @@ public class Astronauta extends Entidade implements Interagivel {
 
         bounds.set(x + (WIDTH - FOOTPRINT_WIDTH) / 2f, y + 6f,
             FOOTPRINT_WIDTH, FOOTPRINT_HEIGHT);
+        syncCollisionShapes();
 
         // ======================================
         // BOX2D
@@ -185,7 +197,10 @@ public class Astronauta extends Entidade implements Interagivel {
     }
 
     private TextureRegion mirrored(TextureRegion source) {
-        TextureRegion copy = new TextureRegion(source);
+        if (!(source instanceof com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion atlas)) {
+            throw new IllegalStateException("Quadro do astronauta precisa ser AtlasRegion");
+        }
+        TextureRegion copy = new com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion(atlas);
         copy.flip(true, false);
         return copy;
     }
@@ -207,17 +222,10 @@ public class Astronauta extends Entidade implements Interagivel {
 
         movementInputActive = Math.abs(dirX) > .01f || Math.abs(dirY) > .01f;
 
-        /*
-         * Fonte de verdade da orientação: sem arma o corpo segue o movimento;
-         * com o rifle equipado quem manda é a mira, resolvida em setAimDirection.
-         * Antes as duas escreviam em viradoEsquerda e dava para andar à direita
-         * mirando à esquerda, com o rifle atravessado nas costas do traje.
-         */
-        if (!weaponEquipped) {
-            if (movementInputActive) setAimDirection(dirX, dirY);
-            if (dirX < 0) viradoEsquerda = true;
-            if (dirX > 0) viradoEsquerda = false;
-        }
+        // The body follows locomotion; mouse aim only rotates the rifle.
+        if (!weaponEquipped && movementInputActive) setAimDirection(dirX, dirY);
+        if (dirX < -.01f) viradoEsquerda = true;
+        if (dirX > .01f) viradoEsquerda = false;
 
         // Pixels/s -> metros/s
         sprinting = sprintGate.resolve(wantsToRun, movementInputActive, energia);
@@ -308,7 +316,7 @@ public class Astronauta extends Entidade implements Interagivel {
                 - BODY_CENTER_Y
         );
 
-        bounds.setPosition(position.x + (WIDTH - FOOTPRINT_WIDTH) / 2f, position.y + 6f);
+        syncCollisionShapes();
 
         // ======================================
         // OXIGÊNIO
@@ -358,7 +366,7 @@ public class Astronauta extends Entidade implements Interagivel {
         float blink = invulnerabilityTimer > 0f && ((int)(invulnerabilityTimer * 24f) & 1) == 0 ? .45f : 1f;
         if (damageTimer > 0f) batch.setColor(1f, .58f, .58f, blink);
         else batch.setColor(1f, 1f, 1f, blink);
-        batch.draw(frame, visualX, visualY,
+        AtlasRegionRenderer.draw(batch, frame, visualX, visualY,
             GameConfig.PLAYER_VISUAL_SIZE, GameConfig.PLAYER_VISUAL_SIZE);
         batch.setColor(1f, 1f, 1f, 1f);
         if (weaponEquipped) drawWeapon(batch);
@@ -401,12 +409,12 @@ public class Astronauta extends Entidade implements Interagivel {
         float centerY = WeaponGeometry.gripY(position.y);
         float recoil = recoilTimer > 0f ? recoilTimer / .12f * 5f : 0f;
         float radians = aimAngle * MathUtils.degreesToRadians;
-        weaponSprite.setPosition(centerX - 13f - MathUtils.cos(radians) * recoil,
-            centerY - 20.5f - MathUtils.sin(radians) * recoil);
+        weaponSprite.setPosition(centerX - weaponSprite.getOriginX() - MathUtils.cos(radians) * recoil,
+            centerY - weaponSprite.getOriginY() - MathUtils.sin(radians) * recoil);
         weaponSprite.setRotation(aimAngle);
         boolean upsideDown = aimAngle > 90f || aimAngle < -90f;
-        // A arte original aponta para a esquerda; este flip fixa a direção-base.
-        weaponSprite.setFlip(true, upsideDown);
+        // O novo cano aponta à direita; só a orientação vertical acompanha a mira.
+        weaponSprite.setFlip(false, upsideDown);
         weaponSprite.draw(batch);
     }
 
@@ -467,12 +475,6 @@ public class Astronauta extends Entidade implements Interagivel {
     public void setAimDirection(float dirX, float dirY) {
         if (dirX * dirX + dirY * dirY < .0001f) return;
         aimAngle = MathUtils.atan2(dirY, dirX) * MathUtils.radiansToDegrees;
-        if (weaponEquipped) alinharCorpoComAMira();
-    }
-
-    /** Vira o traje para o lado da mira; a regra e a zona morta vivem em WeaponGeometry. */
-    private void alinharCorpoComAMira() {
-        viradoEsquerda = WeaponGeometry.resolveFacingLeft(viradoEsquerda, aimAngle);
     }
 
     /** Boca do cano no mundo: origem única do traço, do flash e do desenho. */
@@ -518,7 +520,8 @@ public class Astronauta extends Entidade implements Interagivel {
         if (!ativo || protegido || quantidade <= 0f || invulnerabilityTimer > 0f) {
             return;
         }
-        oxigenio = Math.max(0f, oxigenio - quantidade);
+        float reduction = inventario == null ? 1f : inventario.getMultiplicadorDanoRecebido();
+        oxigenio = Math.max(0f, oxigenio - quantidade * reduction);
         damageTimer = .22f;
         invulnerabilityTimer = .48f;
         Vector2 away = new Vector2(position.x + WIDTH / 2f - sourceX,
@@ -678,10 +681,7 @@ public class Astronauta extends Entidade implements Interagivel {
             data.posY
         );
 
-        bounds.setPosition(
-            data.posX + (WIDTH - FOOTPRINT_WIDTH) / 2f,
-            data.posY + 6f
-        );
+        syncCollisionShapes();
 
         body.setTransform(
             (
@@ -757,6 +757,17 @@ public class Astronauta extends Entidade implements Interagivel {
     public Rectangle getBounds() {
 
         return bounds;
+    }
+
+    @Override public Rectangle getFootprint() { return bounds; }
+    @Override public Rectangle getHurtbox() { return hurtbox; }
+
+    private void syncCollisionShapes() {
+        bounds.set(position.x + (WIDTH - FOOTPRINT_WIDTH) / 2f, position.y + 6f,
+            FOOTPRINT_WIDTH, FOOTPRINT_HEIGHT);
+        // Torso and helmet, deliberately independent from the feet fixture.
+        hurtbox.set(position.x + WIDTH * .27f, position.y + HEIGHT * .20f,
+            WIDTH * .46f, HEIGHT * .69f);
     }
 
     public float getOxigenio() {

@@ -6,6 +6,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Align;
@@ -19,57 +20,36 @@ import com.orion.echoes.lua.systems.MissionState;
 import com.orion.echoes.lua.ui.HudLabel;
 import com.orion.echoes.lua.ui.UiTheme;
 
-/** HUD compacto que libera o centro da tela e fica translucido quando o jogador passa por baixo. */
+/** Interface de campo inspirada na telemetria do traje, sem cobrir o centro da acao. */
 public final class Hud implements Disposable {
+    private static final float OBJECTIVE_X = 24f, OBJECTIVE_Y = 642f;
+    private static final float OBJECTIVE_W = 620f, OBJECTIVE_H = 62f;
+    private static final float VITALS_X = 24f, VITALS_Y = 18f;
+    private static final float VITALS_W = 318f, VITALS_H = 94f;
+    private static final float CARGO_X = 1006f, CARGO_Y = 18f;
+    private static final float CARGO_W = 250f, CARGO_H = 76f;
+    private static final float TOAST_Y = 126f, TOAST_SCALE = .78f;
+    private static final float TOAST_MAX_TEXT_WIDTH = 520f;
+    private static final float TOAST_PADDING_X = 24f, TOAST_PADDING_Y = 14f;
+
     private final OrthographicCamera camera = new OrthographicCamera();
     private final Viewport viewport;
     private final BitmapFont font;
     private final GlyphLayout layout = new GlyphLayout();
     private final NinePatch panelPatch;
-    private final com.badlogic.gdx.graphics.g2d.TextureRegion barTrack;
-    private final com.badlogic.gdx.graphics.g2d.TextureRegion barFill;
-    /*
-     * Caixa de mensagem.
-     *
-     * As medidas saem do texto ja renderizado, entao a caixa acompanha o
-     * conteudo em vez de tentar adivinha-lo.
-     */
-    private static final float TOAST_SCALE = .82f;
-    private static final float TOAST_MAX_TEXT_WIDTH = 560f;
-    private static final float TOAST_MIN_WIDTH = 260f;
-    private static final float TOAST_PADDING_X = 26f;
-    private static final float TOAST_PADDING_Y = 16f;
-    private static final float TOAST_Y = 104f;
-
-    /** Reaproveitadas a cada painel para nao alocar Color por frame. */
-    private final Color shadowColor = new Color();
-    private final Color panelColor = new Color();
-
-    /*
-     * Rotulos numericos do HUD.
-     *
-     * Eram sete String.format/concatenacoes por quadro - 420 strings por
-     * segundo a 60fps - para mostrar numeros que mudam poucas vezes por
-     * partida. O texto so e remontado quando o valor inteiro muda.
-     */
+    private final com.orion.echoes.lua.render.GameplayStatusHud statusHud;
+    private final TextureRegion barTrack, barFill, white;
+    private final TextureRegion[] resourceIcons = new TextureRegion[3];
+    private final Color tint = new Color();
     private final HudLabel oxygenLabel = new HudLabel("", "%");
     private final HudLabel energyLabel = new HudLabel("", "%");
     private final HudLabel ammoLabel = new HudLabel("", "");
-    private final HudLabel oxygenStock = new HudLabel("O2  ", "");
-    private final HudLabel foodStock = new HudLabel("COMIDA  ", "");
-    private final HudLabel iceStock = new HudLabel("GELO  ", "");
-    private final HudLabel questLabel =
-        new HudLabel("LUA · ", "/" + MissionState.QUEST_TOTAL_STEPS);
+    private final HudLabel oxygenStock = new HudLabel("", "");
+    private final HudLabel foodStock = new HudLabel("", "");
+    private final HudLabel iceStock = new HudLabel("", "");
 
-    private static final float SHADOW_SPREAD = 6f;
-    private static final float SHADOW_OFFSET = 3f;
-
-    private float toastWidth;
-    private float toastHeight;
     private String previousMessage = "";
-    private float entrance;
-    private float toastLife;
-    private float toastKick;
+    private float toastWidth, toastHeight, toastLife, toastKick, entrance;
 
     public Hud(AssetManager assets) {
         viewport = new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, camera);
@@ -77,154 +57,94 @@ public final class Hud implements Disposable {
         camera.update();
         font = assets.font;
         panelPatch = assets.uiPanelPatch();
+        statusHud = new com.orion.echoes.lua.render.GameplayStatusHud(assets);
         barTrack = assets.uiBarTrackTexture;
         barFill = assets.uiBarFillTexture;
+        white = assets.uiWhiteTexture;
+        for (int i = 0; i < resourceIcons.length; i++) resourceIcons[i] = assets.resourceIcon(i);
     }
 
     public void update(float delta, String message) {
-        entrance = Math.min(1f, entrance + delta / .32f);
-        String safe = message == null ? "" : message;
+        entrance = Math.min(1f, entrance + delta / .36f);
+        String safe = message == null ? "" : message.strip();
         if (!safe.equals(previousMessage)) {
             previousMessage = safe;
-            toastLife = safe.isBlank() ? 0f : 1f;
-            toastKick = safe.isBlank() ? 0f : 1f;
-            medirMensagem(safe);
+            toastLife = safe.isEmpty() ? 0f : 1f;
+            toastKick = safe.isEmpty() ? 0f : 1f;
+            measureToast(safe);
         }
-        toastLife = Math.max(0f, toastLife - delta / 3.2f);
-        toastKick = Math.max(0f, toastKick - delta / .22f);
-    }
-
-    /**
-     * Mede a mensagem com a fonte real, quebrando linha se preciso.
-     *
-     * A largura da caixa era estimada por contagem de caracteres
-     * (message.length() * 9.2f), mas Chakra Petch e proporcional: uma frase
-     * com letras largas estourava a caixa, e o teto fixo cortava qualquer
-     * mensagem mais longa. Agora a caixa e dimensionada pelo texto, e nao o
-     * contrario.
-     */
-    private void medirMensagem(String value) {
-        if (value.isBlank()) {
-            toastWidth = 0f;
-            toastHeight = 0f;
-            return;
-        }
-        font.getData().setScale(TOAST_SCALE);
-        // Primeiro sem quebra, para saber se cabe numa linha so.
-        layout.setText(font, value);
-        if (layout.width <= TOAST_MAX_TEXT_WIDTH) {
-            toastWidth = Math.max(TOAST_MIN_WIDTH, layout.width + TOAST_PADDING_X * 2f);
-            toastHeight = layout.height + TOAST_PADDING_Y * 2f;
-        } else {
-            // Nao cabe: quebra dentro da largura maxima e a caixa cresce em altura.
-            layout.setText(font, value, font.getColor(), TOAST_MAX_TEXT_WIDTH, Align.center, true);
-            toastWidth = TOAST_MAX_TEXT_WIDTH + TOAST_PADDING_X * 2f;
-            toastHeight = layout.height + TOAST_PADDING_Y * 2f;
-        }
-        font.getData().setScale(1f);
+        toastLife = Math.max(0f, toastLife - delta / 3.1f);
+        toastKick = Math.max(0f, toastKick - delta / .2f);
     }
 
     public void render(SpriteBatch batch, Astronauta player, MissionState mission, String message,
                        float playerScreenX, float playerScreenY) {
         float eased = Interpolation.pow3Out.apply(entrance);
-        float objectiveY = 646f + (1f - eased) * 22f;
-        float lowerY = 18f - (1f - eased) * 18f;
-        float objectiveAlpha = near(playerScreenX, playerScreenY, 354f, objectiveY, 572f, 58f) ? .24f : .9f;
-        float vitalsAlpha = near(playerScreenX, playerScreenY, 18f, lowerY, 246f, 88f) ? .24f : .88f;
-        float inventoryAlpha = near(playerScreenX, playerScreenY, 940f, lowerY, 322f, 52f) ? .24f : .88f;
-        boolean toastVisible = message != null && !message.isBlank() && toastLife > 0f;
-        float toastAlpha = toastVisible ? Math.min(1f, toastLife * 4f) : 0f;
+        float objectiveY = OBJECTIVE_Y + (1f - eased) * 18f;
+        float lowerY = VITALS_Y - (1f - eased) * 18f;
+        float objectiveAlpha = overlap(playerScreenX, playerScreenY,
+            OBJECTIVE_X, objectiveY, OBJECTIVE_W, OBJECTIVE_H) ? .58f : .94f;
+        float vitalsAlpha = overlap(playerScreenX, playerScreenY,
+            VITALS_X, lowerY, VITALS_W, VITALS_H) ? .58f : .94f;
+        float cargoAlpha = overlap(playerScreenX, playerScreenY,
+            CARGO_X, lowerY, CARGO_W, CARGO_H) ? .58f : .94f;
+        boolean showToast = message != null && !message.isBlank() && toastLife > 0f;
+        float toastAlpha = showToast ? Math.min(1f, toastLife * 4f) : 0f;
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        panel(batch, 354f, objectiveY, 572f, 58f, objectiveAlpha, UiTheme.AMBER);
-        panel(batch, 18f, lowerY, 246f, 88f, vitalsAlpha, UiTheme.CYAN);
-        panel(batch, 940f, lowerY, 322f, 52f, inventoryAlpha, UiTheme.CYAN_DIM);
-        if (toastVisible) {
-            float kick = Interpolation.swingOut.apply(toastKick) * 4f;
-            float width = toastWidth;
-            float height = toastHeight + kick;
-            panel(batch, 640f - width / 2f, TOAST_Y - kick / 2f, width, height,
-                .92f * toastAlpha, UiTheme.GREEN);
-        }
-        bar(batch, 78f, lowerY + 59f, 132f, 9f, player.getOxigenio() / 100f,
-            player.getOxigenio() <= 25f ? UiTheme.RED : UiTheme.CYAN, vitalsAlpha);
-        bar(batch, 78f, lowerY + 37f, 132f, 8f, player.getEnergia() / 100f, UiTheme.AMBER, vitalsAlpha);
-        bar(batch, 78f, lowerY + 15f, 132f, 6f, player.getMunicao() / (float) GameConfig.AMMO_MAX,
-            player.getMunicao() <= GameConfig.AMMO_LOW ? UiTheme.RED : UiTheme.GREEN, vitalsAlpha);
-        batch.end();
+        panel(batch, OBJECTIVE_X, objectiveY, OBJECTIVE_W, OBJECTIVE_H, objectiveAlpha);
+        statusHud.render(batch,player);
 
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        centered(batch, mission.getObjective(player.getOxigenio()), .86f, UiTheme.TEXT, 640f,
-            objectiveY + 44f, objectiveAlpha);
-        text(batch, questLabel.of(mission.getQuestStep(player.getOxigenio())),
-            .62f, UiTheme.AMBER, 372f, objectiveY + 17f, objectiveAlpha);
-        centered(batch, mission.getQuestTitle(player.getOxigenio()), .64f, UiTheme.TEXT_MUTED,
-            660f, objectiveY + 17f, objectiveAlpha * .9f);
-        text(batch, "O2", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 71f, vitalsAlpha);
-        text(batch, oxygenLabel.of(Math.round(player.getOxigenio())), .75f,
-            player.getOxigenio() <= 25f ? UiTheme.RED : UiTheme.TEXT, 216f, lowerY + 69f, vitalsAlpha);
-        text(batch, "EN", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 49f, vitalsAlpha);
-        text(batch, energyLabel.of(Math.round(player.getEnergia())), .72f, UiTheme.TEXT, 216f,
-            lowerY + 47f, vitalsAlpha);
-        boolean lowAmmo = player.getMunicao() <= GameConfig.AMMO_LOW;
-        text(batch, "MUN", .8f, UiTheme.TEXT_MUTED, 34f, lowerY + 25f, vitalsAlpha);
-        text(batch, ammoLabel.of(player.getMunicao()), .78f,
-            lowAmmo ? UiTheme.RED : UiTheme.GREEN, 216f, lowerY + 25f, vitalsAlpha);
-        text(batch, oxygenStock.of(player.getOxigenioColetado()), .8f, UiTheme.CYAN,
-            958f, lowerY + 33f, inventoryAlpha);
-        text(batch, foodStock.of(player.getComidaColetada()), .8f, UiTheme.AMBER,
-            1035f, lowerY + 33f, inventoryAlpha);
-        text(batch, iceStock.of(player.getGeloColetado()), .8f, UiTheme.TEXT,
-            1163f, lowerY + 33f, inventoryAlpha);
-        if (toastVisible) {
-            desenharToast(batch, message, toastAlpha);
-        }
-        batch.end();
-    }
+        text(batch, "MISSÃO  " + mission.getQuestStep(player.getOxigenio()) + "/"
+            + MissionState.QUEST_TOTAL_STEPS, .57f, UiTheme.AMBER,
+            OBJECTIVE_X + 31f, objectiveY + 50f, objectiveAlpha);
+        text(batch, mission.getObjective(player.getOxigenio()), .77f, UiTheme.TEXT,
+            OBJECTIVE_X + 15f, objectiveY + 25f, objectiveAlpha);
 
-    /** Desenha a mensagem centralizada na caixa, em uma ou duas linhas. */
-    private void desenharToast(SpriteBatch batch, String value, float alpha) {
-        font.getData().setScale(TOAST_SCALE);
-        font.setColor(UiTheme.TEXT.r, UiTheme.TEXT.g, UiTheme.TEXT.b, alpha);
-        float textWidth = Math.min(toastWidth - TOAST_PADDING_X * 2f, TOAST_MAX_TEXT_WIDTH);
-        layout.setText(font, value, font.getColor(), textWidth, Align.center, true);
-        float kick = Interpolation.swingOut.apply(toastKick) * 4f;
-        float baseline = TOAST_Y - kick / 2f + toastHeight + kick - TOAST_PADDING_Y;
-        font.draw(batch, layout, 640f - textWidth / 2f, baseline);
+
+        if (showToast) drawToast(batch, message, toastAlpha);
+        batch.setColor(Color.WHITE);
         font.getData().setScale(1f);
+        batch.end();
     }
 
-    private boolean near(float px, float py, float x, float y, float width, float height) {
-        return px > x - 46f && px < x + width + 46f && py > y - 44f && py < y + height + 44f;
+    private void vital(SpriteBatch batch, String name, String value, float ratio, Color color,
+                       float x, float y, float alpha) {
+        text(batch, name, .52f, UiTheme.TEXT_MUTED, x, y + 10f, alpha);
+        rightText(batch, value, .62f, color, x + 286f, y + 10f, alpha);
+        bar(batch, x + 75f, y + 2f, 164f, 7f, ratio, color, alpha);
     }
 
-    /**
-     * Painel do HUD com sombra de mesma silhueta.
-     *
-     * A sombra usa o proprio 9-patch, em duas camadas, para acompanhar os
-     * cantos arredondados; e escala com o alpha do painel, senao ficaria uma
-     * mancha escura sob um painel que esta esmaecendo.
-     */
-    private void panel(SpriteBatch batch, float x, float y, float width, float height,
-                       float alpha, Color accent) {
-        sombra(batch, x, y, width, height, SHADOW_SPREAD, SHADOW_OFFSET, .16f * alpha);
-        sombra(batch, x, y, width, height, SHADOW_SPREAD * .45f, SHADOW_OFFSET * .55f, .24f * alpha);
-        panelColor.set(accent.r * .42f + .58f, accent.g * .42f + .58f,
-            accent.b * .42f + .58f, alpha);
-        panelPatch.setColor(panelColor);
+    private void cargo(SpriteBatch batch, TextureRegion icon, String value,
+                       float x, float y, Color color, float alpha) {
+        batch.setColor(1f, 1f, 1f, alpha);
+        com.orion.echoes.lua.render.SpriteFit.draw(batch, icon, x, y, 34f, 34f);
+        text(batch, value, .72f, color, x + 42f, y + 24f, alpha);
+    }
+
+    private void panel(SpriteBatch batch, float x, float y, float width, float height, float alpha) {
+        tint.set(0f, 0f, 0f, .28f * alpha);
+        panelPatch.setColor(tint);
+        panelPatch.draw(batch, x + 3f, y - 4f, width, height);
+        tint.set(1f, 1f, 1f, alpha);
+        panelPatch.setColor(tint);
         panelPatch.draw(batch, x, y, width, height);
         panelPatch.setColor(Color.WHITE);
+        screw(batch, x + 9f, y + 8f, alpha);
+        screw(batch, x + width - 12f, y + height - 11f, alpha);
     }
 
-    private void sombra(SpriteBatch batch, float x, float y, float width, float height,
-                        float spread, float offset, float alpha) {
-        shadowColor.set(0f, 0f, 0f, alpha);
-        panelPatch.setColor(shadowColor);
-        panelPatch.draw(batch, x - spread + offset, y - spread - offset,
-            width + spread * 2f, height + spread * 2f);
-        panelPatch.setColor(Color.WHITE);
+    private void screw(SpriteBatch batch, float x, float y, float alpha) {
+        batch.setColor(UiTheme.BORDER.r, UiTheme.BORDER.g, UiTheme.BORDER.b, alpha * .7f);
+        batch.draw(white, x, y, 3f, 3f);
+        batch.setColor(Color.WHITE);
+    }
+
+    private void statusMark(SpriteBatch batch, float x, float y, Color color, float alpha) {
+        batch.setColor(color.r, color.g, color.b, alpha);
+        batch.draw(white, x, y, 8f, 8f);
+        batch.setColor(Color.WHITE);
     }
 
     private void bar(SpriteBatch batch, float x, float y, float width, float height,
@@ -236,18 +156,47 @@ public final class Hud implements Disposable {
         batch.setColor(Color.WHITE);
     }
 
-    private void text(SpriteBatch batch, String value, float scale, Color color, float x, float y, float alpha) {
+    private void measureToast(String value) {
+        if (value.isEmpty()) {
+            toastWidth = toastHeight = 0f;
+            return;
+        }
+        font.getData().setScale(TOAST_SCALE);
+        layout.setText(font, value, UiTheme.TEXT, TOAST_MAX_TEXT_WIDTH, Align.center, true);
+        toastWidth = Math.min(TOAST_MAX_TEXT_WIDTH, Math.max(230f, layout.width)) + TOAST_PADDING_X * 2f;
+        toastHeight = layout.height + TOAST_PADDING_Y * 2f;
+        font.getData().setScale(1f);
+    }
+
+    private void drawToast(SpriteBatch batch, String value, float alpha) {
+        float kick = Interpolation.swingOut.apply(toastKick) * 5f;
+        float x = GameConfig.WINDOW_WIDTH / 2f - toastWidth / 2f;
+        panel(batch, x, TOAST_Y - kick, toastWidth, toastHeight, .92f * alpha);
+        font.getData().setScale(TOAST_SCALE);
+        font.setColor(UiTheme.TEXT.r, UiTheme.TEXT.g, UiTheme.TEXT.b, alpha);
+        float textWidth = toastWidth - TOAST_PADDING_X * 2f;
+        layout.setText(font, value, font.getColor(), textWidth, Align.center, true);
+        font.draw(batch, layout, x + TOAST_PADDING_X,
+            TOAST_Y - kick + toastHeight - TOAST_PADDING_Y);
+    }
+
+    private boolean overlap(float px, float py, float x, float y, float width, float height) {
+        return px > x - 36f && px < x + width + 36f && py > y - 36f && py < y + height + 36f;
+    }
+
+    private void text(SpriteBatch batch, String value, float scale, Color color,
+                      float x, float y, float alpha) {
         font.getData().setScale(scale);
         font.setColor(color.r, color.g, color.b, alpha);
         font.draw(batch, value, x, y);
     }
 
-    private void centered(SpriteBatch batch, String value, float scale, Color color,
-                          float centerX, float y, float alpha) {
+    private void rightText(SpriteBatch batch, String value, float scale, Color color,
+                           float right, float y, float alpha) {
         font.getData().setScale(scale);
         font.setColor(color.r, color.g, color.b, alpha);
         layout.setText(font, value);
-        font.draw(batch, layout, centerX - layout.width / 2f, y);
+        font.draw(batch, layout, right - layout.width, y);
     }
 
     public void resize(int width, int height) { viewport.update(width, height, true); }

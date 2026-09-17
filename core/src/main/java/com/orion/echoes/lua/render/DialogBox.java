@@ -48,7 +48,7 @@ public final class DialogBox {
     public DialogBox(SpriteBatch batch, AssetManager assets) {
         this.batch = batch;
         this.assets = assets;
-        this.panel = assets.uiDialogPatch();
+        this.panel = assets.uiPanelPatch();
         this.font = assets.font;
     }
 
@@ -73,6 +73,7 @@ public final class DialogBox {
         batch.setColor(0f, 0f, 0f, .42f * eased);
         batch.draw(assets.uiWhiteTexture, 0f, 0f,
             GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
+        batch.setColor(Color.WHITE);
 
         sombra(X, y, WIDTH, HEIGHT, SHADOW_SPREAD, SHADOW_OFFSET, .18f * eased);
         sombra(X, y, WIDTH, HEIGHT, SHADOW_SPREAD * .45f, SHADOW_OFFSET * .55f, .26f * eased);
@@ -84,11 +85,10 @@ public final class DialogBox {
 
         float portraitX = X + 30f;
         float portraitY = y + 42f;
-        batch.setColor(.12f, .9f, 1f, .18f * eased);
+        batch.setColor(.03f, .08f, .12f, .8f * eased);
         batch.draw(assets.uiWhiteTexture, portraitX - 5f, portraitY - 5f, 194f, 214f);
         batch.setColor(1f, 1f, 1f, eased);
-        batch.draw(portrait,
-            portraitX, portraitY, 184f, 204f);
+        SpriteFit.draw(batch, portrait, portraitX, portraitY, 184f, 204f);
 
         float textX = X + 252f;
         float textWidth = WIDTH - 290f;
@@ -98,7 +98,7 @@ public final class DialogBox {
 
         font.getData().setScale(.56f);
         font.setColor(UiTheme.CYAN.r, UiTheme.CYAN.g, UiTheme.CYAN.b, eased);
-        font.draw(batch, "CANAL LOCAL  •  ECHOES", textX, y + HEIGHT - 68f);
+        font.draw(batch, "TRANSMISSÃO LOCAL", textX, y + HEIGHT - 68f);
 
         // Quebra dentro da largura útil: é isto que impede o texto de vazar.
         font.getData().setScale(TEXT_SCALE);

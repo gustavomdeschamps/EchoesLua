@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
 
 /** Predador lunar com telegraph legível e animações 4x4 consistentes. */
 public class Enemy extends Entidade {
@@ -52,6 +53,8 @@ public class Enemy extends Entidade {
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
     private final Rectangle movementBounds = new Rectangle();
+    private final Rectangle footprint = new Rectangle();
+    private final Rectangle attackHitbox = new Rectangle();
     private final float spawnX, spawnY;
     private final Behavior behavior;
     private State state = State.IDLE;
@@ -76,6 +79,8 @@ public class Enemy extends Entidade {
 
     public Behavior getBehavior() { return behavior; }
 
+    private Array<Rectangle> solidBounds;
+    public void setSolidBounds(Array<Rectangle> solids) { solidBounds=solids; }
     public void update(float delta, Astronauta target, Array<Obstacle> obstacles) {
         elapsed += delta;
         stateTime += delta;
@@ -175,6 +180,10 @@ public class Enemy extends Entidade {
      */
     private void sincronizarHitbox() {
         bounds.set(hitboxX(position.x), hitboxY(position.y), hitboxWidth(), hitboxHeight());
+        footprint.set(bounds.x + bounds.width * .10f, bounds.y,
+            bounds.width * .80f, Math.max(12f, bounds.height * .34f));
+        attackHitbox.set(bounds.x - bounds.width * .20f, bounds.y - 5f,
+            bounds.width * 1.40f, bounds.height * .88f);
     }
 
     private static float hitboxWidth() {
@@ -197,12 +206,14 @@ public class Enemy extends Entidade {
     }
 
     private float telegraphPulse() {
-        return state == State.TELEGRAPH ? MathUtils.sin(stateTime * 26f) * 2f : 0f;
+        return 0f;
     }
 
     private boolean isFree(float x, float y, Array<Obstacle> obstacles) {
-        movementBounds.set(hitboxX(x), hitboxY(y), hitboxWidth(), hitboxHeight());
+        movementBounds.set(hitboxX(x) + hitboxWidth() * .10f, hitboxY(y),
+            hitboxWidth() * .80f, Math.max(12f, hitboxHeight() * .34f));
         for (Obstacle obstacle : obstacles) if (movementBounds.overlaps(obstacle.getBounds())) return false;
+        if(solidBounds!=null) for(Rectangle solid:solidBounds) if(movementBounds.overlaps(solid))return false;
         return true;
     }
 
@@ -238,7 +249,7 @@ public class Enemy extends Entidade {
         if (state == State.HIT) batch.setColor(1f, .45f, .62f, alpha);
         else batch.setColor(behavior.tint.r, behavior.tint.g, behavior.tint.b, alpha);
         float pulse = telegraphPulse();
-        batch.draw(currentFrame(),
+        AtlasRegionRenderer.draw(batch, currentFrame(),
             position.x + GameConfig.ENEMY_SPRITE_OFFSET_X,
             position.y + GameConfig.ENEMY_SPRITE_OFFSET_Y + pulse,
             GameConfig.ENEMY_SPRITE_SIZE, GameConfig.ENEMY_SPRITE_SIZE);
@@ -255,9 +266,13 @@ public class Enemy extends Entidade {
     public Vector2 getAimDirection() { return direction; }
 
     public boolean canDamage(Astronauta astronauta) {
+        if(astronauta.isInvulnerable() || astronauta.isProtegido())return false;
         if (behavior == Behavior.RANGED) return false;
         if (!ativo || state != State.ATTACK || stateTime < .08f || stateTime > .24f
-            || contactCooldown > 0f || !bounds.overlaps(astronauta.getBounds())) return false;
+            || contactCooldown > 0f || !attackHitbox.overlaps(astronauta.getHurtbox())) return false;
+        if(solidBounds!=null && com.orion.echoes.lua.systems.CombatVisibility.blocked(centerX(),centerY(),
+            astronauta.getHurtbox().x+astronauta.getHurtbox().width/2,
+            astronauta.getHurtbox().y+astronauta.getHurtbox().height/2,solidBounds))return false;
         contactCooldown = .9f;
         return true;
     }
@@ -286,6 +301,11 @@ public class Enemy extends Entidade {
         boolean started = telegraphStarted;
         telegraphStarted = false;
         return started;
+    }
+    @Override public Rectangle getHurtbox() { return bounds; }
+    @Override public Rectangle getFootprint() { return footprint; }
+    @Override public Rectangle getAttackHitbox() {
+        return state == State.ATTACK ? attackHitbox : null;
     }
     @Override public void dispose() { }
 }

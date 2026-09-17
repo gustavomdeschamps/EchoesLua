@@ -44,6 +44,12 @@ public final class LunarCheckpoint {
 
     /** Grava os campos de campanha comuns as duas fases. */
     public static void applyCampaign(GameSaveData data, CampaignState campaign) {
+        data.inventario = campaign.getInventario().exportarChaves();
+        data.comidaGuardada = campaign.getInventario().getComida();
+        data.nivelArma = campaign.getInventario().getNivelArma();
+        data.nivelArmadura = campaign.getInventario().getNivelArmadura();
+        data.formaBossCalisto = campaign.getFormaBossCalisto();
+        data.hpBossCalisto = campaign.getHpBossCalisto();
         data.oxigenio = campaign.getOxygen();
         data.energia = campaign.getEnergy();
         data.gelo = campaign.getIce();
@@ -81,6 +87,9 @@ public final class LunarCheckpoint {
     /** Reconstroi a campanha a partir de um save, sem tocar no mundo. */
     public static CampaignState toCampaign(GameSaveData data) {
         CampaignState campaign = new CampaignState(data.semente);
+        campaign.getInventario().restaurar(data.inventario, data.comidaGuardada,
+            data.nivelArma, data.nivelArmadura);
+        campaign.setBossCalisto(data.formaBossCalisto, data.hpBossCalisto);
         campaign.setPhase(CampaignState.phaseFromToken(data.fase));
         campaign.setVitals(data.oxigenio, data.energia);
         campaign.setAmmo(data.municao);
@@ -125,6 +134,7 @@ public final class LunarCheckpoint {
             data.estufaReparada, data.armaCraftada, data.inimigosEliminados);
         mission.setMarsProgress(data.marteVisitado, data.marteConcluido);
         if (campaign != null) {
+            campaign.getInventario().restaurar(data.inventario,data.comidaGuardada,data.nivelArma,data.nivelArmadura);
             campaign.setVitals(data.oxigenio, data.energia);
             campaign.setAmmo(data.municao);
             campaign.captureMission(mission);

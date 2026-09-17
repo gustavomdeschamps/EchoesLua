@@ -3,6 +3,8 @@ package com.orion.echoes.lua;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.Cursor;
+import com.badlogic.gdx.graphics.Pixmap;
 
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.SoundManager;
@@ -20,6 +22,8 @@ public class EchoesLua extends Game {
     private SoundManager sounds;
     private AppSettings settings;
     private CampaignState campaign;
+    private Cursor defaultCursor;
+    private Cursor targetCursor;
 
     @Override
     public void create() {
@@ -111,10 +115,44 @@ public class EchoesLua extends Game {
         }
     }
 
+    /** Instala os dois cursores autorais fornecidos pelo pacote final. */
+    public void installCustomCursors() {
+        disposeCursors();
+        try {
+            Pixmap normal = new Pixmap(Gdx.files.internal("textures/ui/cursor_default.png"));
+            Pixmap target = new Pixmap(Gdx.files.internal("textures/ui/cursor_target.png"));
+            defaultCursor = Gdx.graphics.newCursor(normal, 3, 3);
+            targetCursor = Gdx.graphics.newCursor(target, 16, 16);
+            normal.dispose();
+            target.dispose();
+            useDefaultCursor();
+        } catch (RuntimeException unsupported) {
+            // Algumas plataformas não aceitam cursor customizado; o jogo deve
+            // continuar funcional com o cursor nativo.
+            disposeCursors();
+        }
+    }
+
+    public void useDefaultCursor() {
+        if (defaultCursor != null) Gdx.graphics.setCursor(defaultCursor);
+    }
+
+    public void useTargetCursor() {
+        if (targetCursor != null) Gdx.graphics.setCursor(targetCursor);
+    }
+
+    private void disposeCursors() {
+        if (defaultCursor != null) defaultCursor.dispose();
+        if (targetCursor != null) targetCursor.dispose();
+        defaultCursor = null;
+        targetCursor = null;
+    }
+
     @Override
     public void dispose() {
 
         super.dispose();
+        disposeCursors();
 
         if (sounds != null) {
             sounds.dispose();

@@ -6,6 +6,7 @@ import com.badlogic.gdx.Screen;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -85,6 +86,7 @@ abstract class MissionResultScreen implements Screen {
         Color accent = success ? UiTheme.GREEN : UiTheme.RED;
         drawBackground();
         drawComposition(accent);
+        drawHero(appear(DELAY_SUBTITLE));
         drawReport(accent);
         drawButtons(accent);
         handleInput();
@@ -111,7 +113,7 @@ abstract class MissionResultScreen implements Screen {
         return game.getSettings() != null && game.getSettings().isReduceMotion();
     }
 
-    private static final Color SUCCESS_TINT = new Color(.52f, .32f, .21f, 1f);
+    private static final Color SUCCESS_TINT = new Color(.78f, .84f, .94f, 1f);
     private static final Color FAILURE_TINT = new Color(.13f, .11f, .14f, 1f);
 
     private float rise(float progress) {
@@ -132,17 +134,64 @@ abstract class MissionResultScreen implements Screen {
     // COMPOSICAO
     // =====================================================
 
+    /*
+     * Enquadramento da arte de vitoria.
+     *
+     * A ilustracao traz um homem fotorrealista em primeiro plano que nao e o
+     * astronauta do jogo - apresenta-lo como o personagem seria trocar a
+     * identidade do protagonista no ultimo quadro da campanha. O recorte abaixo
+     * fica com o cenario do retorno (Terra nascendo sobre a crista lunar, ceu
+     * profundo e o terco direito calmo para o relatorio) e o personagem entra
+     * como ele e: o sprite do proprio jogo, sobre a crista.
+     */
+    private static final float ART_U = .46f, ART_V = .22f, ART_W = .54f, ART_H = .5389f;
+    private TextureRegion victoryFraming;
+
+    private TextureRegion victoryFraming() {
+        if (victoryFraming == null) {
+            Texture art = game.getAssets().victoryReturnTexture;
+            victoryFraming = new TextureRegion(art,
+                Math.round(art.getWidth() * ART_U), Math.round(art.getHeight() * ART_V),
+                Math.round(art.getWidth() * ART_W), Math.round(art.getHeight() * ART_H));
+        }
+        return victoryFraming;
+    }
+
     /** Arte de fundo com deriva lenta, para a tela nao ficar estatica. */
     private void drawBackground() {
-        Texture background = success
-            ? game.getAssets().marsBackgroundTexture
-            : game.getAssets().backgroundLuaTexture;
         Color tint = success ? SUCCESS_TINT : FAILURE_TINT;
-
-        float drift = Interpolation.sine.apply(MathUtils.clamp(elapsed / 14f, 0f, 1f)) * 26f;
+        float drift = reduceMotion() ? 0f
+            : Interpolation.sine.apply(MathUtils.clamp(elapsed / 14f, 0f, 1f)) * 12f;
         ui.clear(UiTheme.VOID);
-        ui.image(background, -drift, -drift * .4f,
-            GameConfig.WINDOW_WIDTH + drift * 2f, GameConfig.WINDOW_HEIGHT + drift, tint);
+        if (success) {
+            ui.image(victoryFraming(), -drift, -drift * .4f,
+                GameConfig.WINDOW_WIDTH + drift * 2f, GameConfig.WINDOW_HEIGHT + drift, tint);
+        } else {
+            ui.image(game.getAssets().backgroundLuaTexture, -drift, -drift * .4f,
+                GameConfig.WINDOW_WIDTH + drift * 2f, GameConfig.WINDOW_HEIGHT + drift, tint);
+        }
+    }
+
+    /**
+     * O astronauta da campanha, de pe na crista.
+     *
+     * Usa o mesmo quadro de repouso das fases: nao ha animacao inventada nem
+     * gesto fabricado por corte de imagem - o que aparece e o personagem que o
+     * jogador conduziu ate aqui.
+     */
+    private void drawHero(float progress) {
+        if (!success || progress <= 0f) return;
+        // Fica entre a coluna de titulo e o painel do relatorio: sobre a crista
+        // e sem cobrir o texto do desfecho.
+        float size = 196f;
+        float x = 522f, y = 178f + rise(progress);
+        // Sombra e sprite no mesmo batch: region() abre o proprio batch e, se
+        // chamado dentro de beginText(), quebraria o par begin/end.
+        ui.beginShapes();
+        ui.rect(x + size * .26f, y + 6f, size * .46f, size * .07f, new Color(0f, 0f, 0f, .34f * progress));
+        ui.sprite(game.getAssets().astronautFrame(0, 0), x, y, size, size,
+            faded.set(1f, 1f, 1f, progress));
+        ui.endShapes();
     }
 
     private void drawComposition(Color accent) {
@@ -152,21 +201,21 @@ abstract class MissionResultScreen implements Screen {
         ui.beginShapes();
         // Faixa inferior: assenta os botoes e separa a leitura do fundo.
         ui.rect(0f, 0f, GameConfig.WINDOW_WIDTH, 168f, new Color(.016f, .024f, .030f, .95f));
-        // Regua curta acima do titulo, na cor do desfecho.
-        ui.sprite(game.getAssets().uiDamageVignetteTexture, 0f, 0f,
-            GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT,
-            new Color(1f, 1f, 1f, success ? .22f : .48f));
+        // Vinheta so no desfecho de derrota: na vitoria ela escurecia a arte
+        // do retorno sem motivo, com cara de dano em tela.
+        if (!success) ui.sprite(game.getAssets().uiDamageVignetteTexture, 0f, 0f,
+            GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, new Color(1f, 1f, 1f, .48f));
         ui.endShapes();
 
         ui.beginText();
-        ui.text("ECHOES  ·  " + game.getCampaign().phaseToken(),
+        ui.text("ECHOES  ·  " + (success ? "TERRA" : game.getCampaign().phaseToken()),
             .72f, fade(accent, titleIn), 74f, 640f + rise(titleIn));
         ui.title(success ? "MISSÃO\nCONCLUÍDA" : "FIM DA\nEXPEDIÇÃO",
             1.65f, fade(UiTheme.TEXT, titleIn), 70f, 548f + rise(titleIn));
         ui.text(success
-                ? "O Soberano caiu. O enlace entre as colônias está seguro."
+                ? "As colônias voltaram a se ouvir.\nSua expedição chegou ao fim."
                 : "O suporte de vida do traje chegou ao limite.",
-            .72f, fade(UiTheme.TEXT_MUTED, subtitleIn), 74f, 386f + rise(subtitleIn));
+            .72f, fade(success ? UiTheme.TEXT : UiTheme.TEXT_MUTED, subtitleIn), 74f, 386f + rise(subtitleIn));
         ui.endText();
     }
 

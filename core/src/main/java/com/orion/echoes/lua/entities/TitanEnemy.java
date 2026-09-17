@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
 import com.orion.echoes.lua.systems.CombatTarget;
 
 /** Predador anfíbio de Titã: espécie, silhueta e animação próprias. */
@@ -22,6 +23,7 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     private float time;
     private float hitTimer;
     private float attackCooldown;
+    private Array<Rectangle> solidBounds;
     private float telegraphTimer;
     private boolean shotPending;
     private boolean moving;
@@ -44,6 +46,7 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
 
     public void update(float delta, Astronauta player, float worldWidth, float worldHeight,
                        Array<Rectangle> obstacles) {
+        solidBounds=obstacles;
         if (!ativo) return;
         time += delta;
         if (hp <= 0f) {
@@ -91,7 +94,11 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     }
 
     public boolean canDamage(Astronauta player) {
-        if (!ativo || attackCooldown > 0f || !bounds.overlaps(player.getBounds())) return false;
+        if(player.isInvulnerable() || player.isProtegido())return false;
+        if (!ativo || hp<=0 || telegraphTimer>0 || hitTimer>0 || attackCooldown > 0f || !bounds.overlaps(player.getHurtbox())) return false;
+        if(solidBounds!=null && com.orion.echoes.lua.systems.CombatVisibility.blocked(centerX(),centerY(),
+            player.getHurtbox().x+player.getHurtbox().width/2,
+            player.getHurtbox().y+player.getHurtbox().height/2,solidBounds))return false;
         attackCooldown = 1.05f;
         return true;
     }
@@ -117,7 +124,8 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     private TextureRegion frame() {
         int row = hp <= 0f ? 3 : hitTimer > 0f ? 3
             : telegraphTimer > 0f ? 2 : moving ? 1 : 0;
-        int column = hp <= 0f ? Math.min(3, (int)(deathTime / .16f))
+        int column = hp <= 0f ? Math.min(3, 2 + (int)(deathTime / .16f))
+            : hitTimer > 0f ? (int)(time / .09f) % 2
             : (int)(time / (row == 1 ? .12f : .22f)) % 4;
         TextureRegion frame = frames[row][column];
         if (frame.isFlipX() != facingLeft) frame.flip(true, false);
@@ -149,8 +157,8 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     @Override public void render(SpriteBatch batch) {
         if (!ativo) return;
         if (hitTimer > 0f) batch.setColor(1f, .55f, .3f, 1f);
-        batch.draw(frame(), centerX() - SPRITE_SIZE / 2f,
-            position.y - 32f + MathUtils.sin(time * 3f) * 2f, SPRITE_SIZE, SPRITE_SIZE);
+        AtlasRegionRenderer.draw(batch, frame(), centerX() - SPRITE_SIZE / 2f,
+            position.y - 2f, SPRITE_SIZE, SPRITE_SIZE);
         batch.setColor(1f, 1f, 1f, 1f);
     }
 

@@ -9,6 +9,8 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.render.SpriteFit;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
+import com.orion.echoes.lua.render.AtlasSpriteFactory;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 
 /** Prop marciano com atlas próprio e estados simples de coleta/ativação. */
@@ -38,6 +40,7 @@ public final class MarsObject extends Entidade {
      * a estação usa a região estática antiga com o pulso procedural existente.
      */
     private final TextureRegion[] stationFrames;
+    private int stationFrame;
     private VisualState state = VisualState.OFFLINE_IDLE;
     private float stateTime;
     private final float baseY;
@@ -52,10 +55,11 @@ public final class MarsObject extends Entidade {
         this.kind = kind;
         this.baseY = y;
         this.stationFrames = isStation() ? loadStationFrames(assets, kind) : null;
-        sprite = new Sprite(kind == Kind.ROCK
+        TextureRegion initialRegion = kind == Kind.ROCK
             ? assets.marsObstacleRegion(Math.abs(((int)x * 31 + (int)y * 17)) % 6)
             : stationFrames != null ? stationFrames[0]
-            : assets.marsRegion(kind.column, kind.row));
+            : assets.marsRegion(kind.column, kind.row);
+        sprite = AtlasSpriteFactory.create(initialRegion);
         /*
          * As celulas do atlas sao quadradas. Esticar a arte para preencher um
          * retangulo de outra proporcao achatava a plataforma de pouso em 32% e
@@ -63,7 +67,7 @@ public final class MarsObject extends Entidade {
          * Aqui a arte e encaixada sem deformar, e o retangulo resultante vira
          * a referencia tambem da hitbox.
          */
-        SpriteFit.fit(sprite, x, y, width, height, drawRect);
+        SpriteFit.fit(initialRegion, x, y, width, height, drawRect);
         sprite.setSize(drawRect.width, drawRect.height);
         sprite.setPosition(drawRect.x, drawRect.y);
         sprite.setOriginCenter();
@@ -109,7 +113,7 @@ public final class MarsObject extends Entidade {
         elapsed += delta;
         activation = Math.max(0f, activation - delta / .55f);
         if (isCollectible()) {
-            sprite.setPosition(position.x, baseY + MathUtils.sin(elapsed * 2.5f + position.x) * 7f);
+            sprite.setPosition(drawRect.x, baseY + MathUtils.sin(elapsed * 2.5f + position.x) * 7f);
             sprite.setRotation(MathUtils.sin(elapsed * 1.5f + position.y) * 3f);
         } else if (stationFrames != null) {
             updateStationAnimation(delta);
@@ -128,15 +132,22 @@ public final class MarsObject extends Entidade {
             state = VisualState.ONLINE_LOOP;
             stateTime = 0f;
         }
-        int frame = switch (state) {
+        stationFrame = switch (state) {
             case OFFLINE_IDLE -> 0;
             case ACTIVATING -> 1;
             case ONLINE_LOOP -> 2 + (int) (stateTime / ONLINE_FRAME_INTERVAL) % 2;
         };
-        sprite.setRegion(stationFrames[frame]);
     }
 
-    @Override public void render(SpriteBatch batch) { if (ativo) sprite.draw(batch); }
+    @Override public void render(SpriteBatch batch) {
+        if (!ativo) return;
+        if (stationFrames != null) {
+            AtlasRegionRenderer.draw(batch, stationFrames[stationFrame], drawRect.x, drawRect.y,
+                drawRect.width, drawRect.height);
+        } else {
+            sprite.draw(batch);
+        }
+    }
     public Kind getKind() { return kind; }
     public boolean isCollectible() { return kind == Kind.MINERAL || kind == Kind.MEDKIT || kind == Kind.POWER_CELL; }
     public boolean isStation() { return kind == Kind.SOLAR_STATION || kind == Kind.OXYGEN_STATION || kind == Kind.COMMS_STATION; }
@@ -169,7 +180,6 @@ public final class MarsObject extends Entidade {
         if (stationFrames != null) {
             state = VisualState.ONLINE_LOOP;
             stateTime = 0f;
-            sprite.setRegion(stationFrames[2]);
         } else {
             sprite.setColor(1f, .82f, .58f, 1f);
         }

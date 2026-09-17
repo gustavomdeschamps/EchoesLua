@@ -56,6 +56,7 @@ public final class MenuScreen implements Screen {
     public MenuScreen(EchoesLua game) { this.game = game; }
 
     @Override public void show() {
+        game.useDefaultCursor();
         // Telas de gameplay usam a mesma fonte com escalas temporárias.
         // Restaurar aqui impede que os botões cresçam após pause/vitória/derrota.
         game.getAssets().font.getData().setScale(1f);
@@ -92,9 +93,9 @@ public final class MenuScreen implements Screen {
         Table content = basePage();
         content.add(title("COMO JOGAR", 1.2f)).left().colspan(2).padBottom(25f).row();
         helpCard(content, "MOVIMENTO", "WASD ou setas  ·  SHIFT para correr", UiTheme.CYAN);
-        helpCard(content, "AÇÃO", "E interage  ·  ESPAÇO executa o dash", UiTheme.AMBER);
-        helpCard(content, "COMBATE", "Mouse aponta  ·  botão esquerdo dispara", UiTheme.GREEN);
-        helpCard(content, "MISSÃO", "Reative três sistemas, fabrique a arma e abra o portal", UiTheme.RED);
+        helpCard(content, "AÇÃO", "E interage  ·  Q executa o dash", UiTheme.AMBER);
+        helpCard(content, "COMBATE", "Mouse aponta  ·  clique ou ESPAÇO dispara", UiTheme.GREEN);
+        helpCard(content, "EXPEDIÇÃO", "I abre a mochila  ·  M abre o mapa  ·  C usa comida na mochila", UiTheme.RED);
         content.add(button("VOLTAR", () -> showMain(true))).width(210f).height(54f).left().colspan(2).padTop(24f).row();
         swap(content, animate);
     }
@@ -370,7 +371,11 @@ public final class MenuScreen implements Screen {
         if (fadeCompleted) {
             fadeCompleted = false;
             CampaignState campaign = game.getCampaign();
-            if (campaign.getPhase() == CampaignState.Phase.TITAN) {
+            if (campaign.getPhase() == CampaignState.Phase.CALLISTO) {
+                game.setScreen(new CallistoScreen(game, campaign));
+            } else if (campaign.getPhase() == CampaignState.Phase.AHARIN) {
+                game.setScreen(new AharinScreen(game, campaign));
+            } else if (campaign.getPhase() == CampaignState.Phase.TITAN) {
                 game.setScreen(WorldIntroScreen.routeToTitan(game, campaign));
             } else if (campaign.getPhase() == CampaignState.Phase.MARS) {
                 game.setScreen(WorldIntroScreen.routeToMars(game, campaign));

@@ -9,6 +9,8 @@ import com.orion.echoes.lua.events.EventBus;
 import com.orion.echoes.lua.events.EventType;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.render.AtlasSpriteFactory;
+import com.orion.echoes.lua.render.SpriteFit;
 
 public class BaseLunar extends Entidade implements Interagivel {
 
@@ -26,12 +28,13 @@ public class BaseLunar extends Entidade implements Interagivel {
     ) {
         super(x, y, width, height);
 
-        sprite = new Sprite(assets.baseLunarTexture);
-        sprite.setSize(width, height);
-        sprite.setPosition(x, y);
+        sprite = AtlasSpriteFactory.create(assets.baseLunarTexture);
+        Rectangle draw = SpriteFit.fit(assets.baseLunarTexture, x, y, width, height, new Rectangle());
+        sprite.setBounds(draw.x, draw.y, draw.width, draw.height);
 
         // Área útil no solo: antenas e teto não devem funcionar como zona pressurizada.
-        bounds.set(x + width * .09f, y + height * .06f, width * .82f, height * .5f);
+        bounds.set(draw.x + draw.width * .09f, draw.y + draw.height * .06f,
+            draw.width * .82f, draw.height * .5f);
     }
 
     @Override

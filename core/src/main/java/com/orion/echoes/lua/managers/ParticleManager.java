@@ -12,6 +12,7 @@ import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.Disposable;
 import com.badlogic.gdx.utils.ObjectMap;
 import com.badlogic.gdx.utils.Pool;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
 
 public class ParticleManager implements Disposable {
 
@@ -277,8 +278,8 @@ public class ParticleManager implements Disposable {
             int frameIndex = Math.min(fx.frames.length - 1, (int)(progress * fx.frames.length));
             if (fx.additive) batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE);
             batch.setColor(fx.red, fx.green, fx.blue, alpha);
-            batch.draw(fx.frames[frameIndex], fx.x, fx.y, fx.width / 2f, fx.height / 2f,
-                fx.width, fx.height, scale, scale, fx.rotation);
+            AtlasRegionRenderer.draw(batch, fx.frames[frameIndex], fx.x, fx.y,
+                fx.width, fx.height, scale, fx.rotation);
             if (fx.additive) batch.setBlendFunction(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         }
         batch.setColor(1f, 1f, 1f, 1f);

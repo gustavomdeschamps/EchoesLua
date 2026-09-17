@@ -21,6 +21,9 @@ public class PhysicsWorld {
     public static final float GRAVITY_LUA = -1.62f;
 
     private final World world;
+    private final ObjectMap<Body,com.badlogic.gdx.math.Rectangle> solidBodies = new ObjectMap<>();
+    private final com.badlogic.gdx.utils.Array<com.badlogic.gdx.math.Rectangle> solidBounds = new com.badlogic.gdx.utils.Array<>();
+    public com.badlogic.gdx.utils.Array<com.badlogic.gdx.math.Rectangle> getSolidBounds() { return solidBounds; }
     private final ObjectMap<Body, Vector2> previousPositions = new ObjectMap<>();
     private float accumulator;
 
@@ -168,6 +171,7 @@ public class PhysicsWorld {
         float height,
         Object userData
     ) {
+        solidBounds.add(new com.badlogic.gdx.math.Rectangle(x-width/2f,y-height/2f,width,height));
 
         BodyDef bodyDef =
             new BodyDef();
@@ -199,6 +203,7 @@ public class PhysicsWorld {
 
         fixtureDef.friction =
             0.6f;
+        solidBodies.put(body,solidBounds.peek());
 
         body.createFixture(
             fixtureDef
@@ -279,6 +284,9 @@ public class PhysicsWorld {
     ) {
 
         if (body != null) {
+            com.badlogic.gdx.math.Rectangle solid=solidBodies.remove(body);
+            if(solid!=null)solidBounds.removeValue(solid,true);
+            untrackForRender(body);
 
             world.destroyBody(
                 body
@@ -291,6 +299,7 @@ public class PhysicsWorld {
     // =====================================================
 
     public void dispose() {
+        solidBounds.clear();solidBodies.clear();previousPositions.clear();
 
         world.dispose();
     }

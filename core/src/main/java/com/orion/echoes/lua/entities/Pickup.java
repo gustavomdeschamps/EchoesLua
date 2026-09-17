@@ -7,6 +7,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.render.SpriteFit;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
 import com.badlogic.gdx.math.Rectangle;
 
 /**
@@ -22,7 +23,7 @@ import com.badlogic.gdx.math.Rectangle;
  */
 public final class Pickup extends Entidade {
 
-    public enum Kind { OXIGENIO, GELO }
+    public enum Kind { OXIGENIO, GELO, COMIDA }
 
     private static final float SIZE = 58f;
     private static final float PADDING = 6f;
@@ -39,7 +40,8 @@ public final class Pickup extends Entidade {
         super(x, y, SIZE, SIZE);
         this.kind = kind;
         this.baseY = y;
-        this.region = kind == Kind.OXIGENIO ? assets.oxigenioTexture : assets.geloTexture;
+        this.region = kind == Kind.OXIGENIO ? assets.oxigenioTexture
+            : kind == Kind.COMIDA ? assets.comidaTexture : assets.geloTexture;
         sincronizar(y);
     }
 
@@ -71,6 +73,8 @@ public final class Pickup extends Entidade {
         if (kind == Kind.OXIGENIO) {
             player.recuperarOxigenio(GameConfig.OXYGEN_ITEM_VALUE);
             player.registrarColeta(Item.TipoItem.OXIGENIO);
+        } else if (kind == Kind.COMIDA) {
+            player.guardarComida(); player.registrarColeta(Item.TipoItem.COMIDA);
         } else {
             player.adicionarGelo();
             player.registrarColeta(Item.TipoItem.GELO);
@@ -89,7 +93,7 @@ public final class Pickup extends Entidade {
         float w = drawRect.width * pulse;
         float h = drawRect.height * pulse;
         batch.setColor(Color.WHITE);
-        batch.draw(region, drawRect.x + (drawRect.width - w) / 2f,
+        AtlasRegionRenderer.draw(batch, region, drawRect.x + (drawRect.width - w) / 2f,
             drawRect.y + (drawRect.height - h) / 2f, w, h);
         batch.setColor(Color.WHITE);
     }

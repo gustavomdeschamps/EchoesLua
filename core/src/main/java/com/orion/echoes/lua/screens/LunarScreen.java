@@ -104,6 +104,8 @@ public class LunarScreen implements Screen {
 
     private boolean pausado, gameOver, vitoria;
     private boolean portalTraveling;
+    private com.orion.echoes.lua.ui.ExpeditionOverlay expedition;
+    private boolean expeditionOpen;
     private boolean oxigenioCriticoAtivado, estavaNaBase, portalWasUnlocked;
     private float tempoPoeira, tempoPasso;
 
@@ -135,6 +137,7 @@ public class LunarScreen implements Screen {
 
     @Override
     public void show() {
+        game.useTargetCursor();
         criarCameras();
 
         physicsWorld = new PhysicsWorld();
@@ -157,6 +160,7 @@ public class LunarScreen implements Screen {
 
         world = new LunarWorld(campaign.getSeed(), assets, physicsWorld);
         astronauta = world.getPlayer();
+        expedition = new com.orion.echoes.lua.ui.ExpeditionOverlay(game, astronauta);
         Vector2 aylaSpawn = NpcSpawnSelector.choose(campaign.getSeed(), "ayla", new float[][] {
             {245f, 395f}, {540f, 330f}, {285f, 690f}, {665f, 610f}
         });
@@ -261,6 +265,7 @@ public class LunarScreen implements Screen {
 
         overlay.renderDamageVignette(juice.getDamageFlashAlpha());
 
+        expedition.render();
         if (pausado) {
             pauseOverlay.render(UiTheme.CYAN, "ECHOES · LUA", campaign.missaoAtual(),
                 "A missão está congelada. Nenhum recurso será consumido.",
@@ -329,6 +334,7 @@ public class LunarScreen implements Screen {
 
     private void update(float delta) {
         if (pausado || gameOver || vitoria) return;
+        if (expeditionOpen) { input.discardActions(); return; }
 
         delta = Math.min(delta, MAX_STEP);
         if (lunarConversation.update(delta, astronauta, campaign.isDialogoLua(), () -> {
@@ -480,6 +486,15 @@ public class LunarScreen implements Screen {
     private void atualizarInteracao() {
         if (!input.consumeInteractPressed()) return;
         if (interactions.interact(world) != InteractionSystem.Result.PORTAL_CROSSED) return;
+        if (!campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_LUA)) {
+            guardarCampanha();
+            if (!PhaseBossScreen.liberada(campaign, false)) {
+                feedback.show(PhaseBossScreen.bloqueio(false));
+                return;
+            }
+            nextScreen = new PhaseBossScreen(game, campaign, false);
+            return;
+        }
         portalTraveling = true;
         world.getPortal().beginTraversal(false);
         feedback.show("Travessia iniciada. Vetor de saída invertido para Marte.");
@@ -567,6 +582,8 @@ public class LunarScreen implements Screen {
     }
 
     private void verificarPause() {
+        expeditionOpen = !pausado && expedition.handleInput();
+        if (expeditionOpen) return;
         if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) hitboxDebug.toggle();
         // Com a pausa aberta, o overlay tem prioridade: ESC pode estar fechando
         // o painel de opcoes em vez de despausar.
@@ -582,11 +599,11 @@ public class LunarScreen implements Screen {
         }
         if (!pausado) return;
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || pauseOverlay.consumeResumeRequested()) {
             pausado = false;
             sounds.tocarUnpause();
         }
-        if (Gdx.input.isKeyJustPressed(Input.Keys.M)) nextScreen = new MenuScreen(game);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M) || pauseOverlay.consumeMenuRequested()) nextScreen = new MenuScreen(game);
     }
 
     // =====================================================
@@ -626,6 +643,7 @@ public class LunarScreen implements Screen {
 
     @Override
     public void resize(int width, int height) {
+        if (expedition != null) expedition.resize(width, height);
         viewport.update(width, height, true);
         uiViewport.update(width, height, true);
         hud.resize(width, height);
@@ -692,6 +710,7 @@ public class LunarScreen implements Screen {
 
     @Override
     public void dispose() {
+        if (expedition != null) expedition.dispose();
         if (hud != null) hud.dispose();
         if (particleManager != null) particleManager.dispose();
         if (physicsWorld != null) physicsWorld.dispose();

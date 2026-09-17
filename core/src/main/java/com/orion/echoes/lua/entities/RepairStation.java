@@ -5,6 +5,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.physics.box2d.Body;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
 import com.orion.echoes.lua.systems.MissionState;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 
@@ -69,11 +70,8 @@ public class RepairStation extends Entidade {
         };
         // Pulso mínimo de energia, só em operação: a animação principal vem
         // dos quadros, não de escalar o sprite inteiro.
-        float pulse = state == VisualState.ONLINE_LOOP
-            ? 1f + MathUtils.sin(stateTime * 3.6f) * .012f : 1f;
-        float size = 190f * pulse;
-        batch.draw(frames[frame], position.x - 18f + (190f - size) / 2f,
-            position.y - 18f + (190f - size) / 2f, size, size);
+        AtlasRegionRenderer.draw(batch, frames[frame], position.x - 18f,
+            position.y - 18f, 190f, 190f);
     }
 
     public boolean isPlayerNear(Astronauta astronauta) {

@@ -65,6 +65,7 @@ public final class CombatSystem {
     private void updateEnemies(float delta, LunarWorld world) {
         Astronauta player = world.getPlayer();
         for (Enemy enemy : world.getEnemies()) {
+            enemy.setSolidBounds(world.getSolidBounds());
             enemy.update(delta, player, world.getObstacles());
             if (enemy.consumeTelegraphStarted()) {
                 particles.criarAlertaInimigo(enemy.centerX(), enemy.centerY(), false);
@@ -90,13 +91,15 @@ public final class CombatSystem {
         for (int index = world.getEnemyPulses().size - 1; index >= 0; index--) {
             EnemyPulse pulse = world.getEnemyPulses().get(index);
             pulse.update(delta);
-            if (pulse.collideWith(world.getObstacles())) {
+            if (pulse.collideWithSolids(world.getSolidBounds())) {
                 particles.criarImpactoTiro(pulse.centerX(), pulse.centerY());
             } else if (pulse.hits(player)) {
-                player.receberDano(GameConfig.ENEMY_PULSE_DAMAGE,
-                    pulse.centerX(), pulse.centerY());
-                feedback.show("Pulso hostil atingiu o traje.");
-                hurtPlayer(player);
+                if (!player.isInvulnerable() && !player.isProtegido()) {
+                    player.receberDano(GameConfig.ENEMY_PULSE_DAMAGE,
+                        pulse.centerX(), pulse.centerY());
+                    feedback.show("Pulso hostil atingiu o traje.");
+                    hurtPlayer(player);
+                }
             }
             if (!pulse.isAtivo()) world.getEnemyPulses().removeIndex(index);
         }

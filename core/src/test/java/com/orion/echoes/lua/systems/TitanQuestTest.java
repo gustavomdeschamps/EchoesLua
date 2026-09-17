@@ -18,7 +18,9 @@ class TitanQuestTest {
     @Test void shotChecksWeaponAmmoCooldownAndRangeTogether() {
         CampaignState campaign = new CampaignState(8L);
         TitanCombatSystem combat = new TitanCombatSystem(campaign);
-        FakeTarget target = new FakeTarget(100f, 0f);
+        // O alvo morre em dois acertos qualquer que seja a base da arma: o que
+        // este teste cobre e a ordem das checagens do disparo, nao o balanco.
+        FakeTarget target = new FakeTarget(100f, 0f, combat.getDano() * 2f);
         combat.setMunicao(2);
         assertFalse(combat.tentarTiro(new Vector2(), target, false));
         assertEquals(2, combat.getMunicao());
@@ -32,8 +34,8 @@ class TitanQuestTest {
 
     private static final class FakeTarget implements CombatTarget {
         private final float x, y;
-        private float hp = 80f;
-        FakeTarget(float x, float y) { this.x = x; this.y = y; }
+        private float hp;
+        FakeTarget(float x, float y, float hp) { this.x = x; this.y = y; this.hp = hp; }
         public float centerX() { return x; }
         public float centerY() { return y; }
         public boolean isAlive() { return hp > 0f; }

@@ -14,7 +14,17 @@ import com.orion.echoes.lua.config.GameConfig;
 public final class CampaignState {
 
     /** Em qual fase o jogador esta agora. */
-    public enum Phase { LUNAR, MARS, TITAN }
+    public enum Phase { LUNAR, MARS, TITAN, CALLISTO, AHARIN }
+    private final Inventario inventario = new Inventario();
+    public Inventario getInventario() { return inventario; }
+    private int formaBossCalisto = 1;
+    private float hpBossCalisto = 100f;
+    public int getFormaBossCalisto() { return formaBossCalisto; }
+    public float getHpBossCalisto() { return hpBossCalisto; }
+    public void setBossCalisto(int forma, float hp) {
+        formaBossCalisto = Math.max(1, Math.min(3, forma));
+        hpBossCalisto = Math.max(0f, hp);
+    }
 
     private final long seed;
     private Phase phase = Phase.LUNAR;
@@ -145,12 +155,32 @@ public final class CampaignState {
     }
 
     public String missaoAtual() {
+        if (phase == Phase.CALLISTO) return inventario.tem(Inventario.CHAVE_LUZ)
+            ? "Leve a Chave de Luz ao portal de Aharin." : "Derrote as três formas do Sentinela de Calisto.";
+        if (phase == Phase.AHARIN) return "Converse com as entidades de Luz.";
+        if (phase == Phase.TITAN && inventario.tem(Inventario.CHAVE_TITA))
+            return "Atravesse o portal de Calisto junto à cratera do Soberano.";
         if (phase == Phase.TITAN) return dialogoExplorador
             ? "Use a refinaria e enfrente o Soberano a nordeste."
             : "Fale com a pesquisadora junto à refinaria.";
+        /*
+         * A Lua tem objetivo proprio.
+         *
+         * Sem este ramo o texto caia direto nas frases de Marte, e o HUD lunar
+         * mandava "investigue o portal instavel no setor de extracao" - uma
+         * tarefa de outra fase - logo depois de o jogador ganhar a chave da Lua.
+         */
+        if (phase == Phase.LUNAR) {
+            if (inventario.tem(Inventario.CHAVE_LUA))
+                return "Chave da Lua conquistada. Atravesse o portal para Marte.";
+            return luaMissoesOk()
+                ? "Cratera liberada. Enfrente o Guardião da Cratera no portal."
+                : "Repare os sistemas, monte o rifle e limpe a cratera.";
+        }
         if (!dialogoTita) return "Investigue o portal instável no setor de extração.";
         if (!combateOk && !amostraOk) return "Prove capacidade de combate ou colete uma amostra de metano.";
-        return "Portal autorizado. Atravesse para Titã.";
+        return inventario.tem(Inventario.CHAVE_MARTE) ? "Portal autorizado. Atravesse para Titã."
+            : "Reative as estações, neutralize os hostis e enfrente o Titã-Ferrugem no portal.";
     }
 
     public String statusPortal() {
@@ -163,10 +193,14 @@ public final class CampaignState {
             case LUNAR -> "LUA";
             case MARS -> "MARTE";
             case TITAN -> "TITA";
+            case CALLISTO -> "CALISTO";
+            case AHARIN -> "AHARIN";
         };
     }
 
     public static Phase phaseFromToken(String token) {
+        if ("CALISTO".equalsIgnoreCase(token)) return Phase.CALLISTO;
+        if ("AHARIN".equalsIgnoreCase(token)) return Phase.AHARIN;
         if ("TITA".equalsIgnoreCase(token) || "TITAN".equalsIgnoreCase(token)) return Phase.TITAN;
         if ("MARTE".equalsIgnoreCase(token) || "MARS".equalsIgnoreCase(token)) return Phase.MARS;
         return Phase.LUNAR;
@@ -174,6 +208,13 @@ public final class CampaignState {
 
     public int getLunarTotalEnemies() { return lunarTotalEnemies; }
     public boolean hasWeapon() { return weaponCrafted; }
+    public boolean luaMissoesOk() {
+        int repairs=(communicationFixed?1:0)+(energyFixed?1:0)+(extractionFixed?1:0)+(greenhouseFixed?1:0);
+        return repairs>=3 && weaponCrafted && lunarTotalEnemies>0 && lunarEnemiesDefeated>=lunarTotalEnemies;
+    }
+    public boolean marteMissoesOk() {
+        return marsStationsOnline>=3 && marsMissionComplete && portalLiberado();
+    }
 
     // =====================================================
     // PONTE COM A MISSAO LUNAR

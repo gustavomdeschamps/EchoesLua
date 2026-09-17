@@ -34,6 +34,7 @@ import com.orion.echoes.lua.render.HitboxDebugRenderer;
 import com.orion.echoes.lua.systems.CameraDirector;
 import com.orion.echoes.lua.systems.JuiceSystem;
 import com.orion.echoes.lua.render.PauseOverlay;
+import com.orion.echoes.lua.render.TerrainRenderer;
 import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
 import com.orion.echoes.lua.save.SaveManager;
@@ -75,6 +76,7 @@ public final class TitanScreen implements Screen {
     private PhysicsWorld physics;
     private Astronauta player;
     private TitanPortal returnPortal;
+    private TitanPortal calistoPortal;
     private TitanBoss boss;
     private boolean vitoriaRegistrada;
     private TitanCombatSystem combat;
@@ -107,6 +109,7 @@ public final class TitanScreen implements Screen {
     private static final float REFINERY_PROCESS_FRAME_INTERVAL = .22f;
     private float refineryActivity;
     private boolean paused;
+    private com.orion.echoes.lua.ui.ExpeditionOverlay expedition;
     private boolean changingScreen;
     private boolean portalTraveling;
 
@@ -116,6 +119,7 @@ public final class TitanScreen implements Screen {
     }
 
     @Override public void show() {
+        game.useTargetCursor();
         assets = game.getAssets();
         batch = game.getBatch();
         game.getSounds().setVacuum(false);
@@ -123,6 +127,7 @@ public final class TitanScreen implements Screen {
         game.getSounds().tocarMusicaTita();
         particles = new com.orion.echoes.lua.managers.ParticleManager(assets);
         panel = assets.uiPanelPatch();
+        statusHud = new com.orion.echoes.lua.render.GameplayStatusHud(assets);
         pauseOverlay = new PauseOverlay(batch, assets);
         pauseOverlay.setSettings(construirOpcoesDaPausa());
         hitboxDebug = new HitboxDebugRenderer(batch, assets);
@@ -144,11 +149,14 @@ public final class TitanScreen implements Screen {
         new Wall(0f, -24f, WORLD_W, 24f, physics);
         new Wall(0f, WORLD_H, WORLD_W, 24f, physics);
         for (float[] formation : FORMACOES) {
+            Rectangle draw = com.orion.echoes.lua.render.SpriteFit.fit(
+                assets.titanFormationRegion((int)formation[4]), formation[0], formation[1],
+                formation[2], formation[3], new Rectangle());
             Rectangle footprint = new Rectangle(
-                formation[0] + formation[2] * .16f,
-                formation[1] + formation[3] * .06f,
-                formation[2] * .68f,
-                formation[3] * .28f);
+                draw.x + draw.width * .16f,
+                draw.y + draw.height * .11f,
+                draw.width * .68f,
+                draw.height * .28f);
             collisionObstacles.add(footprint);
             new Wall(footprint.x, footprint.y, footprint.width, footprint.height, physics);
         }
@@ -158,6 +166,7 @@ public final class TitanScreen implements Screen {
         new Wall(refineryFootprint.x, refineryFootprint.y,
             refineryFootprint.width, refineryFootprint.height, physics);
         player = new Astronauta(260f, 260f, assets, physics);
+        expedition = new com.orion.echoes.lua.ui.ExpeditionOverlay(game, player);
         player.setSurfaceProfile(Astronauta.SurfaceProfile.MARS);
         player.setWeaponEquipped(campaign.hasWeapon());
         player.setMunicao(campaign.getAmmo());
@@ -194,6 +203,13 @@ public final class TitanScreen implements Screen {
         enemies.add(new TitanEnemy(1810f, 1370f, assets));
         // O chefe guarda o fundo do mapa: o jogador o encontra depois dos comuns.
         boss = new TitanBoss(2150f, 1150f, assets);
+        calistoPortal = new TitanPortal(2500f,1300f,assets);
+        calistoPortal.setUnlocked(campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_TITA));
+        suprimentos.add(new Pickup(650f,430f,Pickup.Kind.COMIDA,assets));
+        suprimentos.add(new Pickup(1460f,630f,Pickup.Kind.COMIDA,assets));
+        if (campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_TITA)) {
+            boss.receiveDamage(100000f); boss.setAtivo(false); vitoriaRegistrada = true;
+        }
         // Oxigenio e gelo espalhados: a fase longa precisa de folego e de
         // insumo para nao travar o jogador sem municao.
         for (float[] ponto : new float[][] {{540f, 900f}, {1180f, 480f}, {1620f, 1260f},
@@ -222,10 +238,11 @@ public final class TitanScreen implements Screen {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
         batch.setColor(Color.WHITE);
-        batch.draw(assets.titanBackgroundTexture, 0f, 0f, WORLD_W, WORLD_H);
+        TerrainRenderer.draw(batch, assets.titanBackgroundTexture, WORLD_W, WORLD_H);
         batch.setColor(Color.WHITE);
         desenharTerreno();
         returnPortal.render(batch);
+        calistoPortal.render(batch);
         desenharRefinaria();
         for (Pickup suprimento : suprimentos) suprimento.render(batch);
         desenharAvisoDoChefe();
@@ -241,6 +258,7 @@ public final class TitanScreen implements Screen {
         renderHitboxes();
         renderDamage();
         renderHud();
+        expedition.render();
         if (paused) renderPause();
         else {
             batch.setProjectionMatrix(uiCamera.combined);
@@ -252,6 +270,7 @@ public final class TitanScreen implements Screen {
 
     private void update(float delta) {
         if (changingScreen) return;
+        if (!paused && expedition.handleInput()) { input.discardActions(); return; }
         if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) hitboxDebug.toggle();
         // Com a pausa aberta, o overlay tem prioridade: ESC pode estar fechando
         // o painel de opcoes em vez de despausar.
@@ -260,14 +279,14 @@ public final class TitanScreen implements Screen {
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
-            || paused && Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            || paused && (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || pauseOverlay.consumeResumeRequested())) {
             paused = !paused;
             player.getBody().setLinearVelocity(0f, 0f);
             if (paused) pauseOverlay.open();
             return;
         }
         if (paused) {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.M) || pauseOverlay.consumeMenuRequested()) {
                 changingScreen = true;
                 game.setScreen(new MenuScreen(game));
                 dispose();
@@ -294,6 +313,8 @@ public final class TitanScreen implements Screen {
         game.getSounds().atualizarIntensidade(boss.isTelegraphing() ? 1f : .25f,
             MathUtils.clamp((35f - player.getOxigenio()) / 35f, 0f, 1f));
         particles.update(delta);
+        calistoPortal.setUnlocked(campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_TITA));
+        calistoPortal.update(delta);
         combat.update(delta);
         messageTimer = Math.max(0f, messageTimer - delta);
         shotTimer = Math.max(0f, shotTimer - delta);
@@ -315,7 +336,7 @@ public final class TitanScreen implements Screen {
         player.setAimTarget(mouseWorld.x, mouseWorld.y);
         if (input.consumeAttackPressed()) shoot();
         for (TitanEnemy enemy : enemies) {
-            enemy.update(delta, player, WORLD_W, WORLD_H, collisionObstacles);
+            enemy.update(delta, player, WORLD_W, WORLD_H, physics.getSolidBounds());
             if (enemy.consumeShot()) spawnEnemyShot(enemy.centerX(), enemy.centerY(),
                 enemy.shotDirectionX(), enemy.shotDirectionY(), 245f, 12f);
             if (enemy.canDamage(player)) {
@@ -356,6 +377,7 @@ public final class TitanScreen implements Screen {
      */
     private void atualizarChefe(float delta) {
         if (boss == null) return;
+        if (boss.isAlive() && !missoesTitaOk()) return;
         if (!boss.isAtivo()) {
             if (!vitoriaRegistrada) {
                 vitoriaRegistrada = true;
@@ -364,7 +386,7 @@ public final class TitanScreen implements Screen {
             }
             return;
         }
-        boss.update(delta, player, WORLD_W, WORLD_H, collisionObstacles);
+        boss.update(delta, player, WORLD_W, WORLD_H, physics.getSolidBounds());
         // Rugido no telegraph: o aviso do chefe era so visual ate aqui.
         if (boss.consumeRoar()) {
             game.getSounds().tocarBoss("rugido", boss.centerX(), boss.centerY());
@@ -395,14 +417,14 @@ public final class TitanScreen implements Screen {
     private void desenharTerreno() {
         for (float[] pedra : FORMACOES) {
             batch.setColor(Color.WHITE);
-            batch.draw(assets.titanFormationRegion((int) pedra[4]),
+            com.orion.echoes.lua.render.SpriteFit.draw(batch, assets.titanFormationRegion((int) pedra[4]),
                 pedra[0], pedra[1], pedra[2], pedra[3]);
         }
         // As silhuetas ficam no alto: sao horizonte, nao obstaculo.
         batch.setColor(.5f, .38f, .26f, .8f);
-        batch.draw(assets.landmarkRegion(1, 1), 380f, 1440f, 300f, 210f);
-        batch.draw(assets.landmarkRegion(3, 1), 1240f, 1520f, 260f, 190f);
-        batch.draw(assets.landmarkRegion(0, 1), 2080f, 1470f, 280f, 200f);
+        com.orion.echoes.lua.render.SpriteFit.draw(batch, assets.titanFormationRegion(0), 380f, 1440f, 300f, 210f);
+        com.orion.echoes.lua.render.SpriteFit.draw(batch, assets.titanFormationRegion(3), 1240f, 1520f, 260f, 190f);
+        com.orion.echoes.lua.render.SpriteFit.draw(batch, assets.titanFormationRegion(5), 2080f, 1470f, 280f, 200f);
         batch.setColor(Color.WHITE);
     }
 
@@ -416,7 +438,7 @@ public final class TitanScreen implements Screen {
     private void desenharRefinaria() {
         TextureRegion frame = refineryFrame();
         if (frame != null) {
-            batch.draw(frame, refinaria.x, refinaria.y, refinaria.width, refinaria.height);
+            com.orion.echoes.lua.render.SpriteFit.draw(batch, frame, refinaria.x, refinaria.y, refinaria.width, refinaria.height);
         } else {
             batch.draw(assets.missionRegion(MissionSprite.CRAFTING_TERMINAL),
                 refinaria.x, refinaria.y, refinaria.width, refinaria.height);
@@ -474,7 +496,7 @@ public final class TitanScreen implements Screen {
             }
         }
         // O chefe e alvo como qualquer outro, so que com corpo bem maior.
-        if (boss != null && boss.isAlive()) {
+        if (boss != null && boss.isAlive() && missoesTitaOk()) {
             float along = alinhamento(boss.centerX(), boss.centerY(), dirX, dirY, closest, 105f);
             if (along > 0f) {
                 target = boss;
@@ -629,9 +651,16 @@ public final class TitanScreen implements Screen {
         campaign.setVitals(player.getOxigenio(), player.getEnergia());
         campaign.setAmmo(player.getMunicao());
         campaign.setMissionTime(missionTime);
-        changingScreen = true;
-        game.setScreen(new VictoryScreen(game, missionTime));
-        dispose();
+        campaign.getInventario().add(com.orion.echoes.lua.systems.Inventario.CHAVE_TITA);
+        campaign.getInventario().melhorarArmadura();
+        feedback("Chave de Titã conquistada. Portal de Calisto ONLINE junto à cratera do Soberano.");
+        saveTitan();
+    }
+
+    private boolean missoesTitaOk() {
+        if (!campaign.isDialogoExplorador()) return false;
+        for (TitanEnemy enemy : enemies) if (enemy.isAlive()) return false;
+        return true;
     }
 
     private void saveTitan() {
@@ -657,6 +686,7 @@ public final class TitanScreen implements Screen {
             return;
         }
         player.fromSaveData(data);
+        campaign.getInventario().restaurar(data.inventario,data.comidaGuardada,data.nivelArma,data.nivelArmadura);
         player.setMunicao(data.municao);
         combat.setMunicao(data.municao);
         missionTime = data.tempoVivo;
@@ -698,12 +728,23 @@ public final class TitanScreen implements Screen {
             juice.trigger(JuiceSystem.Preset.COLLECT);
             feedback(suprimento.getKind() == Pickup.Kind.OXIGENIO
                 ? "Cilindro de oxigênio  •  O2 restaurado"
+                : suprimento.getKind() == Pickup.Kind.COMIDA ? "Ração guardada na mochila."
                 : "Gelo de metano recolhido  •  refine na refinaria");
         }
     }
 
     /** E: refina na refinaria, ou volta a Marte no portal. */
     private void interagir() {
+        if (calistoPortal.isPlayerNear(player)) {
+            if (!campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_TITA)) {
+                feedback("BLOQUEADO — conquiste a Chave de Titã ao derrotar o Soberano."); return;
+            }
+            saveTitan();
+            changingScreen = true;
+            game.setScreen(new CallistoScreen(game, campaign));
+            dispose();
+            return;
+        }
         if (refinaria.overlaps(player.getBounds())) { refinar(); return; }
         if (returnPortal.isPlayerNear(player)) returnToMars();
     }
@@ -748,44 +789,49 @@ public final class TitanScreen implements Screen {
     private final Vector2 cameraTarget = new Vector2();
 
     /* HUD sem alocacao por quadro: cor do painel e textos reaproveitados. */
-    private final Color panelColor = new Color(1f, .76f, .42f, .96f);
-    private final HudLabel hudVitals =
-        new HudLabel("O2  ", "%     ENERGIA  ", "%     MUNIÇÃO  ", "");
-    private final HudLabel hudIce =
-        new HudLabel("GELO  ", "     •     Refinaria: gelo → munição");
+    private final Color panelColor = new Color();
+    private final HudLabel hudOxygen = new HudLabel("", "%");
+    private final HudLabel hudEnergy = new HudLabel("", "%");
+    private final HudLabel hudAmmo = new HudLabel("", "");
+    private final HudLabel hudIce = new HudLabel("", "");
 
+    private com.orion.echoes.lua.render.GameplayStatusHud statusHud;
     private void renderHud() {
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
-        panel.setColor(panelColor);
-        panel.draw(batch, 32f, 28f, 560f, 94f);
-        panel.draw(batch, 410f, 648f, 838f, 50f);
-        panel.draw(batch, 410f, 588f, 838f, 52f);
-        if (messageTimer > 0f) panel.draw(batch, 430f, 130f, 420f, 48f);
-        panel.setColor(Color.WHITE);
-        text("TITÃ  •  LAGOS DE METANO", .78f, AMBER, 444f, 681f);
-        assets.font.getData().setScale(.70f);
+        statusHud.render(batch,player);
+        drawHudPanel(24f, 642f, 620f, 62f, AMBER, .96f);
+        drawHudPanel(660f, 642f, 596f, 62f, AMBER, .96f);
+        if (messageTimer > 0f) drawHudPanel(420f, 126f, 440f, 50f, AMBER,
+            Math.min(.94f, messageTimer * 2f));
+        text("MISSÃO 03 · TITÃ", .53f, AMBER, 42f, 688f);
+        assets.font.getData().setScale(.72f);
         assets.font.setColor(UiTheme.TEXT);
-        assets.font.draw(batch, campaign.missaoAtual(), 436f, 622f, 786f, Align.left, true);
-        text("SOBERANO DO METANO", .62f, UiTheme.TEXT_MUTED, 738f, 681f);
+        assets.font.draw(batch, campaign.missaoAtual(), 42f, 663f, 580f, Align.left, true);
+        text("SOBERANO DO METANO", .53f, AMBER, 678f, 688f);
         batch.setColor(Color.WHITE);
-        batch.draw(assets.uiBarTrackTexture, 956f, 669f, 250f, 8f);
+        batch.draw(assets.uiBarTrackTexture, 678f, 656f, 548f, 10f);
         batch.setColor(boss != null && boss.isTelegraphing() ? UiTheme.RED : AMBER);
-        batch.draw(assets.uiBarFillTexture, 956f, 669f,
-            250f * (boss == null ? 0f : boss.getHealthRatio()), 8f);
+        batch.draw(assets.uiBarFillTexture, 678f, 656f,
+            548f * (boss == null ? 0f : boss.getHealthRatio()), 10f);
         batch.setColor(Color.WHITE);
-        text(hudVitals.of(Math.round(player.getOxigenio()),
-            Math.round(player.getEnergia()), player.getMunicao()), .74f,
-            UiTheme.TEXT, 58f, 88f);
-        text(hudIce.of(player.getGelo()), .65f, UiTheme.TEXT_MUTED, 58f, 55f);
         if (messageTimer > 0f) {
             assets.font.getData().setScale(.68f);
             assets.font.setColor(UiTheme.TEXT);
-            assets.font.draw(batch, message, 455f, 160f, 370f, Align.center, true);
+            assets.font.draw(batch, message, 445f, 158f, 390f, Align.center, true);
         }
         batch.end();
         assets.font.getData().setScale(1f);
         assets.font.setColor(Color.WHITE);
+    }
+
+    private void drawHudPanel(float x, float y, float width, float height,
+                              Color accent, float alpha) {
+        panelColor.set(1f, 1f, 1f, alpha);
+        panel.setColor(panelColor);
+        panel.draw(batch, x, y, width, height);
+        panel.setColor(Color.WHITE);
+        batch.setColor(Color.WHITE);
     }
 
     private void renderHitboxes() {
@@ -830,6 +876,7 @@ public final class TitanScreen implements Screen {
     }
 
     @Override public void resize(int width, int height) {
+        if (expedition != null) expedition.resize(width, height);
         viewport.update(width, height, false);
         uiViewport.update(width, height, true);
         if (pauseOverlay != null) pauseOverlay.resize(width, height);
@@ -893,6 +940,7 @@ public final class TitanScreen implements Screen {
     }
 
     @Override public void dispose() {
+        if (expedition != null) expedition.dispose();
         if (particles != null) { particles.dispose(); particles = null; }
         if (physics != null) { physics.dispose(); physics = null; }
         if (pauseOverlay != null) pauseOverlay.dispose();

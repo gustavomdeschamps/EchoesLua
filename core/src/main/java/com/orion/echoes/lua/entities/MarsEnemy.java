@@ -8,6 +8,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
 import com.orion.echoes.lua.systems.CombatTarget;
 
 /** Drone ou rover marciano com leitura antecipada de ataque e animação real. */
@@ -16,6 +17,8 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
     private final TextureRegion[][] frames = new TextureRegion[4][4];
     private final Vector2 direction = new Vector2();
     private final Rectangle testBounds = new Rectangle();
+    private Array<Rectangle> solidBounds;
+    public void setSolidBounds(Array<Rectangle> solids) { solidBounds=solids; }
     private final boolean drone;
     private final float worldWidth, worldHeight;
     private State state = State.CHASE;
@@ -145,6 +148,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
 
     private boolean free(float x, float y, Array<MarsObject> rocks) {
         footprint(x, y);
+        if(solidBounds!=null) for(Rectangle solid:solidBounds)if(testBounds.overlaps(solid))return false;
         for (MarsObject rock : rocks) {
             if (rock.isBlocking() && testBounds.overlaps(rock.getCollisionBounds())) return false;
         }
@@ -177,8 +181,12 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
     }
 
     public boolean canDamage(Astronauta player) {
+        if(player.isInvulnerable() || player.isProtegido())return false;
         if (!ativo || state != State.ATTACK || stateTime < .07f || stateTime > .24f
-            || damageCooldown > 0f || !bounds.overlaps(player.getBounds())) return false;
+            || damageCooldown > 0f || !bounds.overlaps(player.getHurtbox())) return false;
+        if(solidBounds!=null && com.orion.echoes.lua.systems.CombatVisibility.blocked(centerX(),centerY(),
+            player.getHurtbox().x+player.getHurtbox().width/2,
+            player.getHurtbox().y+player.getHurtbox().height/2,solidBounds))return false;
         damageCooldown = 1f;
         return true;
     }
@@ -214,7 +222,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
         else batch.setColor(1f, 1f, 1f, alpha);
         float bob = spriteBob();
         float size = spriteSize();
-        batch.draw(currentFrame(), centerX() - size / 2f,
+        AtlasRegionRenderer.draw(batch, currentFrame(), centerX() - size / 2f,
             position.y + GameConfig.MARS_ENEMY_SPRITE_OFFSET_Y + bob, size, size);
         batch.setColor(1f, 1f, 1f, 1f);
     }

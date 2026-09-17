@@ -58,9 +58,17 @@ public final class EnemyPulse extends Entidade {
     }
 
     public boolean hits(Astronauta astronauta) {
-        if (!ativo || !bounds.overlaps(astronauta.getBounds())) return false;
+        if (!ativo || !bounds.overlaps(astronauta.getHurtbox())) return false;
         ativo = false;
         return true;
+    }
+
+    public boolean collideWithSolids(Array<com.badlogic.gdx.math.Rectangle> solids) {
+        if(!ativo)return false;
+        for(com.badlogic.gdx.math.Rectangle solid:solids)if(bounds.overlaps(solid)) {
+            ativo=false;return true;
+        }
+        return false;
     }
 
     @Override
@@ -69,7 +77,8 @@ public final class EnemyPulse extends Entidade {
         float pulse = .85f + MathUtils.sin(life * 22f) * .15f;
         float size = GameConfig.ENEMY_PULSE_SIZE * 2.1f * pulse;
         batch.setColor(1f, .72f, .95f, .95f);
-        batch.draw(frame, centerX() - size / 2f, centerY() - size / 2f, size, size);
+        com.orion.echoes.lua.render.AtlasRegionRenderer.draw(batch, frame,
+            centerX() - size / 2f, centerY() - size / 2f, size, size);
         batch.setColor(1f, 1f, 1f, 1f);
     }
 

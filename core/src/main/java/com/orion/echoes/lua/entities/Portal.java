@@ -4,6 +4,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
 
 /** Portal comum às três fases, com animação de repouso, entrada e saída. */
 public class Portal extends Entidade {
@@ -27,7 +28,10 @@ public class Portal extends Entidade {
             for (int column = 0; column < 4; column++) {
                 frames[row][column] = titan ? assets.titanPortalFrame(column, row)
                     : assets.portalFrame(column, row);
-                mirrored[row][column] = new TextureRegion(frames[row][column]);
+                if (!(frames[row][column] instanceof com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion atlas)) {
+                    throw new IllegalStateException("Quadro do portal precisa ser AtlasRegion");
+                }
+                mirrored[row][column] = new com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion(atlas);
                 mirrored[row][column].flip(true, false);
             }
         }
@@ -54,7 +58,7 @@ public class Portal extends Entidade {
         float drawH = height * pulse;
         float previousColor = batch.getPackedColor();
         if (!unlocked) batch.setColor(1f, .48f, .42f, 1f);
-        batch.draw(frame, position.x + (width - drawW) / 2f,
+        AtlasRegionRenderer.draw(batch, frame, position.x + (width - drawW) / 2f,
             position.y + (height - drawH) / 2f, drawW, drawH);
         batch.setPackedColor(previousColor);
     }

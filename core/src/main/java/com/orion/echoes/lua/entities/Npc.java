@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
 
 /**
  * Personagem com quem o jogador conversa.
@@ -100,11 +101,10 @@ public final class Npc extends Entidade {
 
     @Override
     public void render(SpriteBatch batch) {
-        float bob = MathUtils.sin(time * 1.9f) * 2.5f;
         int row = talking ? 1 + (int)(time / 2.2f) % 2 : 0;
         TextureRegion frame = frames[row][(int) (time / (talking ? .34f : .42f)) % 4];
         batch.setColor(Color.WHITE);
-        batch.draw(frame, centerX() - SPRITE_SIZE / 2f, position.y - 5f + bob,
+        AtlasRegionRenderer.draw(batch, frame, centerX() - SPRITE_SIZE / 2f, position.y - 5f,
             SPRITE_SIZE, SPRITE_SIZE);
         batch.setColor(Color.WHITE);
     }

@@ -153,6 +153,7 @@ def atlasGroups = [
     'mars_crawler_sheet.png', 'lunar_obstacles.png', 'mars_obstacles.png',
     'landmarks.png', 'titan_hunter_sheet_v3.png', 'titan_boss_sheet_v3.png',
     'campaign_portal_sheet_v2.png', 'lunar_repair_stations_v2.png', 'titan_formations_v2.png',
+    'titan_enemy_sheet.png',
     'npc_colony_officer_sheet_v2.png', 'npc_commander_ayla_sheet.png', 'titan_portal_vertical_v2.png'
   ],
   ui: ['intro_keyart_v4.png', 'ui_panel_frame.png',
@@ -260,3 +261,22 @@ subprojects {
 }
 
 eclipse.project.name = 'EchoesLua' + '-parent'
+
+/*
+ * Classpath do driver de integracao (tools/java/CampaignDrive.java).
+ *
+ * O driver roda as telas de producao com input sintetico fora do Gradle, para
+ * o teste de campanha nao depender do daemon nem alterar a inicializacao do
+ * jogo. Esta tarefa so exporta o classpath ja resolvido.
+ */
+tasks.register('driveClasspath') {
+  group = 'verification'
+  description = 'Exporta o classpath de runtime do launcher para o driver de campanha.'
+  def target = layout.buildDirectory.file('drive-classpath.txt')
+  outputs.file(target)
+  doLast {
+    def files = project(':lwjgl3').sourceSets.main.runtimeClasspath.files
+    target.get().asFile.parentFile.mkdirs()
+    target.get().asFile.setText(files.join(File.pathSeparator), 'UTF-8')
+  }
+}

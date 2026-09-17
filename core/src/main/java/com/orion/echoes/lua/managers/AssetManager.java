@@ -64,6 +64,9 @@ public final class AssetManager implements Disposable {
     public TextureRegion missionAtlasTexture;
     public Texture marsBackgroundTexture;
     public TextureRegion introKeyArtTexture;
+    public Texture victoryReturnTexture;
+    public Texture callistoBackgroundTexture, aharinBackgroundTexture;
+    private TextureRegion[][] callistoBossFrames;
     public TextureRegion marsAtlasTexture;
     public TextureRegion lunarEnemySheetTexture;
     public TextureRegion marsDroneSheetTexture;
@@ -112,6 +115,10 @@ public final class AssetManager implements Disposable {
         loader.load(LUNAR_GROUND, Texture.class, terrain);
         loader.load(MARS_GROUND, Texture.class, terrain);
         loader.load(TITAN_GROUND, Texture.class, terrain);
+        loader.load("textures/victory_return_v1.png", Texture.class);
+        loader.load("textures/callisto_ground_v1.png", Texture.class);
+        loader.load("textures/aharin_sanctuary_v1.png", Texture.class);
+        loader.load("textures/callisto_boss_sheet_v1.png", Texture.class);
 
         TextureLoader.TextureParameter keyArt = new TextureLoader.TextureParameter();
         keyArt.minFilter = Texture.TextureFilter.Linear;
@@ -160,7 +167,7 @@ public final class AssetManager implements Disposable {
         titanPortalSheetTexture = required(gameAtlas, "campaign_portal_sheet_v2");
         repairStationsSheetTexture = required(gameAtlas, "lunar_repair_stations_v2");
         titanFormationsTexture = required(gameAtlas, "titan_formations_v2");
-        npcCommanderSheetTexture = required(gameAtlas, "npc_colony_officer_sheet_v2");
+        npcCommanderSheetTexture = required(gameAtlas, "npc_commander_ayla_sheet");
         titanVerticalPortal = required(gameAtlas, "titan_portal_vertical_v2");
         lunarObstaclesTexture = required(gameAtlas, "lunar_obstacles");
         marsObstaclesTexture = required(gameAtlas, "mars_obstacles");
@@ -185,6 +192,15 @@ public final class AssetManager implements Disposable {
         backgroundLuaTexture = loader.get(LUNAR_GROUND, Texture.class);
         marsBackgroundTexture = loader.get(MARS_GROUND, Texture.class);
         titanBackgroundTexture = loader.get(TITAN_GROUND, Texture.class);
+        victoryReturnTexture = loader.get("textures/victory_return_v1.png", Texture.class);
+        victoryReturnTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        callistoBackgroundTexture = loader.get("textures/callisto_ground_v1.png", Texture.class);
+        aharinBackgroundTexture = loader.get("textures/aharin_sanctuary_v1.png", Texture.class);
+        callistoBackgroundTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        aharinBackgroundTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        Texture callistoBoss = loader.get("textures/callisto_boss_sheet_v1.png", Texture.class);
+        callistoBoss.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        callistoBossFrames = TextureRegion.split(callistoBoss, 384, 384);
         worldIntroLunarTexture = loader.isLoaded(WORLD_INTRO_LUNAR) ? loader.get(WORLD_INTRO_LUNAR, Texture.class) : null;
         worldIntroMarsTexture = loader.isLoaded(WORLD_INTRO_MARS) ? loader.get(WORLD_INTRO_MARS, Texture.class) : null;
         worldIntroTitanTexture = loader.isLoaded(WORLD_INTRO_TITAN) ? loader.get(WORLD_INTRO_TITAN, Texture.class) : null;
@@ -282,6 +298,10 @@ public final class AssetManager implements Disposable {
         return gridRegion(titanBossSheetTexture, 4, 4, column, row, 2);
     }
 
+    public TextureRegion callistoBossFrame(int form, int pose) {
+        return callistoBossFrames[Math.max(0,Math.min(2,form-1))][Math.max(0,Math.min(3,pose))];
+    }
+
     public TextureRegion npcCommanderFrame(int column, int row) {
         return gridRegion(npcCommanderSheetTexture, 4, 4, column, row, 2);
     }
@@ -340,6 +360,7 @@ public final class AssetManager implements Disposable {
             case LUNAR -> worldIntroLunarTexture;
             case MARS -> worldIntroMarsTexture;
             case TITAN -> worldIntroTitanTexture;
+            case CALLISTO, AHARIN -> null;
         };
     }
 
@@ -400,7 +421,12 @@ public final class AssetManager implements Disposable {
 
     public TextureRegion resourceIcon(int index) {
         if (index < 0 || index > 3) throw new IllegalArgumentException("Ícone inválido: " + index);
-        return gridRegion(uiResourceIconsTexture, 4, 1, index, 0, 0);
+        return switch (index) {
+            case 0 -> oxigenioTexture;
+            case 1 -> comidaTexture;
+            case 2 -> geloTexture;
+            default -> gridRegion(uiResourceIconsTexture, 4, 1, index, 0, 0);
+        };
     }
 
     private TextureRegion gridRegion(TextureRegion sheet, int columns, int rows,
@@ -411,15 +437,11 @@ public final class AssetManager implements Disposable {
         com.badlogic.gdx.utils.Array<TextureAtlas.AtlasRegion> frames = frameGroups.get(sheet);
         if (frames != null) {
             if (frames.size != columns * rows) throw new IllegalStateException("Grade incompleta no atlas");
-            // Each entity owns its flip state. Never flip an atlas singleton.
-            return new TextureRegion(frames.get(row * columns + column));
+            // Preserve trim offsets. Each caller receives its own AtlasRegion
+            // because animated entities may flip frames independently.
+            return new TextureAtlas.AtlasRegion(frames.get(row * columns + column));
         }
-        int cellWidth = sheet.getRegionWidth() / columns;
-        int cellHeight = sheet.getRegionHeight() / rows;
-        return new TextureRegion(sheet.getTexture(),
-            sheet.getRegionX() + column * cellWidth + inset,
-            sheet.getRegionY() + row * cellHeight + inset,
-            cellWidth - inset * 2, cellHeight - inset * 2);
+        throw new IllegalStateException("Folha não foi separada em AtlasRegion: " + sheet);
     }
 
     public TextureRegion missionRegion(int column, int row) {

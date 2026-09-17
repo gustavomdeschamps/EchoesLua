@@ -7,6 +7,7 @@ import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.MissionSprite;
 import com.orion.echoes.lua.systems.MissionState;
+import com.orion.echoes.lua.render.AtlasSpriteFactory;
 
 public class MissionCollectible extends Entidade {
     private final MissionState.PartType type;
@@ -18,7 +19,7 @@ public class MissionCollectible extends Entidade {
         super(x, y, 54f, 54f);
         this.type = type;
         this.baseY = y;
-        sprite = new Sprite(assets.missionRegion(spriteFor(type)));
+        sprite = AtlasSpriteFactory.create(assets.missionRegion(spriteFor(type)));
         sprite.setSize(62f, 62f);
         sprite.setOriginCenter();
         sprite.setPosition(x, y);

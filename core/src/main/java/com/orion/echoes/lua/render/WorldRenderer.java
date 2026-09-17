@@ -51,18 +51,16 @@ public final class WorldRenderer {
     }
 
     private void drawGround() {
-        batch.draw(assets.backgroundLuaTexture, 0, 0,
-            GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT, 0f, 0f,
-            GameConfig.WORLD_WIDTH / assets.backgroundLuaTexture.getWidth(),
-            GameConfig.WORLD_HEIGHT / assets.backgroundLuaTexture.getHeight());
+        TerrainRenderer.draw(batch, assets.backgroundLuaTexture,
+            GameConfig.WORLD_WIDTH, GameConfig.WORLD_HEIGHT);
     }
 
     private void drawLandmarks() {
         batch.setColor(.78f, .82f, .88f, .86f);
-        batch.draw(assets.landmarkRegion(0, 0), 1540f, 1440f, 250f, 185f);
-        batch.draw(assets.landmarkRegion(1, 0), 2440f, 1080f, 205f, 165f);
-        batch.draw(assets.landmarkRegion(2, 0), 330f, 1510f, 230f, 150f);
-        batch.draw(assets.landmarkRegion(3, 0), 2100f, 250f, 180f, 205f);
+        SpriteFit.draw(batch, assets.landmarkRegion(0, 0), 1540f, 1440f, 250f, 185f);
+        SpriteFit.draw(batch, assets.landmarkRegion(1, 0), 2440f, 1080f, 205f, 165f);
+        SpriteFit.draw(batch, assets.landmarkRegion(2, 0), 330f, 1510f, 230f, 150f);
+        SpriteFit.draw(batch, assets.landmarkRegion(3, 0), 2100f, 250f, 180f, 205f);
         batch.setColor(1f, 1f, 1f, 1f);
     }
 }

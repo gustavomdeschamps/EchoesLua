@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
+import com.orion.echoes.lua.render.AtlasRegionRenderer;
 import com.orion.echoes.lua.systems.CombatTarget;
 
 /**
@@ -80,7 +81,8 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         direction.set(targetX - centerX(), targetY - centerY());
         float distance = direction.len();
         if (distance > .001f) direction.scl(1f / distance);
-        if (Math.abs(direction.x) > .08f) facingLeft = direction.x < 0f;
+        if (!isTelegraphing() && state!=State.IMPACTO && state!=State.VOLLEY && state!=State.BURST
+            && Math.abs(direction.x) > .08f) facingLeft = direction.x < 0f;
 
         switch (state) {
             case DANO -> {
@@ -151,7 +153,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         float spriteX = x + width / 2f - size / 2f;
         float spriteY = y + size * GameConfig.BOSS_SPRITE_OFFSET_Y_RATIO;
         float boxWidth = size * GameConfig.BOSS_HITBOX_WIDTH_RATIO;
-        float boxHeight = size * GameConfig.BOSS_HITBOX_HEIGHT_RATIO;
+        float boxHeight = size * .10f;
         movementBounds.set(spriteX + (size - boxWidth) / 2f,
             spriteY + size * GameConfig.BOSS_HITBOX_BASE_RATIO, boxWidth, boxHeight);
         for (Rectangle obstacle : obstacles) if (movementBounds.overlaps(obstacle)) return false;
@@ -281,7 +283,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         // O aviso pisca; o impacto clareia. A cor conta o que vem.
         if (hitFlash > 0f) batch.setColor(1f, .55f, .5f, alpha);
         else if (isTelegraphing()) {
-            float pulse = .6f + MathUtils.sin(stateTime * 26f) * .4f;
+            float pulse = getTelegraphProgress();
             batch.setColor(1f, .72f + pulse * .18f, .45f, alpha);
         } else if (state == State.IMPACTO || state == State.VOLLEY || state == State.BURST)
             batch.setColor(1f, .95f, .82f, alpha);
@@ -294,10 +296,14 @@ public final class TitanBoss extends Entidade implements CombatTarget {
         int row = state == State.MORTO ? 3 : isTelegraphing()
             || state == State.IMPACTO || state == State.VOLLEY || state == State.BURST ? 2
             : state == State.DANO ? 0 : state == State.AVANCA ? 1 : 0;
-        int column = (int) (time / .2f) % 4;
+        int column = state == State.MORTO ? Math.min(3, 2 + (int)(stateTime / .35f))
+            : isTelegraphing() ? Math.min(1,(int)(getTelegraphProgress()*2f))
+            : state==State.IMPACTO ? Math.min(3,2+(int)(stateTime/(GameConfig.BOSS_SLAM_TIME*.5f)))
+            : state==State.VOLLEY || state==State.BURST ? Math.min(3,2+(int)(stateTime/.2f))
+            : (int)(stateTime/(state==State.AVANCA?.24f:.4f))%4;
         TextureRegion frame = frames[row][column];
         if (frame.isFlipX() != facingLeft) frame.flip(true, false);
-        batch.draw(frame, centerX() - size / 2f,
+        AtlasRegionRenderer.draw(batch, frame, centerX() - size / 2f,
             position.y + size * GameConfig.BOSS_SPRITE_OFFSET_Y_RATIO + lunge, size, size);
         batch.setColor(Color.WHITE);
     }
@@ -309,8 +315,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
     public float centerX() { return position.x + width / 2f; }
 
     public float centerY() {
-        return position.y + GameConfig.BOSS_SPRITE_SIZE * GameConfig.BOSS_SPRITE_OFFSET_Y_RATIO
-            + GameConfig.BOSS_SPRITE_SIZE / 2f;
+        return bounds.y + bounds.height/2f;
     }
 
     @Override public void dispose() { }

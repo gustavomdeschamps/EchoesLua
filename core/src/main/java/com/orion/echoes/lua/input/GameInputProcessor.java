@@ -5,6 +5,9 @@ import com.badlogic.gdx.InputProcessor;
 import com.badlogic.gdx.math.Vector2;
 
 public class GameInputProcessor implements InputProcessor {
+    public void discardActions() {
+        interactPressed = attackPressed = dashPressed = savePressed = loadPressed = false;
+    }
 
     private boolean up;
     private boolean down;
@@ -125,6 +128,9 @@ public class GameInputProcessor implements InputProcessor {
                 break;
 
             case Input.Keys.SPACE:
+                attackPressed = true;
+                break;
+            case Input.Keys.Q:
                 dashPressed = true;
                 break;
 

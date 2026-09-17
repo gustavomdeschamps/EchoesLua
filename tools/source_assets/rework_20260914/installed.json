@@ -1,0 +1,302 @@
+{
+  "base_lunar.png": {
+    "source": "tools\\source_assets\\rework_20260914\\base.png",
+    "grid": [
+      1,
+      1
+    ],
+    "mode": "static",
+    "sha256": "0e239f1162c4be915b7485e72e4d0bc9e7ce2aadb26ecbfb9804630d33533314"
+  },
+  "lunar_obstacles.png": {
+    "source": "tools\\source_assets\\rework_20260914\\lunar_rocks.png",
+    "grid": [
+      3,
+      2
+    ],
+    "mode": "static",
+    "sha256": "65e0e0fa4e71f75f1aa1054c29c9f5bec04e2440494002d31e933106ded8588a"
+  },
+  "mars_atlas_v4.png": {
+    "source": "tools\\source_assets\\rework_20260914\\mars_props.png",
+    "grid": [
+      4,
+      3
+    ],
+    "mode": "static",
+    "sha256": "442dbc6e02300d5cc83d8409c062caacc59c313b692ff733fc7013be472ae665"
+  },
+  "mars_station_sheet_v2.png": {
+    "source": "tools\\source_assets\\rework_20260914\\mars_stations.png",
+    "grid": [
+      4,
+      3
+    ],
+    "mode": "machine",
+    "sha256": "9e1a0f80683c04fcb781a3413d09beac539ee5bbf739d6e701821b3898f141dc"
+  },
+  "lunar_repair_stations_v2.png": {
+    "source": "tools\\source_assets\\rework_20260914\\lunar_stations.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "machine",
+    "sha256": "931aad556fa0175d25a4cd227cbf2bd84c076a82d864b74efe16f4709229b79a"
+  },
+  "mars_obstacles.png": {
+    "source": "tools\\source_assets\\rework_20260914\\mars_rocks.png",
+    "grid": [
+      3,
+      2
+    ],
+    "mode": "static",
+    "sha256": "347484a969df0a6babe4d233e7459f4395a9e52c601aaf385f925ee1b7f32e94"
+  },
+  "titan_formations_v2.png": {
+    "source": "tools\\source_assets\\rework_20260914\\titan_rocks.png",
+    "grid": [
+      3,
+      2
+    ],
+    "mode": "static",
+    "sha256": "592c6e25eaf86ca83969c914bf64280825fb59d76821cf3d6be6f1adf4320ef4"
+  },
+  "mission_atlas_unified.png": {
+    "source": "tools\\source_assets\\rework_20260914\\mission.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "static",
+    "sha256": "45cfb6eca32afed107b9e3410b22609110f57b1a017869f8a332ba1340d70531"
+  },
+  "titan_refinery_sheet_v2.png": {
+    "source": "tools\\source_assets\\rework_20260914\\refinery.png",
+    "grid": [
+      4,
+      1
+    ],
+    "mode": "machine",
+    "sha256": "c85a4b3487d746afd103164a23642ab500287b4fb04eb7826f88aab544f8db19"
+  },
+  "landmarks.png": {
+    "source": "tools\\source_assets\\rework_20260914\\landmarks.png",
+    "grid": [
+      4,
+      2
+    ],
+    "mode": "static",
+    "sha256": "096cb719535e30602e0f19b51c64b48384596f685658cb8a80ced40c6bdfd307"
+  },
+  "lunar_enemy_sheet.png": {
+    "source": "tools\\source_assets\\rework_20260914\\lunar_enemy.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "273b8f4a449d53d46a5b7964843b181d06546c3e4dfa7acb4da511d9be130fba"
+  },
+  "mars_drone_sheet.png": {
+    "source": "tools\\source_assets\\rework_20260914\\mars_drone.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "c330603354bd9a9991485dfc3f769d171d50c822929dd73ab2f45d0cc65fe02d"
+  },
+  "mars_crawler_sheet.png": {
+    "source": "tools\\source_assets\\rework_20260914\\mars_crawler.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "8668199b2e7a69d9412a79d95de47b65f31328b3fed00a88ee6e5eea50a1a774"
+  },
+  "titan_hunter_sheet_v3.png": {
+    "source": "tools\\source_assets\\rework_20260914\\titan_hunter.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "4a551c1c080749a832d2fa854d44819c4d1e35b0bb0a153a18b5e34497786db4"
+  },
+  "titan_enemy_sheet.png": {
+    "source": "tools\\source_assets\\rework_20260914\\titan_hunter.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "4a551c1c080749a832d2fa854d44819c4d1e35b0bb0a153a18b5e34497786db4"
+  },
+  "npc_commander_ayla_sheet.png": {
+    "source": "tools\\source_assets\\rework_20260914\\ayla.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "cfb8c92fa06e54eea11387afc3ddae11a5b8c703d5fc98e9c08249781949594b"
+  },
+  "npc_colony_officer_sheet_v2.png": {
+    "source": "tools\\source_assets\\rework_20260914\\ayyub.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "0a6726a45739b76e47d803223f627efe47392899f4591e15d3e5df64902b0aa8"
+  },
+  "campaign_portal_sheet_v2.png": {
+    "source": "tools\\source_assets\\rework_20260914\\portal.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "machine",
+    "sha256": "473303b3450e4575a713f04c0cad362a7c2e7139683907caa967379194ea24a2"
+  },
+  "titan_portal_vertical_v2.png": {
+    "source": "tools\\source_assets\\rework_20260914\\titan_portal.png",
+    "grid": [
+      4,
+      2
+    ],
+    "mode": "machine",
+    "sha256": "e6b337351223b0ec63f956da6008f83bd4af35ab8a428fe9bfc055cf0d5bdbc5"
+  },
+  "astronaut_combat_sheet.png": {
+    "source": "tools\\source_assets\\rework_20260914\\hero_combat_final.png",
+    "grid": [
+      4,
+      3
+    ],
+    "mode": "actor",
+    "sha256": "14b2aab367f99482629e9a1b599fdb3f10315435b1bf5a648a7140cd7094749a"
+  },
+  "action_fx_sheet.png": {
+    "source": "tools\\source_assets\\rework_20260914\\action_fx.png",
+    "grid": [
+      6,
+      4
+    ],
+    "mode": "fx",
+    "sha256": "f3694922b6b1eaf0a220d1bee1532b47490be316d79cbd5274a629e0de4717dd"
+  },
+  "energy_fx_sheet.png": {
+    "source": "tools\\source_assets\\rework_20260914\\energy_fx.png",
+    "grid": [
+      6,
+      4
+    ],
+    "mode": "fx",
+    "sha256": "9f1aa22b4d0651d0001fa5278715d3a96276a71fcd921f87c0d4e46813589f33"
+  },
+  "titan_boss_sheet_v3.png": {
+    "source": "tools\\source_assets\\rework_20260914\\titan_boss.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "6f18f413f80b35d36aaf85306d41c80e3024d110ad7622a0b949e536217e490b"
+  },
+  "oxigenio.png": {
+    "source": "tools\\source_assets\\rework_20260914\\supplies.png",
+    "grid": [
+      1,
+      1
+    ],
+    "mode": "static",
+    "sha256": "04a90645bb3e728b3c9b43d22b3da1a5f90f2ced9dc403a5ccd0d29d1b2e72b0"
+  },
+  "comida.png": {
+    "source": "tools\\source_assets\\rework_20260914\\supplies.png",
+    "grid": [
+      1,
+      1
+    ],
+    "mode": "static",
+    "sha256": "52e2cc9342baa36c1489a8334fea93f6d7bfea6dbfab7686559c4c4549dc6dbe"
+  },
+  "gelo.png": {
+    "source": "tools\\source_assets\\rework_20260914\\supplies.png",
+    "grid": [
+      1,
+      1
+    ],
+    "mode": "static",
+    "sha256": "32428cde4f0d624ec0642f105794d2bfa5f875365f9ea1109de7297a53ed11d2"
+  },
+  "pulse_rifle.png": {
+    "source": "tools\\source_assets\\rework_20260914\\supplies.png",
+    "grid": [
+      1,
+      1
+    ],
+    "mode": "static",
+    "sha256": "e18cfe56b4a86db009b8539fa03783a6cabcb17d30e02ce85cc926cbfdc01ca9"
+  },
+  "lunar_ground.png": {
+    "source": "tools\\source_assets\\rework_20260914\\ground_lunar.png",
+    "mode": "terrain",
+    "sha256": "cc2ed3abe34e464c72f295f8cd50acc321f1c517bc6b04b56958471a29bed695"
+  },
+  "mars_ground.png": {
+    "source": "tools\\source_assets\\rework_20260914\\ground_mars.png",
+    "mode": "terrain",
+    "sha256": "762667b7653a2a62846a3f8dc2d40c241c37d80f4c5bd756f7cada3f812c3592"
+  },
+  "titan_ground_v2.png": {
+    "source": "tools\\source_assets\\rework_20260914\\ground_titan.png",
+    "mode": "terrain",
+    "sha256": "097848e778ee8ea6458344409a29070ea7fbde3b9f3f1592cf8c8da70978d6eb"
+  },
+  "world_intro_lunar_v1.png": {
+    "source": "tools\\source_assets\\rework_20260914\\intro_lunar.png",
+    "mode": "keyart",
+    "sha256": "587c9f11c3111a2518a325ef842eaffea3724a3caa68f3ecf97151d54c0fa8f5"
+  },
+  "world_intro_mars_v1.png": {
+    "source": "tools\\source_assets\\rework_20260914\\intro_mars.png",
+    "mode": "keyart",
+    "sha256": "fb15b33d855d63f52caf1ff4fd1bcf8460c4879bb27932cd2892131b650a2823"
+  },
+  "world_intro_titan_v1.png": {
+    "source": "tools\\source_assets\\rework_20260914\\intro_titan.png",
+    "mode": "keyart",
+    "sha256": "4110b94a9961e7193b102e6c7e24517adbf5147f79c2856fa90cedfc669f4da5"
+  },
+  "npc_researcher_lira_sheet_v2.png": {
+    "source": "tools\\source_assets\\rework_20260914\\lira_final.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "61abfb91735e00c6279d5cccc736009e0e040f811b62ea3a565018cf409e8775"
+  },
+  "astronauta_sheet.png": {
+    "source": "tools\\source_assets\\rework_20260914\\hero_walk_final.png",
+    "grid": [
+      4,
+      4
+    ],
+    "mode": "actor",
+    "sha256": "717533d052f06b04b158f973f7631b725025bdd938b4fedca69f10fadc0be5b5",
+    "gait_sources": [
+      "tools\\source_assets\\rework_20260914\\hero_walk_cycle.png",
+      "tools\\source_assets\\rework_20260914\\hero_run_cycle.png"
+    ]
+  },
+  "intro_keyart_v4.png": {
+    "source": "tools\\source_assets\\rework_20260914\\intro_panorama.png",
+    "mode": "keyart",
+    "sha256": "f6fb9f18fbf7acb5b5a82a2743a2bdc55217ac2efaf7a3f7be99c5c06ad8e97b"
+  }
+}

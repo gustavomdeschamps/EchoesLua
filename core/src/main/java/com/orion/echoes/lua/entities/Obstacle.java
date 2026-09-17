@@ -9,6 +9,8 @@ import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.physics.box2d.Body;
 
 import com.orion.echoes.lua.physics.PhysicsWorld;
+import com.orion.echoes.lua.render.AtlasSpriteFactory;
+import com.orion.echoes.lua.render.SpriteFit;
 
 public class Obstacle {
 
@@ -35,24 +37,25 @@ public class Obstacle {
     public Obstacle(float x, float y, float width, float height,
                     TextureRegion region, PhysicsWorld physicsWorld) {
         this.position = new Vector2(x, y);
-        this.width = width;
-        this.height = height;
+        Rectangle draw = SpriteFit.fit(region, x, y, width, height, new Rectangle());
+        this.width = draw.width;
+        this.height = draw.height;
 
-        sprite = new Sprite(region);
-        sprite.setSize(width, height);
-        sprite.setPosition(x, y);
+        sprite = AtlasSpriteFactory.create(region);
+        sprite.setSize(draw.width, draw.height);
+        sprite.setPosition(draw.x, draw.y);
         sprite.setColor(.9f, .92f, .96f, 1f);
-        shadow = new Sprite(region);
-        shadow.setSize(width + 12f, height + 10f);
-        shadow.setPosition(x - 6f, y - 8f);
+        shadow = AtlasSpriteFactory.create(region);
+        shadow.setSize(draw.width + 12f, draw.height + 10f);
+        shadow.setPosition(draw.x - 6f, draw.y - 8f);
         shadow.setColor(.02f, .025f, .035f, .72f);
 
         // Em perspectiva superior, a colisao pertence a base da rocha, nao ao topo da arte.
-        float hitboxWidth = width * 0.72f;
-        float hitboxHeight = height * 0.31f;
+        float hitboxWidth = draw.width * 0.72f;
+        float hitboxHeight = draw.height * 0.31f;
 
-        float hitboxX = x + (width - hitboxWidth) / 2f;
-        float hitboxY = y + height * 0.07f;
+        float hitboxX = draw.x + (draw.width - hitboxWidth) / 2f;
+        float hitboxY = draw.y + draw.height * 0.11f;
 
         bounds = new Rectangle(
             hitboxX,

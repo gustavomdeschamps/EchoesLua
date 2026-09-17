@@ -31,7 +31,7 @@ public final class TitanCombatSystem {
             float dx = alvo.centerX() - origem.x;
             float dy = alvo.centerY() - origem.y;
             if (dx * dx + dy * dy <= alcance * alcance) {
-                boolean morreu = alvo.receiveDamage(dano);
+                boolean morreu = alvo.receiveDamage(getDano());
                 if (morreu && campaign != null) campaign.setCombateOk(true);
             }
         }
@@ -43,5 +43,5 @@ public final class TitanCombatSystem {
     public float getAlcance() { return alcance; }
     public float getCooldown() { return cooldown; }
     public float getCooldownMax() { return cooldownMax; }
-    public float getDano() { return dano; }
+    public float getDano() { return campaign == null ? dano : campaign.getInventario().getDano(); }
 }

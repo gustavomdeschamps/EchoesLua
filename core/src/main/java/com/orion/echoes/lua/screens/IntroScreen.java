@@ -31,6 +31,7 @@ public final class IntroScreen implements Screen {
     private final OrthographicCamera camera = new OrthographicCamera();
     private final FitViewport viewport = new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, camera);
     private final GlyphLayout layout = new GlyphLayout();
+    private final com.badlogic.gdx.graphics.g2d.Animation<com.badlogic.gdx.graphics.g2d.TextureRegion> openingFrames;
     private float elapsed;
     private boolean finished;
 
@@ -38,17 +39,20 @@ public final class IntroScreen implements Screen {
         this.game = game;
         this.batch = game.getBatch();
         this.assets = game.getAssets();
+        com.badlogic.gdx.graphics.g2d.TextureRegion[] frames = new com.badlogic.gdx.graphics.g2d.TextureRegion[6];
+        int w = assets.introKeyArtTexture.getRegionWidth(), h = assets.introKeyArtTexture.getRegionHeight();
+        int cropW = Math.round(w * .94f), cropH = Math.round(h * .94f);
+        for (int i = 0; i < frames.length; i++) frames[i] = new com.badlogic.gdx.graphics.g2d.TextureRegion(
+            assets.introKeyArtTexture, (w-cropW)*i/5, (h-cropH)/2, cropW, cropH);
+        openingFrames = new com.badlogic.gdx.graphics.g2d.Animation<>(DURATION/6f, frames);
         camera.position.set(GameConfig.WINDOW_WIDTH / 2f, GameConfig.WINDOW_HEIGHT / 2f, 0f);
         camera.update();
     }
 
     @Override
     public void render(float delta) {
-        elapsed += Math.min(delta, 1f / 30f);
-        if (elapsed > .35f && (Gdx.input.justTouched()
-            || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
-            || Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
-            || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE))) {
+        elapsed += Math.max(0f, delta);
+        if (elapsed >= 6f && Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             finish();
             return;
         }
@@ -61,35 +65,40 @@ public final class IntroScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        float drift = Interpolation.pow2Out.apply(MathUtils.clamp(elapsed / DURATION, 0f, 1f));
-        float signalKick = MathUtils.clamp(1f - Math.abs(elapsed - 1.48f) / .16f, 0f, 1f);
-        float jitter = MathUtils.sin(elapsed * 91f) * signalKick * 3f;
+        boolean reduced = game.getSettings().isReduceMotion();
+        float drift = reduced ? 0f : Interpolation.pow2Out.apply(MathUtils.clamp(elapsed / DURATION, 0f, 1f));
+        float signalKick = reduced ? 0f : MathUtils.clamp(1f - Math.abs(elapsed - 1.48f) / .16f, 0f, 1f);
+        float jitter = 0f;
         float artW = 1328f;
         float artH = 747f;
         float artX = -24f - drift * 24f + jitter;
         float artY = -14f - drift * 12f;
         desenharKeyArt(artX, artY, artW, artH, signalKick);
-        // Faixa editorial curta: a arte continua mostrando Lua, Marte e Titã.
-        batch.setColor(.005f, .01f, .02f, .66f * envelope(.45f, 6.8f, .5f));
-        rect(42f, 432f, 610f, 224f);
+        // Soft light falloff behind the title, without a hard-edged overlay panel.
+        for (int i = 0; i < 80; i++) {
+            float falloff = 1f - i / 79f;
+            batch.setColor(.005f, .01f, .02f,
+                .62f * falloff * falloff * envelope(.45f, 6.8f, .5f));
+            rect(i * 10f, 0f, 10f, 720f);
+        }
         batch.setColor(Color.WHITE);
-        drawAt(assets.font, "ARQUIVO DE MISSÃO  //  ROTA EXTERIOR", .62f, 1.05f, 4.5f, 78f, 628f,
+        drawAt(assets.font, "UM SINAL ATRAVESSA CINCO MUNDOS", .62f, 1.05f, 5.8f, 78f, 628f,
             new Color(.82f, .49f, .28f, 1f));
-        drawAt(assets.titleFont, "ECHOES OF LUA", 1.72f, 1.45f, 6.85f, 76f, 570f, Color.WHITE);
-        drawAt(assets.titleFont, "LUA  •  MARTE  •  TITÃ", .68f, 2.0f, 6.85f, 82f, 512f,
+        drawAt(assets.titleFont, "ECHOES", 2.25f, 1.1f, 6.85f, 76f, 570f, Color.WHITE);
+        drawAt(assets.titleFont, "LUA  •  MARTE  •  TITÃ  •  CALISTO  •  AHARIN", .52f, 2.0f, 6.85f, 82f, 512f,
             new Color(.78f, .8f, .76f, 1f));
         drawAt(assets.font, "TRÊS MUNDOS. UM SINAL. A ÚLTIMA RESPOSTA AGUARDA.", .62f,
             2.35f, 6.35f, 80f, 112f, new Color(.38f, .78f, .77f, 1f));
         drawAt(assets.font, "REPARE  •  ATRAVESSE  •  ENFRENTE", .72f,
             3.05f, 6.65f, 80f, 82f, new Color(.9f, .91f, .86f, 1f));
-        drawAt(assets.font, "ESPAÇO / ENTER  PULAR", .56f,
-            .55f, 6.85f, 1038f, 68f, new Color(.72f, .76f, .75f, 1f));
+        drawAt(assets.font, "ENTER  PULAR", .56f,
+            6f, 7.15f, 1090f, 68f, new Color(.72f, .76f, .75f, 1f));
         batch.end();
 
         renderRadioArcs();
         renderSignalTrace(MathUtils.clamp((elapsed - 1.25f) / .65f, 0f, 1f));
-        renderScanlines();
-        renderFilmGrain();
+        // Let the panoramic worlds and signal arcs carry the opening, not CRT noise.
+        // Keep the cinematic motion without random single-pixel noise over the UI.
         renderVignette();
         renderLetterbox();
         renderSignalFlash(signalKick);
@@ -104,19 +113,20 @@ public final class IntroScreen implements Screen {
      * apenas durante o estalo. Fora do pico, desenha uma vez so.
      */
     private void desenharKeyArt(float x, float y, float width, float height, float kick) {
+        var art = openingFrames.getKeyFrame(game.getSettings().isReduceMotion() ? 0f : elapsed);
         if (kick <= .01f) {
             batch.setColor(.82f, .82f, .78f, 1f);
-            batch.draw(assets.introKeyArtTexture, x, y, width, height);
+            batch.draw(art, x, y, width, height);
             batch.setColor(Color.WHITE);
             return;
         }
         float split = kick * 6f;
         batch.setColor(.85f, .28f, .24f, .55f);
-        batch.draw(assets.introKeyArtTexture, x - split, y, width, height);
+        batch.draw(art, x - split, y, width, height);
         batch.setColor(.26f, .58f, .88f, .55f);
-        batch.draw(assets.introKeyArtTexture, x + split, y, width, height);
+        batch.draw(art, x + split, y, width, height);
         batch.setColor(.82f, .82f, .78f, 1f);
-        batch.draw(assets.introKeyArtTexture, x, y, width, height);
+        batch.draw(art, x, y, width, height);
         batch.setColor(Color.WHITE);
     }
 
@@ -281,7 +291,7 @@ public final class IntroScreen implements Screen {
         dispose();
     }
 
-    @Override public void show() { }
+    @Override public void show() { game.getSounds().tocarMusicaMenu(); }
     @Override public void resize(int width, int height) { viewport.update(width, height, true); }
     @Override public void pause() { }
     @Override public void resume() { }

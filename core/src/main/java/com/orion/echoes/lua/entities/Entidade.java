@@ -32,6 +32,15 @@ public abstract class Entidade {
         return bounds;
     }
 
+    /** Damage silhouette. Interaction-only entities keep their legacy bounds. */
+    public Rectangle getHurtbox() { return bounds; }
+
+    /** Ground contact used for navigation and obstacle collision. */
+    public Rectangle getFootprint() { return bounds; }
+
+    /** Active melee volume, or {@code null} when the entity is not attacking. */
+    public Rectangle getAttackHitbox() { return null; }
+
     public boolean isAtivo() {
         return ativo;
     }

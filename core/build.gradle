@@ -17,6 +17,9 @@ dependencies {
   testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
   testImplementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
   testRuntimeOnly "com.badlogicgames.gdx:gdx-platform:$gdxVersion:natives-desktop"
+  // Os testes de colisao instanciam PhysicsWorld de verdade; sem este native o Box2D
+  // nao carrega e a suite falha por ambiente, nao por regra.
+  testRuntimeOnly "com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-desktop"
 }
 
 test {

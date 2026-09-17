@@ -39,7 +39,7 @@ reprocessar o que existe.
 
 | Região | Atlas | Acessor | Grade | Quadros | Célula | Margem | Alpha | Desenhado em |
 |---|---|---|---|---|---|---|---|---|
-| `npc_colony_officer_sheet_v2` | game | `npcCommanderFrame()` | 4x4 | 16 | 313x313 | 8% | sim | `DialogBox` |
+| `npc_colony_officer_sheet_v2` | game | `npcCommanderFrame()` | 4x4 | 16 | 313x313 | 11% | sim | `DialogBox` |
 
 ## Inimigos e chefe
 
@@ -47,14 +47,14 @@ reprocessar o que existe.
 |---|---|---|---|---|---|---|---|---|
 | `lunar_enemy_sheet` | game | `lunarEnemyFrame()` | 4x4 | 16 | 313x313 | 11% | sim | `Enemy` |
 | `titan_boss_sheet_v3` | game | `titanBossFrame()` | 4x4 | 16 | 313x313 | 7% | sim | `TitanBoss` |
-| `titan_hunter_sheet_v3` | game | `titanEnemyFrame()` | 4x4 | 16 | 313x313 | 7% | sim | `TitanEnemy` |
+| `titan_hunter_sheet_v3` | game | `titanEnemyFrame()` | 4x4 | 16 | 313x313 | 4% | sim | `TitanEnemy` |
 
 ## Estações e refinaria
 
 | Região | Atlas | Acessor | Grade | Quadros | Célula | Margem | Alpha | Desenhado em |
 |---|---|---|---|---|---|---|---|---|
-| `mars_station_sheet_v2` | game (opcional) | `marsStationFrame()` | 4x3 | 12 | 313x313 | 9% | sim | `MarsObject` |
-| `lunar_repair_stations_v2` | game | `repairStationFrame()` | 4x4 | 16 | 313x313 | 7% | sim | `RepairStation` |
+| `mars_station_sheet_v2` | game (opcional) | `marsStationFrame()` | 4x3 | 12 | 313x313 | 9% | sim | `MarsObject`, `SpriteQaScreen` |
+| `lunar_repair_stations_v2` | game | `repairStationFrame()` | 4x4 | 16 | 313x313 | 7% | sim | `RepairStation`, `SpriteQaScreen` |
 | `titan_refinery_sheet_v2` | game (opcional) | `titanRefineryFrame()` | 4x1 | 4 | 313x313 | 16% | sim | `TitanScreen` |
 
 ## Portais
@@ -69,7 +69,7 @@ reprocessar o que existe.
 | Região | Atlas | Acessor | Grade | Quadros | Célula | Margem | Alpha | Desenhado em |
 |---|---|---|---|---|---|---|---|---|
 | `mission_atlas_unified` | game | `missionRegion()` | 4x4 | 16 | 313x313 | 9% | sim | `CraftingStation`, `MissionCollectible`, `TitanScreen` |
-| `resource_icons` | ui | `resourceIcon()` | 4x1 | 4 | — | — | — | **ninguém** |
+| `resource_icons` | ui | `resourceIcon()` | 4x1 | 4 | — | — | — | `Hud`, `TitanScreen` |
 
 ## Obstáculos e terreno
 
@@ -92,10 +92,8 @@ reprocessar o que existe.
 | Região | Atlas | Acessor | Grade | Quadros | Célula | Margem | Alpha | Desenhado em |
 |---|---|---|---|---|---|---|---|---|
 | `mars_atlas_v4` | game | `marsRegion()` | 4x3 | 12 | 313x313 | 5% | sim | `MarsObject` |
-| `?` | ? | `npcVisualFrame()` | 4x4 | 16 | — | — | — | `Npc` |
+| `?` | ? | `npcVisualFrame()` | 4x4 | 16 | — | — | — | `Npc`, `SpriteQaScreen` |
 
 ## Acessores sem chamador
 
-Carregados e nunca desenhados — cada um é atlas e memória gastos à toa, ou um recurso que alguém esqueceu de ligar:
-
-- `resource_icons (via resourceIcon)`
+Nenhum. Todo acessor de textura tem pelo menos um chamador.

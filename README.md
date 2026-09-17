@@ -1,11 +1,11 @@
-# Echoes — Integração Lua → Marte → Titã
+# Echoes — Lua → Marte → Titã → Calisto → Aharin
 
 Jogo 2D em Java 17 com LibGDX 1.14.2. A missão começa na Lua: o astronauta
 administra oxigênio e energia, restaura os sistemas da colônia e atravessa o
-portal para Marte e, depois, para Titã.
+portal para Marte e, depois, para Titã, Calisto e Aharin, com retorno à Terra.
 
 ```
-Menu → Intro → Fase Lunar ⇄ Portal ⇄ Fase Marciana ⇄ Portal ⇄ Titã → Chefão → Vitória
+Menu → Intro → Lua → Marte → Titã → Calisto → Aharin → Terra → Vitória
 ```
 
 Os portais são **bidirecionais**: dá para retornar de Marte à Lua e de Titã a
@@ -49,14 +49,22 @@ barra, que ficam vermelhos quando a carga está baixa.
 |---|---|
 | `WASD` / setas | mover |
 | `Shift` | correr (gasta mais energia) |
-| `Espaço` | dash (gasta energia) |
+| `Q` | dash (gasta energia) |
+| `Espaço` | disparar |
 | Mouse | apontar · botão esquerdo dispara (sem retículo na tela) |
 | `E` | reparar, montar, processar gelo, usar o portal |
-| `F5` / `F9` | salvar e carregar a campanha (nas três fases) |
-| `Esc` | pausar · `M` volta ao menu |
+| `I` | abrir/fechar inventário; `C` consome comida dentro dele |
+| `M` | abrir/fechar o mapa da rota da campanha |
+| `F5` / `F9` | salvar / carregar nas fases originais; novas arenas salvam com F5 e nos marcos |
+| `Esc` | pausar ou fechar inventário/mapa |
 | `F3` | sobrepor hitboxes (depuração visual) |
 
 ## Build e execução
+
+A expansão da Parte 3, seus requisitos, adaptações e verificações estão em
+[docs/PARTE3_20260917.md](docs/PARTE3_20260917.md). Os chefes deixam chaves
+obrigatórias para avançar; Calisto tem três formas do mesmo chefe. Consulte
+também `README.txt` para o fluxo atualizado de missões.
 
 Requer apenas **JDK 17**. Basta clonar e rodar.
 

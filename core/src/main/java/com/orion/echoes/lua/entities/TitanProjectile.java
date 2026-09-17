@@ -36,7 +36,7 @@ public final class TitanProjectile {
 
     private void sync() { bounds.set(position.x - 9f, position.y - 9f, 18f, 18f); }
     public boolean hits(Astronauta player) {
-        if (!active || !bounds.overlaps(player.getBounds())) return false;
+        if (!active || !bounds.overlaps(player.getHurtbox())) return false;
         active = false;
         return true;
     }
@@ -53,11 +53,11 @@ public final class TitanProjectile {
         if (!active) return;
         float angle = velocity.angleDeg();
         batch.setColor(.1f, .9f, 1f, .35f);
-        batch.draw(glow, position.x - velocity.x * .07f - 18f,
+        com.orion.echoes.lua.render.AtlasRegionRenderer.draw(batch, glow, position.x - velocity.x * .07f - 18f,
             position.y - velocity.y * .07f - 9f, 36f, 18f);
         batch.setColor(1f, .72f, .22f, 1f);
-        batch.draw(glow, position.x - 12f, position.y - 12f,
-            12f, 12f, 24f, 24f, 1f, 1f, angle);
+        com.orion.echoes.lua.render.AtlasRegionRenderer.draw(batch, glow,
+            position.x - 12f, position.y - 12f, 24f, 24f, 1f, angle);
         batch.setColor(Color.WHITE);
     }
     public boolean isActive() { return active; }

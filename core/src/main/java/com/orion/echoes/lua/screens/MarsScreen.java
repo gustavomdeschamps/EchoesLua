@@ -37,6 +37,7 @@ import com.orion.echoes.lua.physics.PhysicsWorld;
 import com.orion.echoes.lua.render.DialogBox;
 import com.orion.echoes.lua.render.HitboxDebugRenderer;
 import com.orion.echoes.lua.render.PauseOverlay;
+import com.orion.echoes.lua.render.TerrainRenderer;
 import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
 import com.orion.echoes.lua.save.SaveManager;
@@ -96,6 +97,7 @@ public final class MarsScreen implements Screen {
     /** 0 normal, 1 viajando para Titã, 2 retornando à Lua. */
     private int portalTravel;
     private boolean paused;
+    private com.orion.echoes.lua.ui.ExpeditionOverlay expedition;
     private final DialogueController titanDialogue = new DialogueController();
     private Npc oficial;
     private final Array<Pickup> suprimentos = new Array<>();
@@ -109,9 +111,11 @@ public final class MarsScreen implements Screen {
     }
 
     @Override public void show() {
+        game.useTargetCursor();
         assets = game.getAssets();
         batch = game.getBatch();
         panelPatch = assets.uiPanelPatch();
+        statusHud = new com.orion.echoes.lua.render.GameplayStatusHud(assets);
         pauseOverlay = new PauseOverlay(batch, assets);
         pauseOverlay.setSettings(construirOpcoesDaPausa());
         physics = new PhysicsWorld();
@@ -144,10 +148,13 @@ public final class MarsScreen implements Screen {
         LunarCheckpoint.applyCampaign(arrival, campaign);
         player.fromSaveData(arrival);
         player.setWeaponEquipped(campaign.hasWeapon());
+        expedition = new com.orion.echoes.lua.ui.ExpeditionOverlay(game, player);
         player.setMunicao(campaign.getAmmo());
         titanCombat = new TitanCombatSystem(campaign);
         titanCombat.setMunicao(player.getMunicao());
         buildColony();
+        suprimentos.add(new Pickup(600f,450f,Pickup.Kind.COMIDA,assets));
+        suprimentos.add(new Pickup(1700f,700f,Pickup.Kind.COMIDA,assets));
         restaurarCampanha();
         camera.position.set(640f, 360f, 0f);
         camera.update();
@@ -183,13 +190,13 @@ public final class MarsScreen implements Screen {
         returnPortal.setReversed(true);
         titanPortal = new TitanPortal(2600f, 1520f, assets);
         dialogBox = new DialogBox(batch, assets);
-        titanPortal.setUnlocked(campaign.portalLiberado());
+        titanPortal.setUnlocked(campaign.portalLiberado() && campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_MARTE));
         prop(2400f, 1230f, 120f, 140f, MarsObject.Kind.BEACON);
         float[][] data = {{530,760,130},{850,420,115},{1080,930,145},{1320,580,125},
             {1710,810,150},{1980,430,120},{2350,650,145},{2750,320,110},{610,1660,120},
             {1150,1610,105},{2600,900,130},{2250,1660,115}};
         for (float[] r : data) {
-            MarsObject rock = new MarsObject(r[0], r[1], r[2] * 1.04f, r[2] * .86f,
+            MarsObject rock = new MarsObject(r[0], r[1], r[2] * .90f, r[2] * .72f,
                 MarsObject.Kind.ROCK, assets, physics);
             props.add(rock);
             rocks.add(rock);
@@ -285,7 +292,7 @@ public final class MarsScreen implements Screen {
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
-        batch.draw(assets.marsBackgroundTexture, 0f, 0f, WORLD_W, WORLD_H);
+        TerrainRenderer.draw(batch, assets.marsBackgroundTexture, WORLD_W, WORLD_H);
         renderLandmarks();
         for (MarsObject object : props) object.render(batch);
         returnPortal.render(batch);
@@ -304,6 +311,7 @@ public final class MarsScreen implements Screen {
         renderEnemyHealth();
         renderHud();
         renderDamage();
+        expedition.render();
         if (paused) renderPause();
         renderTransition();
     }
@@ -354,6 +362,7 @@ public final class MarsScreen implements Screen {
     }
 
     private void update(float delta) {
+        if (!paused && expedition.handleInput()) { input.discardActions(); return; }
         if (changingScreen) return;
         if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) hitboxDebug.toggle();
 
@@ -387,14 +396,14 @@ public final class MarsScreen implements Screen {
             return;
         }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
-            || paused && Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            || paused && (Gdx.input.isKeyJustPressed(Input.Keys.ENTER) || pauseOverlay.consumeResumeRequested())) {
             paused = !paused;
             player.getBody().setLinearVelocity(0f, 0f);
             if (paused) pauseOverlay.open();
             return;
         }
         if (paused) {
-            if (Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.M) || pauseOverlay.consumeMenuRequested()) {
                 changingScreen = true;
                 game.setScreen(new MenuScreen(game));
                 dispose();
@@ -452,11 +461,12 @@ public final class MarsScreen implements Screen {
         atualizarSaveLoad();
         for (MarsObject object : props) object.update(delta);
         returnPortal.update(delta);
-        titanPortal.setUnlocked(campaign.portalLiberado());
+        titanPortal.setUnlocked(campaign.portalLiberado() && campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_MARTE));
         titanPortal.update(delta);
         collectItems();
         coletarSuprimentos(delta);
         for (MarsEnemy enemy : enemies) {
+            enemy.setSolidBounds(physics.getSolidBounds());
             enemy.update(delta, player, props);
             if (enemy.consumeTelegraphStarted()) {
                 particles.criarAlertaInimigo(enemy.centerX(), enemy.centerY(), true);
@@ -517,6 +527,7 @@ public final class MarsScreen implements Screen {
             sounds.tocarColetaEspacial(suprimento.centerX(), suprimento.centerY());
             feedback(suprimento.getKind() == Pickup.Kind.OXIGENIO
                 ? "Cilindro de oxigênio  •  O2 restaurado"
+                : suprimento.getKind() == Pickup.Kind.COMIDA ? "Ração guardada na mochila."
                 : "Gelo recolhido  •  refine no habitat para gerar munição");
         }
     }
@@ -608,6 +619,15 @@ public final class MarsScreen implements Screen {
 
     private void enterTitan() {
         if (portalTravel != 0) return;
+        if (!campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_MARTE)) {
+            if (!missionComplete()) { feedback("Reative três estações e neutralize os hostis antes do chefe."); return; }
+            guardarCampanha();
+            if (!PhaseBossScreen.liberada(campaign, true)) { feedback(PhaseBossScreen.bloqueio(true)); return; }
+            changingScreen = true;
+            game.setScreen(new PhaseBossScreen(game, campaign, true));
+            dispose();
+            return;
+        }
         portalTravel = 1;
         titanPortal.beginTraversal(false);
         feedback("O campo dobra e inverte o vetor de saída para Titã.");
@@ -656,6 +676,7 @@ public final class MarsScreen implements Screen {
             return;
         }
         player.fromSaveData(data);
+        campaign.getInventario().restaurar(data.inventario,data.comidaGuardada,data.nivelArma,data.nivelArmadura);
         player.setMunicao(data.municao);
         minerals = data.marteNucleos;
         for (int index = activeStations; index < Math.min(data.marteEstacoes, stations.size); index++) {
@@ -710,7 +731,14 @@ public final class MarsScreen implements Screen {
         MarsEnemy target = null;
         float closest = titanCombat.getAlcance();
         for (MarsEnemy enemy : enemies) {
-            if (!enemy.isAtivo()) continue;
+            /*
+             * Cadaver nao e alvo.
+             *
+             * A agonia (DYING) dura meio segundo e mantem `ativo` ligado para
+             * a animacao terminar. Mirando por isAtivo, o rifle continuava
+             * travando no corpo caido e gastando bala nele.
+             */
+            if (!enemy.isAlive()) continue;
             float ex = enemy.centerX() - x;
             float ey = enemy.centerY() - y;
             float along = ex * dx + ey * dy;
@@ -721,6 +749,7 @@ public final class MarsScreen implements Screen {
             }
         }
         shotEnd.set(x + dx * titanCombat.getAlcance(), y + dy * titanCombat.getAlcance());
+        boolean aliveBeforeShot = target != null && target.isAlive();
         titanCombat.setMunicao(player.getMunicao());
         boolean fired = titanCombat.tentarTiro(shotStart, target, campaign.hasWeapon());
         player.setMunicao(titanCombat.getMunicao());
@@ -731,7 +760,15 @@ public final class MarsScreen implements Screen {
         }
         if (target != null) {
             shotEnd.set(target.centerX(), target.centerY());
-            boolean killed = !target.isAlive();
+            /*
+             * O abate e deste tiro, nao do estado atual do alvo.
+             *
+             * `!target.isAlive()` sozinho contava de novo qualquer disparo que
+             * pegasse um inimigo ja em agonia: hostilesDefeated passava de
+             * enemies.size, missionComplete() nunca mais era verdadeiro e o
+             * portal de Tita ficava bloqueado com a missao "completa" no HUD.
+             */
+            boolean killed = aliveBeforeShot && !target.isAlive();
             if (killed) {
                 hostilesDefeated++;
                 particles.criarMorteInimigo(target.centerX(), target.centerY());
@@ -782,8 +819,21 @@ public final class MarsScreen implements Screen {
         return false;
     }
 
+    /**
+     * Conclusao da missao marciana.
+     *
+     * A contagem le o estado real dos hostis em vez de confiar so no contador:
+     * qualquer descompasso entre `hostilesDefeated` e o mapa deixava de travar
+     * a fase, que era exatamente o que prendia o jogador diante do portal.
+     */
     private boolean missionComplete() {
-        return activeStations == 3 && hostilesDefeated == enemies.size;
+        return activeStations >= stations.size && hostisRestantes() == 0;
+    }
+
+    private int hostisRestantes() {
+        int vivos = 0;
+        for (MarsEnemy enemy : enemies) if (enemy.isAlive()) vivos++;
+        return vivos;
     }
     private void feedback(String value) { message = value; messageTimer = 3.4f; }
 
@@ -835,42 +885,21 @@ public final class MarsScreen implements Screen {
         batch.end();
     }
 
+    private com.orion.echoes.lua.render.GameplayStatusHud statusHud;
     private void renderHud() {
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
-        drawUiPanel(32f, 28f, 294f, 82f, MARS, .91f);
-        drawUiPanel(914f, 28f, 334f, 82f, MARS, .91f);
-        drawUiPanel(330f, 646f, 620f, 52f, MARS, .94f);
-        if (messageTimer > 0f) drawUiPanel(398f, 128f, 484f, 48f, UiTheme.AMBER,
+        statusHud.render(batch,player);
+        drawUiPanel(24f, 642f, 620f, 62f, MARS, .96f);
+        drawUiPanel(660f, 642f, 596f, 62f, MARS, .94f);
+        if (messageTimer > 0f) drawUiPanel(398f, 126f, 484f, 50f, UiTheme.AMBER,
             Math.min(.94f, messageTimer * 2f));
-        drawBar(88f, 75f, 178f, 9f, player.getOxigenio() / 100f,
-            player.getOxigenio() < 25f ? UiTheme.RED : UiTheme.CYAN);
-        drawBar(88f, 49f, 178f, 8f, player.getEnergia() / 100f, UiTheme.AMBER);
-        drawBar(88f, 33f, 178f, 6f, player.getMunicao() / (float) GameConfig.AMMO_MAX,
-            player.getMunicao() <= GameConfig.AMMO_LOW ? UiTheme.RED : UiTheme.GREEN);
-        if (missionComplete()) {
-            float pulse = .35f + MathUtils.sin(extractionGlow * 4f) * .15f;
-            batch.setColor(MARS.r, MARS.g, MARS.b, pulse);
-            batch.draw(assets.uiWhiteTexture, 330f, 642f, 620f, 3f);
-        }
-        batch.setColor(Color.WHITE);
-        text("O2", .72f, UiTheme.TEXT_MUTED, 50f, 88f, 1f);
-        text(hudOxygen.of(Math.round(player.getOxigenio())), .7f, UiTheme.TEXT, 275f, 87f, 1f);
-        text("EN", .72f, UiTheme.TEXT_MUTED, 50f, 61f, 1f);
-        text(hudEnergy.of(Math.round(player.getEnergia())), .7f, UiTheme.TEXT, 275f, 60f, 1f);
-        text("MUN", .72f, UiTheme.TEXT_MUTED, 50f, 40f, 1f);
-        text(hudAmmo.of(player.getMunicao()), .7f,
-            player.getMunicao() <= GameConfig.AMMO_LOW ? UiTheme.RED : UiTheme.GREEN, 275f, 39f, 1f);
-        text(hudMinerals.of(minerals), .74f, UiTheme.AMBER, 944f, 84f, 1f);
-        text(hudStations.of(activeStations), .74f, UiTheme.CYAN, 1050f, 84f, 1f);
-        text("HOSTIS  " + hostilesDefeated + "/" + enemies.size, .72f, UiTheme.TEXT_MUTED, 944f, 55f, 1f);
-        // Gelo fica ao lado dos hostis: e o insumo que vira municao no habitat.
-        text("GELO  " + player.getGelo(), .72f,
-            player.getGelo() > 0 ? UiTheme.CYAN : UiTheme.TEXT_MUTED, 1108f, 55f, 1f);
-        text(campaign.missaoAtual(), .72f,
-            campaign.portalLiberado() ? UiTheme.GREEN : UiTheme.TEXT, 354f, 680f, 1f);
-        text(campaign.statusPortal(), .62f,
-            campaign.portalLiberado() ? UiTheme.CYAN : UiTheme.RED, 955f, 680f, 1f);
+        text("MISSÃO EM CURSO", .53f, MARS, 42f, 688f, 1f);
+        text(campaign.missaoAtual(), .73f,
+            campaign.portalLiberado() ? UiTheme.GREEN : UiTheme.TEXT, 42f, 663f, 1f);
+        text("ROTA PARA TITÃ", .53f, MARS, 678f, 688f, 1f);
+        text(campaign.statusPortal(), .67f,
+            campaign.portalLiberado() ? UiTheme.CYAN : UiTheme.RED, 678f, 663f, 1f);
         if (messageTimer > 0f) centered(message, .72f, UiTheme.TEXT, 152f,
             Math.min(1f, messageTimer * 2f));
         if (titanDialogue.isOpen()) {
@@ -892,10 +921,10 @@ public final class MarsScreen implements Screen {
 
     private void renderLandmarks() {
         batch.setColor(1f, .9f, .82f, .88f);
-        batch.draw(assets.landmarkRegion(0, 1), 1120f, 1480f, 260f, 180f);
-        batch.draw(assets.landmarkRegion(1, 1), 2640f, 680f, 220f, 165f);
-        batch.draw(assets.landmarkRegion(2, 1), 380f, 720f, 235f, 145f);
-        batch.draw(assets.landmarkRegion(3, 1), 1900f, 1510f, 180f, 205f);
+        com.orion.echoes.lua.render.SpriteFit.draw(batch, assets.landmarkRegion(0, 1), 1120f, 1480f, 260f, 180f);
+        com.orion.echoes.lua.render.SpriteFit.draw(batch, assets.landmarkRegion(1, 1), 2640f, 680f, 220f, 165f);
+        com.orion.echoes.lua.render.SpriteFit.draw(batch, assets.landmarkRegion(2, 1), 380f, 720f, 235f, 145f);
+        com.orion.echoes.lua.render.SpriteFit.draw(batch, assets.landmarkRegion(3, 1), 1900f, 1510f, 180f, 205f);
         batch.setColor(1f, 1f, 1f, 1f);
     }
 
@@ -924,11 +953,12 @@ public final class MarsScreen implements Screen {
     }
 
     private void drawUiPanel(float x, float y, float w, float h, Color accent, float alpha) {
-        panelColor.set(accent.r * .38f + .62f, accent.g * .38f + .62f,
-            accent.b * .38f + .62f, alpha);
+        panelColor.set(1f, 1f, 1f, alpha);
         panelPatch.setColor(panelColor);
         panelPatch.draw(batch, x, y, w, h);
         panelPatch.setColor(Color.WHITE);
+        batch.setColor(Color.WHITE);
+        batch.setColor(Color.WHITE);
     }
 
     private void drawBar(float x, float y, float w, float h, float ratio, Color color) {
@@ -953,6 +983,7 @@ public final class MarsScreen implements Screen {
     }
 
     @Override public void resize(int width, int height) {
+        if (expedition != null) expedition.resize(width, height);
         viewport.update(width, height, false);
         uiViewport.update(width, height, true);
         if (pauseOverlay != null) pauseOverlay.resize(width, height);
@@ -1016,6 +1047,7 @@ public final class MarsScreen implements Screen {
     }
 
     @Override public void dispose() {
+        if (expedition != null) expedition.dispose();
         if (particles != null) { particles.dispose(); particles = null; }
         if (physics != null) { physics.dispose(); physics = null; }
         if (pauseOverlay != null) pauseOverlay.dispose();

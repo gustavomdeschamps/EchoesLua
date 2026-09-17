@@ -9,6 +9,7 @@ import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.physics.PhysicsWorld;
 import com.orion.echoes.lua.render.SpriteFit;
+import com.orion.echoes.lua.render.AtlasSpriteFactory;
 
 public class Item extends Entidade implements Interagivel {
 
@@ -66,7 +67,7 @@ public class Item extends Entidade implements Interagivel {
             case OXIGENIO:
 
                 sprite =
-                    new Sprite(
+                    AtlasSpriteFactory.create(
                         assets.oxigenioTexture
                     );
 
@@ -75,7 +76,7 @@ public class Item extends Entidade implements Interagivel {
             case COMIDA:
 
                 sprite =
-                    new Sprite(
+                    AtlasSpriteFactory.create(
                         assets.comidaTexture
                     );
 
@@ -84,7 +85,7 @@ public class Item extends Entidade implements Interagivel {
             case GELO:
 
                 sprite =
-                    new Sprite(
+                    AtlasSpriteFactory.create(
                         assets.geloTexture
                     );
 
@@ -216,9 +217,7 @@ public class Item extends Entidade implements Interagivel {
 
             case COMIDA:
 
-                astronauta.recuperarEnergia(
-                    30f
-                );
+                  astronauta.guardarComida();
 
                 break;
 

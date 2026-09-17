@@ -64,8 +64,10 @@ public final class LoadingScreen implements Screen {
         if (!leaving && loaded && elapsed >= MINIMUM_DISPLAY_TIME) {
             leaving = true;
             game.getSounds().load();
+            game.installCustomCursors();
             dispose();
-            game.setScreen(new IntroScreen(game));
+            game.setScreen(Boolean.getBoolean("echoes.spriteQa")
+                ? new SpriteQaScreen(game) : new IntroScreen(game));
         }
     }
 
@@ -87,14 +89,7 @@ public final class LoadingScreen implements Screen {
         // o texto do rodape continuar legivel sobre o regolito claro.
         batch.setColor(reveal, reveal, reveal, 1f);
         batch.draw(keyArt, 0f, 0f, GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT);
-        batch.setColor(.01f, .014f, .02f, .55f * reveal);
-        batch.draw(pixel, 0f, 0f, GameConfig.WINDOW_WIDTH, 118f);
-        batch.setColor(.08f, .11f, .13f, reveal * .85f);
-        batch.draw(pixel, barX, barY, barW, barH);
-        batch.setColor(.35f, .78f, .76f, reveal);
-        batch.draw(pixel, barX, barY, barW * displayedProgress, barH);
         batch.setColor(Color.WHITE);
-        font.draw(batch, status, 640f - layout.width / 2f, 92f);
         batch.end();
     }
 

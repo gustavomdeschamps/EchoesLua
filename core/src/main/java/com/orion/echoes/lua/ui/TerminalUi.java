@@ -40,7 +40,7 @@ public class TerminalUi implements Disposable {
         this.font = assets.font;
         this.titleFont = assets.titleFont;
         this.white = assets.uiWhiteTexture;
-        this.panelPatch = assets.uiDialogPatch();
+        this.panelPatch = assets.uiPanelPatch();
         viewport = new FitViewport(GameConfig.WINDOW_WIDTH, GameConfig.WINDOW_HEIGHT, camera);
         camera.position.set(GameConfig.WINDOW_WIDTH / 2f, GameConfig.WINDOW_HEIGHT / 2f, 0f);
         camera.update();
@@ -76,8 +76,7 @@ public class TerminalUi implements Disposable {
     public void panel(float x, float y, float width, float height, Color accent) {
         shadow(x, y, width, height, SHADOW_SPREAD, SHADOW_OFFSET, .18f);
         shadow(x, y, width, height, SHADOW_SPREAD * .45f, SHADOW_OFFSET * .55f, .26f);
-        panelPatch.setColor(new Color(accent.r * .32f + .68f, accent.g * .32f + .68f,
-            accent.b * .32f + .68f, 1f));
+        panelPatch.getColor().set(1f,1f,1f,accent.a);
         panelPatch.draw(batch, x, y, width, height);
         panelPatch.setColor(Color.WHITE);
         batch.setColor(Color.WHITE);

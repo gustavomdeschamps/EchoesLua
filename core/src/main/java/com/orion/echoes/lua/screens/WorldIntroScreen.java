@@ -102,6 +102,7 @@ public final class WorldIntroScreen implements Screen {
             case LUNAR -> UiTheme.CYAN;
             case MARS -> Color.valueOf("C95E37");
             case TITAN -> UiTheme.AMBER;
+            case CALLISTO, AHARIN -> UiTheme.CYAN;
         };
     }
 
@@ -110,6 +111,7 @@ public final class WorldIntroScreen implements Screen {
             case LUNAR -> new String[] {"MISSÃO 01", "LUA", "SILÊNCIO NO ENLACE"};
             case MARS -> new String[] {"MISSÃO 02", "MARTE", "COLÔNIA NA TEMPESTADE"};
             case TITAN -> new String[] {"MISSÃO 03", "TITÃ", "SOB A NÉVOA DE METANO"};
+            case CALLISTO, AHARIN -> new String[] {"EXPEDIÇÃO", world.name(), "ALÉM DO ÚLTIMO SINAL"};
         };
     }
 
@@ -118,6 +120,7 @@ public final class WorldIntroScreen implements Screen {
             case LUNAR -> "Restabeleça os sistemas da colônia.";
             case MARS -> "Reative a instalação e localize o novo portal.";
             case TITAN -> "Encontre a equipe e atravesse o vale.";
+            case CALLISTO, AHARIN -> "Siga o enlace entre os mundos.";
         };
     }
 
@@ -129,6 +132,7 @@ public final class WorldIntroScreen implements Screen {
             case LUNAR -> assets.backgroundLuaTexture;
             case MARS -> assets.marsBackgroundTexture;
             case TITAN -> assets.titanBackgroundTexture;
+            case CALLISTO, AHARIN -> assets.backgroundLuaTexture;
         };
     }
 
@@ -137,6 +141,7 @@ public final class WorldIntroScreen implements Screen {
             case LUNAR -> "ENLACE // ORION-01";
             case MARS -> "TEMPESTADE // ARES-07";
             case TITAN -> "ÚLTIMO SINAL // KRONOS-03";
+            case CALLISTO, AHARIN -> "ENLACE // LUZ";
         };
     }
 
@@ -184,6 +189,7 @@ public final class WorldIntroScreen implements Screen {
             case LUNAR -> new Color(.42f, .46f, .52f, 1f);
             case MARS -> new Color(.72f, .47f, .34f, 1f);
             case TITAN -> new Color(.68f, .50f, .31f, 1f);
+            case CALLISTO, AHARIN -> Color.WHITE;
         } : Color.WHITE);
         batch.draw(dedicated == null ? background() : dedicated, -drift, -drift * .5f,
             GameConfig.WINDOW_WIDTH + drift * 2f, GameConfig.WINDOW_HEIGHT + drift);

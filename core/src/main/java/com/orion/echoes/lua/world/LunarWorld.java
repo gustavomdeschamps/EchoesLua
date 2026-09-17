@@ -40,6 +40,7 @@ public final class LunarWorld {
     private final RandomXS128 random;
     private final AssetManager assets;
     private final PhysicsWorld physics;
+    public Array<com.badlogic.gdx.math.Rectangle> getSolidBounds() { return physics.getSolidBounds(); }
     private final ReachabilityGrid navigation;
 
     private final Array<Wall> walls = new Array<>();
@@ -112,7 +113,7 @@ public final class LunarWorld {
             float jitterY = (random.nextFloat() - .5f) * 90f;
             float x = clamp(cell[0] + jitterX, 120f, GameConfig.WORLD_WIDTH - cell[2] - 120f);
             float y = clamp(cell[1] + jitterY, 120f, GameConfig.WORLD_HEIGHT - cell[3] - 120f);
-            obstacles.add(new Obstacle(x, y, cell[2] * 1.14f, cell[3] * 1.14f,
+            obstacles.add(new Obstacle(x, y, cell[2] * .98f, cell[3] * .98f,
                 assets.lunarObstacleRegion(obstacles.size % 6), physics));
         }
     }
