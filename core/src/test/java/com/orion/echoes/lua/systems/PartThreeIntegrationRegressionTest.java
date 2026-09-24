@@ -36,6 +36,9 @@ class PartThreeIntegrationRegressionTest {
         assertFalse(SanctuaryZone.walkable(60f, 600f), "o vazio de nuvens não é chão");
         assertFalse(SanctuaryZone.walkable(1240f, 660f));
         assertTrue(SanctuaryZone.walkable(SanctuaryZone.TERRACE_X, SanctuaryZone.TERRACE_Y));
+        assertTrue(SanctuaryZone.canTraverse(880f, 330f, 955f, 330f));
+        assertFalse(SanctuaryZone.canTraverse(650f, 290f, 950f, 180f),
+            "o dash não pode atravessar o vazio entre a passarela e o terraço");
         // Passarela e terraço precisam se tocar, senão o jogador fica preso.
         assertTrue(SanctuaryZone.walkable(690f, 292f) || SanctuaryZone.walkable(700f, 292f));
     }

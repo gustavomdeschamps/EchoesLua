@@ -20,8 +20,12 @@ public final class GameplayStatusHud {
     public GameplayStatusHud(AssetManager assets) { this.assets=assets; panel=assets.uiPanelPatch(); }
     public void render(SpriteBatch batch,Astronauta player) {
         batch.setColor(Color.WHITE);
-        panel.draw(batch,24,18,318,94);
+        panel.draw(batch,24,18,318,player.getFreezeRemaining() > 0f ? 140f : 116f);
         panel.draw(batch,970,18,286,76);
+        text(batch,"DIF: " + player.getDifficultyLabel(),.47f,UiTheme.TEXT_MUTED,40,124);
+        if (player.getFreezeRemaining() > 0f)
+            text(batch,"CONGELADO  " + Math.round(player.getFreezeRemaining()) + " s",
+                .48f,UiTheme.CYAN,40,147);
         row(batch,"O2",oxygen.of(Math.round(player.getOxigenio())),player.getOxigenio()/100f,
             player.getOxigenio()<25?UiTheme.RED:UiTheme.CYAN,83);
         row(batch,"ENERGIA",energy.of(Math.round(player.getEnergia())),player.getEnergia()/100f,UiTheme.AMBER,57);

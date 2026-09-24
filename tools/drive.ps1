@@ -15,6 +15,8 @@ $jdk  = 'C:\Program Files\Java\jdk-21.0.10'
 $cpFile = Join-Path $root 'build\drive-classpath.txt'
 if (-not (Test-Path $cpFile)) { Write-Host 'Rode antes: gradlew.bat driveClasspath'; exit 1 }
 $cp  = (Get-Content $cpFile -Raw).Trim()
+$manualClasses = Join-Path $root 'build\manual-classes'
+if (Test-Path $manualClasses) { $cp = "$manualClasses;$cp" }
 $out = Join-Path $root 'build\drive-classes'
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 

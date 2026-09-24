@@ -36,6 +36,7 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
         super(x, y, 90f, 70f);
         spawnX = x;
         spawnY = y;
+        time = Math.abs(MathUtils.sin(x * .031f + y * .017f)) * .85f;
         for (int row = 0; row < 4; row++) {
             for (int column = 0; column < 4; column++) {
                 frames[row][column] = assets.titanEnemyFrame(column, row);

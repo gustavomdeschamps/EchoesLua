@@ -50,6 +50,10 @@ public final class LunarCheckpoint {
         data.nivelArmadura = campaign.getInventario().getNivelArmadura();
         data.formaBossCalisto = campaign.getFormaBossCalisto();
         data.hpBossCalisto = campaign.getHpBossCalisto();
+        data.bossLuaDefeated = campaign.isBossDefeated(CampaignState.Phase.LUNAR);
+        data.bossMarteDefeated = campaign.isBossDefeated(CampaignState.Phase.MARS);
+        data.bossTitanDefeated = campaign.isBossDefeated(CampaignState.Phase.TITAN);
+        data.bossCalistoDefeated = campaign.isBossDefeated(CampaignState.Phase.CALLISTO);
         data.oxigenio = campaign.getOxygen();
         data.energia = campaign.getEnergy();
         data.gelo = campaign.getIce();
@@ -66,6 +70,9 @@ public final class LunarCheckpoint {
         data.fase = campaign.phaseToken();
         data.semente = campaign.getSeed();
         data.municao = campaign.getAmmo();
+        data.municaoReserva = campaign.getInventario().getReserveAmmo();
+        data.dificuldade = campaign.getInventario().getDifficulty().name();
+        data.organizacaoMochila = campaign.getInventario().exportSlots();
         data.totalHostisLunares = campaign.getLunarTotalEnemies();
         data.marteVisitado = campaign.hasVisitedMars();
         data.marteConcluido = campaign.isMarsMissionComplete();
@@ -89,7 +96,16 @@ public final class LunarCheckpoint {
         CampaignState campaign = new CampaignState(data.semente);
         campaign.getInventario().restaurar(data.inventario, data.comidaGuardada,
             data.nivelArma, data.nivelArmadura);
+        campaign.getInventario().restoreReserveAmmo(data.municaoReserva);
+        campaign.getInventario().setDifficulty(
+            com.orion.echoes.lua.systems.Inventario.Difficulty.fromSave(data.dificuldade));
+        campaign.getInventario().restoreSlots(data.organizacaoMochila);
         campaign.setBossCalisto(data.formaBossCalisto, data.hpBossCalisto);
+        campaign.setBossDefeated(CampaignState.Phase.LUNAR, data.bossLuaDefeated);
+        campaign.setBossDefeated(CampaignState.Phase.MARS, data.bossMarteDefeated);
+        campaign.setBossDefeated(CampaignState.Phase.TITAN, data.bossTitanDefeated);
+        campaign.setBossDefeated(CampaignState.Phase.CALLISTO,
+            data.bossCalistoDefeated || (data.formaBossCalisto == 3 && data.hpBossCalisto == 0f));
         campaign.setPhase(CampaignState.phaseFromToken(data.fase));
         campaign.setVitals(data.oxigenio, data.energia);
         campaign.setAmmo(data.municao);
@@ -135,6 +151,10 @@ public final class LunarCheckpoint {
         mission.setMarsProgress(data.marteVisitado, data.marteConcluido);
         if (campaign != null) {
             campaign.getInventario().restaurar(data.inventario,data.comidaGuardada,data.nivelArma,data.nivelArmadura);
+            campaign.getInventario().restoreReserveAmmo(data.municaoReserva);
+            campaign.getInventario().setDifficulty(
+                com.orion.echoes.lua.systems.Inventario.Difficulty.fromSave(data.dificuldade));
+            campaign.getInventario().restoreSlots(data.organizacaoMochila);
             campaign.setVitals(data.oxigenio, data.energia);
             campaign.setAmmo(data.municao);
             campaign.captureMission(mission);

@@ -14,6 +14,7 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
+import com.badlogic.gdx.utils.Align;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 import com.orion.echoes.lua.EchoesLua;
@@ -49,6 +50,7 @@ import com.orion.echoes.lua.systems.TitanCombatSystem;
 import com.orion.echoes.lua.ui.HudLabel;
 import com.orion.echoes.lua.ui.PauseSettingsModel;
 import com.orion.echoes.lua.ui.UiTheme;
+import com.orion.echoes.lua.ui.WorkshopInterior;
 import com.orion.echoes.lua.world.NpcSpawnSelector;
 
 /** Segunda missão jogável: restaura a base marciana e alcança a plataforma. */
@@ -75,6 +77,7 @@ public final class MarsScreen implements Screen {
     private SpriteBatch batch;
     private NinePatch panelPatch;
     private PauseOverlay pauseOverlay;
+    private WorkshopInterior workshop;
     private PhysicsWorld physics;
     private ParticleManager particles;
     private SoundManager sounds;
@@ -104,10 +107,16 @@ public final class MarsScreen implements Screen {
     private DialogBox dialogBox;
     private TitanCombatSystem titanCombat;
     private String message = "A tempestade apagou a colônia. Recupere os núcleos marcianos.";
+    private final GameSaveData resumeData;
 
     public MarsScreen(EchoesLua game, CampaignState campaign) {
+        this(game, campaign, null);
+    }
+
+    public MarsScreen(EchoesLua game, CampaignState campaign, GameSaveData resumeData) {
         this.game = game;
         this.campaign = campaign == null ? game.getCampaign() : campaign;
+        this.resumeData = resumeData;
     }
 
     @Override public void show() {
@@ -117,6 +126,7 @@ public final class MarsScreen implements Screen {
         panelPatch = assets.uiPanelPatch();
         statusHud = new com.orion.echoes.lua.render.GameplayStatusHud(assets);
         pauseOverlay = new PauseOverlay(batch, assets);
+        workshop = new WorkshopInterior(batch, assets);
         pauseOverlay.setSettings(construirOpcoesDaPausa());
         physics = new PhysicsWorld();
         particles = new ParticleManager(assets);
@@ -147,6 +157,11 @@ public final class MarsScreen implements Screen {
         GameSaveData arrival = player.toSaveData();
         LunarCheckpoint.applyCampaign(arrival, campaign);
         player.fromSaveData(arrival);
+        if (resumeData != null && "MUNDO".equals(resumeData.cena)
+            && CampaignState.phaseFromToken(resumeData.fase) == CampaignState.Phase.MARS
+            && resumeData.semente == campaign.getSeed()) {
+            player.fromSaveData(resumeData);
+        }
         player.setWeaponEquipped(campaign.hasWeapon());
         expedition = new com.orion.echoes.lua.ui.ExpeditionOverlay(game, player);
         player.setMunicao(campaign.getAmmo());
@@ -314,6 +329,7 @@ public final class MarsScreen implements Screen {
         expedition.render();
         if (paused) renderPause();
         renderTransition();
+        workshop.render();
     }
 
     /** Trilha e ouvinte seguem o relogio real, fora do hitstop e da pausa. */
@@ -362,6 +378,12 @@ public final class MarsScreen implements Screen {
     }
 
     private void update(float delta) {
+        if (workshop != null && workshop.isOpen()) {
+            workshop.handleInput(delta);
+            player.getBody().setLinearVelocity(0f, 0f);
+            input.discardActions();
+            return;
+        }
         if (!paused && expedition.handleInput()) { input.discardActions(); return; }
         if (changingScreen) return;
         if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) hitboxDebug.toggle();
@@ -437,7 +459,8 @@ public final class MarsScreen implements Screen {
         shotTimer = Math.max(0f, shotTimer - delta);
         extractionGlow += delta;
         Vector2 direction = input.getDirection();
-        if (input.consumeDashPressed() && player.tryDash(direction.x, direction.y)) {
+        boolean dashRequested = input.consumeDashPressed() || Gdx.input.isKeyJustPressed(Input.Keys.Q);
+        if (dashRequested && player.tryDash(direction.x, direction.y)) {
             particles.criarPoeiraMarte(player.getPosition().x + 27f, player.getPosition().y,
                 true, direction.x, direction.y);
             juice.trigger(JuiceSystem.Preset.DASH);
@@ -452,6 +475,12 @@ public final class MarsScreen implements Screen {
         if (player.isProtegido()) {
             player.recuperarOxigenio(9f * delta);
             player.recuperarEnergia(5f * delta);
+        }
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            int before = player.getMunicao();
+            player.setMunicao(campaign.getInventario().reload(before, GameConfig.AMMO_MAX));
+            titanCombat.setMunicao(player.getMunicao());
+            feedback(player.getMunicao() > before ? "Rifle recarregado." : "Sem células fabricadas na reserva.");
         }
         if (input.consumeAttackPressed()) shoot();
         if (Gdx.input.isKeyJustPressed(Input.Keys.E)) handleInteraction();
@@ -539,8 +568,8 @@ public final class MarsScreen implements Screen {
      * jogador sempre tem como voltar ao habitat e converter o que recolheu.
      */
     private void refinarNoHabitat() {
-        if (player.getMunicao() >= GameConfig.AMMO_MAX) {
-            feedback("Munição no limite. O gelo foi preservado.");
+        if (campaign.getInventario().getReserveAmmo() >= 240) {
+            feedback("Reserva de munição cheia. O gelo foi preservado.");
             return;
         }
         if (!player.getBounds().overlaps(habitat.getBounds())) return;
@@ -549,12 +578,12 @@ public final class MarsScreen implements Screen {
             sounds.tocarSemGelo();
             return;
         }
-        int celulas = player.adicionarMunicao(GameConfig.AMMO_PER_ICE);
+        int celulas = campaign.getInventario().addReserveAmmo(GameConfig.AMMO_PER_ICE);
         player.recuperarOxigenio(GameConfig.OXYGEN_ITEM_VALUE * .5f);
         sounds.tocarProcessarGelo();
         feedback(celulas > 0
-            ? "Gelo refinado  •  +" + celulas + " de munição"
-            : "Munição já está no limite.");
+            ? "Gelo refinado: +" + celulas + " células na reserva. R recarrega."
+            : "Reserva de munição cheia.");
     }
 
     private void handleInteraction() {
@@ -563,14 +592,14 @@ public final class MarsScreen implements Screen {
             && !campaign.isDialogoTita()) {
             titanDialogue.start(new String[] {
                 "Explorador, a leitura veio de Titã. O Soberano do Metano despertou e está avançando contra a colônia.",
-                "Sua missão: valide uma amostra de metano ou neutralize um hostil marciano para calibrarmos o portal.",
-                "Depois atravesse o portal vertical ao nordeste, elimine os três caçadores e derrube o Soberano. Volte vivo."
+                "Consigo calibrar o portal com uma amostra de metano. E se os hostis me impedirem?",
+                "Podemos calibrar com a amostra ou com dados de um hostil abatido. Atravesse a nordeste, elimine os três caçadores e volte vivo."
             });
             sounds.tocarHoverUi();
             return;
         }
         if (player.getBounds().overlaps(habitat.getBounds())) {
-            refinarNoHabitat();
+            openWorkshop();
             return;
         }
         if (titanPortal.isPlayerNear(player)) {
@@ -590,6 +619,25 @@ public final class MarsScreen implements Screen {
             return;
         }
         interactWorld();
+    }
+
+    private void openWorkshop() {
+        player.getBody().setLinearVelocity(0f, 0f);
+        workshop.open("HABITAT MARCIANO · OFICINA", new WorkshopInterior.Actions() {
+            @Override public String status() {
+                return "GELO  " + player.getGelo() + "   ·   MUNIÇÃO  " + player.getMunicao()
+                    + "   ·   ESTAÇÕES  " + activeStations + "/3";
+            }
+            @Override public void recharge() {
+                player.recuperarOxigenio(100f); player.recuperarEnergia(100f);
+                sounds.tocarBaseRecarregando(); feedback("Traje reabastecido no habitat.");
+            }
+            @Override public void craft() {
+                feedback(campaign.hasWeapon() ? "Rifle calibrado e pronto para uso."
+                    : "O projeto do rifle ainda está incompleto.");
+            }
+            @Override public void processIce() { refinarNoHabitat(); }
+        });
     }
 
     private void interactWorld() {
@@ -850,6 +898,10 @@ public final class MarsScreen implements Screen {
         // Mesmo traco da fase lunar, em textura, sem trocar de renderer.
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        batch.setColor(1f, .28f, .12f, alpha * .4f);
+        drawTrail(shotStart.x, shotStart.y, shotEnd.x, shotEnd.y, 8f);
+        batch.setColor(1f, .93f, .72f, alpha);
+        drawTrail(shotStart.x, shotStart.y, shotEnd.x, shotEnd.y, 2.5f);
         batch.setColor(1f, .45f, .25f, alpha * .35f);
         drawTrail(px - dx * 36f, py - dy * 36f, px, py, 8f * alpha);
         batch.setColor(1f, .86f, .62f, alpha);
@@ -890,20 +942,24 @@ public final class MarsScreen implements Screen {
         batch.setProjectionMatrix(uiCamera.combined);
         batch.begin();
         statusHud.render(batch,player);
-        drawUiPanel(24f, 642f, 620f, 62f, MARS, .96f);
-        drawUiPanel(660f, 642f, 596f, 62f, MARS, .94f);
-        if (messageTimer > 0f) drawUiPanel(398f, 126f, 484f, 50f, UiTheme.AMBER,
+        drawUiPanel(24f, 630f, 620f, 74f, MARS, .96f);
+        drawUiPanel(660f, 630f, 596f, 74f, MARS, .94f);
+        if (messageTimer > 0f) drawUiPanel(398f, 112f, 484f, 68f, UiTheme.AMBER,
             Math.min(.94f, messageTimer * 2f));
         text("MISSÃO EM CURSO", .53f, MARS, 42f, 688f, 1f);
-        text(campaign.missaoAtual(), .73f,
-            campaign.portalLiberado() ? UiTheme.GREEN : UiTheme.TEXT, 42f, 663f, 1f);
+        assets.font.getData().setScale(.62f);
+        assets.font.setColor(campaign.portalLiberado() ? UiTheme.GREEN : UiTheme.TEXT);
+        assets.font.draw(batch,campaign.missaoAtual(),42f,664f,580f,Align.left,true);
         text("ROTA PARA TITÃ", .53f, MARS, 678f, 688f, 1f);
         text(campaign.statusPortal(), .67f,
             campaign.portalLiberado() ? UiTheme.CYAN : UiTheme.RED, 678f, 663f, 1f);
-        if (messageTimer > 0f) centered(message, .72f, UiTheme.TEXT, 152f,
-            Math.min(1f, messageTimer * 2f));
+        if (messageTimer > 0f) {
+            assets.font.getData().setScale(.58f);
+            assets.font.setColor(UiTheme.TEXT.r,UiTheme.TEXT.g,UiTheme.TEXT.b,Math.min(1f,messageTimer*2f));
+            assets.font.draw(batch,message,418f,157f,444f,Align.center,true);
+        }
         if (titanDialogue.isOpen()) {
-            dialogBox.render(titanDialogue, oficial.getNome(), oficial.getPortraitFrame());
+            dialogBox.render(titanDialogue, oficial.getNome(), assets.npcPortrait(oficial.getVisual()));
         }
         batch.end();
     }
@@ -987,6 +1043,7 @@ public final class MarsScreen implements Screen {
         viewport.update(width, height, false);
         uiViewport.update(width, height, true);
         if (pauseOverlay != null) pauseOverlay.resize(width, height);
+        if (workshop != null) workshop.resize(width, height);
     }
     @Override public void pause() { }
     @Override public void resume() { }
@@ -1051,5 +1108,6 @@ public final class MarsScreen implements Screen {
         if (particles != null) { particles.dispose(); particles = null; }
         if (physics != null) { physics.dispose(); physics = null; }
         if (pauseOverlay != null) pauseOverlay.dispose();
+        if (workshop != null) workshop.dispose();
     }
 }

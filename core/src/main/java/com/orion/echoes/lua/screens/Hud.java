@@ -22,8 +22,8 @@ import com.orion.echoes.lua.ui.UiTheme;
 
 /** Interface de campo inspirada na telemetria do traje, sem cobrir o centro da acao. */
 public final class Hud implements Disposable {
-    private static final float OBJECTIVE_X = 24f, OBJECTIVE_Y = 642f;
-    private static final float OBJECTIVE_W = 620f, OBJECTIVE_H = 62f;
+    private static final float OBJECTIVE_X = 24f, OBJECTIVE_Y = 630f;
+    private static final float OBJECTIVE_W = 620f, OBJECTIVE_H = 74f;
     private static final float VITALS_X = 24f, VITALS_Y = 18f;
     private static final float VITALS_W = 318f, VITALS_H = 94f;
     private static final float CARGO_X = 1006f, CARGO_Y = 18f;
@@ -99,8 +99,10 @@ public final class Hud implements Disposable {
         text(batch, "MISSÃO  " + mission.getQuestStep(player.getOxigenio()) + "/"
             + MissionState.QUEST_TOTAL_STEPS, .57f, UiTheme.AMBER,
             OBJECTIVE_X + 31f, objectiveY + 50f, objectiveAlpha);
-        text(batch, mission.getObjective(player.getOxigenio()), .77f, UiTheme.TEXT,
-            OBJECTIVE_X + 15f, objectiveY + 25f, objectiveAlpha);
+        font.getData().setScale(.66f);
+        font.setColor(UiTheme.TEXT.r,UiTheme.TEXT.g,UiTheme.TEXT.b,objectiveAlpha);
+        font.draw(batch,mission.getObjective(player.getOxigenio()),OBJECTIVE_X+15f,
+            objectiveY+28f,OBJECTIVE_W-30f,Align.left,true);
 
 
         if (showToast) drawToast(batch, message, toastAlpha);

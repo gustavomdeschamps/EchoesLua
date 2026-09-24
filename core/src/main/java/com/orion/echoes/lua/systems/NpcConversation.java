@@ -46,5 +46,5 @@ public final class NpcConversation {
         npc.render(batch);
         npc.renderIndicador(batch, assets.uiObjectiveMarkerTexture, player);
     }
-    public void renderUi() { box.render(dialogue, npc.getNome(), npc.getPortraitFrame()); }
+    public void renderUi() { box.render(dialogue, npc.getNome(), assets.npcPortrait(npc.getVisual())); }
 }

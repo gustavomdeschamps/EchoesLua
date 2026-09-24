@@ -20,6 +20,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
     private Array<Rectangle> solidBounds;
     public void setSolidBounds(Array<Rectangle> solids) { solidBounds=solids; }
     private final boolean drone;
+    private final float animationPhase;
     private final float worldWidth, worldHeight;
     private State state = State.CHASE;
     private float hp = 3f, elapsed, stateTime, damageCooldown;
@@ -31,6 +32,8 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
         this.drone = drone;
         this.worldWidth = worldWidth;
         this.worldHeight = worldHeight;
+        animationPhase = Math.abs(MathUtils.sin(x * .027f + y * .041f)) * .9f;
+        elapsed = animationPhase;
         sincronizarHitbox();
         for (int row = 0; row < 4; row++)
             for (int column = 0; column < 4; column++)
@@ -168,7 +171,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
         int row, column;
         switch (state) {
             case IDLE -> { row = 0; column = (int)(elapsed / .22f) % 4; }
-            case CHASE -> { row = 1; column = (int)(stateTime / (drone ? .1f : .12f)) % 4; }
+            case CHASE -> { row = 1; column = (int)((stateTime + animationPhase) / (drone ? .1f : .12f)) % 4; }
             case TELEGRAPH -> { row = 2; column = Math.min(1, (int)(stateTime / .18f)); }
             case ATTACK -> { row = 2; column = Math.min(3, 2 + (int)(stateTime / .17f)); }
             case HIT -> { row = 3; column = Math.min(1, (int)(stateTime / .085f)); }

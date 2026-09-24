@@ -98,8 +98,8 @@ public final class MissionOverlay implements Disposable {
         }
         if (!mission.hasWeapon()) {
             if (!mission.hasAllWeaponParts() && nearestCollectible(world, out)) return true;
-            out.set(world.getCraftingStation().getPosition().x + 32f,
-                world.getCraftingStation().getPosition().y + 32f);
+            out.set(world.getBase().getBounds().x + world.getBase().getBounds().width / 2f,
+                world.getBase().getBounds().y + world.getBase().getBounds().height / 2f);
             return true;
         }
         if (mission.getEnemiesDefeated() < mission.getTotalEnemies()) {

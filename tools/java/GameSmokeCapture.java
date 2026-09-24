@@ -12,6 +12,7 @@ public final class GameSmokeCapture extends EchoesLua {
     private int world = -1;
     private int ticks;
     private int uiView;
+    private float dashEnergyBefore;
     public static void main(String[] args) {
         System.setProperty("echoes.windowed","true");
         var config = new Lwjgl3ApplicationConfiguration();
@@ -22,7 +23,15 @@ public final class GameSmokeCapture extends EchoesLua {
         new Lwjgl3Application(new GameSmokeCapture(),config);
     }
     @Override public void render() {
+        if (world >= 0 && world < 3 && ticks == 20) {
+            dashEnergyBefore = worldPlayer().getEnergia();
+            if (Gdx.input.getInputProcessor() != null)
+                Gdx.input.getInputProcessor().keyDown(com.badlogic.gdx.Input.Keys.SPACE);
+        }
         super.render();
+        if (world >= 0 && world < 3 && ticks == 21
+            && worldPlayer().getEnergia() >= dashEnergyBefore - 12f)
+            throw new AssertionError("Dash ESPAÇO não consumiu energia no mundo " + world);
         if(!getAssets().isReady() || getScreen() instanceof LoadingScreen) return;
         if (uiView < 3) {
             if (ticks == 0) {
@@ -68,6 +77,16 @@ public final class GameSmokeCapture extends EchoesLua {
         ticks++;
     }
 
+    private com.orion.echoes.lua.entities.Astronauta worldPlayer() {
+        try {
+            var field = getScreen().getClass().getDeclaredField(world == 0 ? "astronauta" : "player");
+            field.setAccessible(true);
+            return (com.orion.echoes.lua.entities.Astronauta) field.get(getScreen());
+        } catch (ReflectiveOperationException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
     private void captureExpansion() {
         var campaign=getCampaign();
         campaign.fromLunarArray(new int[]{0,0,0,0,0,0,0,1,1,1,1,1,4,4});
@@ -91,6 +110,9 @@ public final class GameSmokeCapture extends EchoesLua {
                 saveOverlay("expansion-"+i);
                 if(i<4){keys.add(com.badlogic.gdx.Input.Keys.I);scenes[i].render(1f/60f);keys.clear();saveOverlay("inventory-"+i);
                     keys.add(com.badlogic.gdx.Input.Keys.I);scenes[i].render(1f/60f);keys.clear();}
+                if(i==0){keys.add(com.badlogic.gdx.Input.Keys.M);scenes[i].render(1f/60f);keys.clear();
+                    saveOverlay("star-chart");
+                    keys.add(com.badlogic.gdx.Input.Keys.M);scenes[i].render(1f/60f);keys.clear();}
                 if(i==2) {
                     var field=scenes[i].getClass().getSuperclass().getDeclaredField("boss");field.setAccessible(true);
                     var boss=(com.orion.echoes.lua.entities.BossCalisto)field.get(scenes[i]);
@@ -98,13 +120,25 @@ public final class GameSmokeCapture extends EchoesLua {
                         boss.receiveDamage(10000f);boss.update(1.3f);scenes[i].render(1f/60f);saveOverlay("callisto-form-"+form);
                     }
                     boss.receiveDamage(10000f);scenes[i].render(1f/60f);
+                    // A chave da Luz cai fisicamente no centro do chefe.
+                    // Leva o jogador ate ela para validar a coleta real.
+                    var playerField=scenes[i].getClass().getSuperclass().getDeclaredField("player");playerField.setAccessible(true);
+                    var arenaPlayer=(com.orion.echoes.lua.entities.Astronauta)playerField.get(scenes[i]);
+                    var keyField=scenes[i].getClass().getSuperclass().getDeclaredField("keyPickup");keyField.setAccessible(true);
+                    var key=(com.badlogic.gdx.math.Rectangle)keyField.get(scenes[i]);
+                    var atKey=arenaPlayer.toSaveData(); atKey.posX=key.x+12f; atKey.posY=key.y+12f;
+                    arenaPlayer.fromSaveData(atKey); scenes[i].render(1f/60f);
                     if(!campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_LUZ))throw new AssertionError("No earned light key");
+                    scenes[i].render(1f/60f);saveOverlay("portal-active");
                 }
                 if(i==3) {
                     var field=AharinScreen.class.getDeclaredField("player");field.setAccessible(true);
                     var player=(com.orion.echoes.lua.entities.Astronauta)field.get(scenes[i]);
-                    player.getBody().setTransform(700f/com.orion.echoes.lua.config.GameConfig.PPM,
-                        260f/com.orion.echoes.lua.config.GameConfig.PPM,0f);
+                    // Posição válida junto à primeira entidade. O teste antigo
+                    // ainda usava o gatilho removido "x > 560".
+                    var aharinPosition=player.toSaveData();
+                    aharinPosition.posX=815f-27f; aharinPosition.posY=372f-6f;
+                    player.fromSaveData(aharinPosition);
                     var physicsField=AharinScreen.class.getDeclaredField("physics");physicsField.setAccessible(true);
                     ((com.orion.echoes.lua.physics.PhysicsWorld)physicsField.get(scenes[i])).untrackForRender(player.getBody());
                     player.update(0f);
@@ -125,6 +159,11 @@ public final class GameSmokeCapture extends EchoesLua {
             if(!player.isViradoEsquerda()||player.getBody().getLinearVelocity().x>=0)throw new AssertionError("Mouse changed left locomotion");
             player.move(1,0,false,1f/60f);player.setAimDirection(-1,0);
             if(player.isViradoEsquerda()||player.getBody().getLinearVelocity().x<=0)throw new AssertionError("Mouse changed right locomotion");
+            var inventory = new com.orion.echoes.lua.systems.Inventario();
+            inventory.melhorarArmadura(); player.setInventario(inventory); player.setVitals(100f,100f);
+            player.receberDano(24f);
+            if(Math.abs(player.getOxigenio()-79.6f)>.05f)
+                throw new AssertionError("Armour reduction applied more than once: "+player.getOxigenio());
             System.out.println("Armed locomotion independent of aim: passed");
         } finally {player.dispose();physics.dispose();}
     }
@@ -144,9 +183,9 @@ public final class GameSmokeCapture extends EchoesLua {
         var camera = new com.badlogic.gdx.graphics.OrthographicCamera(1280,720);
         camera.position.set(640,360,0); camera.update();
         var portraits = new com.badlogic.gdx.graphics.g2d.TextureRegion[]{
-            getAssets().npcCommanderFrame(0,0),
-            getAssets().npcVisualFrame(com.orion.echoes.lua.entities.Npc.Visual.MARS_OFFICER,0,0),
-            getAssets().npcVisualFrame(com.orion.echoes.lua.entities.Npc.Visual.LIRA,0,0)};
+            getAssets().npcPortrait(com.orion.echoes.lua.entities.Npc.Visual.AYLA),
+            getAssets().npcPortrait(com.orion.echoes.lua.entities.Npc.Visual.MARS_OFFICER),
+            getAssets().npcPortrait(com.orion.echoes.lua.entities.Npc.Visual.LIRA)};
         String[] names={"Ayla","Ayyub","Lira"};
         var dialog = new com.orion.echoes.lua.systems.DialogueController();
         dialog.start(new String[]{"Esta colônia mantém o enlace entre a Terra e nossas expedições. Sem as antenas, ninguém ouve um pedido de resgate."});

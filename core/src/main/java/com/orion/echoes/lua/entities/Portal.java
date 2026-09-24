@@ -4,13 +4,12 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.MathUtils;
 import com.orion.echoes.lua.managers.AssetManager;
-import com.orion.echoes.lua.render.AtlasRegionRenderer;
 
-/** Portal comum às três fases, com animação de repouso, entrada e saída. */
+/** Portal da campanha com moldura e vórtice próprios, sem quadros antigos do atlas. */
 public class Portal extends Entidade {
     private static final float TRAVEL_DURATION = .72f;
-    private final TextureRegion[][] frames = new TextureRegion[4][4];
-    private final TextureRegion[][] mirrored = new TextureRegion[4][4];
+    private final AssetManager assets;
+    private final boolean titan;
     private float time;
     private float travelTime;
     private boolean unlocked;
@@ -24,17 +23,8 @@ public class Portal extends Entidade {
 
     protected Portal(float x, float y, AssetManager assets, boolean titan) {
         super(x, y, 190f, 220f);
-        for (int row = 0; row < 4; row++) {
-            for (int column = 0; column < 4; column++) {
-                frames[row][column] = titan ? assets.titanPortalFrame(column, row)
-                    : assets.portalFrame(column, row);
-                if (!(frames[row][column] instanceof com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion atlas)) {
-                    throw new IllegalStateException("Quadro do portal precisa ser AtlasRegion");
-                }
-                mirrored[row][column] = new com.badlogic.gdx.graphics.g2d.TextureAtlas.AtlasRegion(atlas);
-                mirrored[row][column].flip(true, false);
-            }
-        }
+        this.assets = assets;
+        this.titan = titan;
         // Só o limiar da porta bloqueia/interage; efeitos luminosos não ampliam a hitbox.
         bounds.set(x + 49f, y + 24f, 92f, 98f);
     }
@@ -45,28 +35,49 @@ public class Portal extends Entidade {
     }
 
     @Override public void render(SpriteBatch batch) {
-        int row = traveling ? (emerging ? 3 : 2) : (unlocked ? 1 : 0);
-        float speed = traveling ? .11f : (unlocked ? .14f : .42f);
-        int column = traveling
-            ? Math.min(3, (int)(travelTime / (TRAVEL_DURATION / 4f)))
-            : unlocked ? (int)(time / speed) % 4 : (int)(time / speed) % 2;
-        boolean flip = reversed;
-        TextureRegion frame = (flip ? mirrored : frames)[row][column];
         float pulse = unlocked ? 1f + MathUtils.sin(time * 4.2f) * .012f : 1f;
         if (traveling) pulse += MathUtils.sin(travelTime / TRAVEL_DURATION * MathUtils.PI) * .075f;
         float drawW = width * pulse;
         float drawH = height * pulse;
+        float px = position.x + (width - drawW) / 2f;
+        float py = position.y + (height - drawH) / 2f;
         float previousColor = batch.getPackedColor();
-        if (!unlocked) batch.setColor(1f, .48f, .42f, 1f);
-        AtlasRegionRenderer.draw(batch, frame, position.x + (width - drawW) / 2f,
-            position.y + (height - drawH) / 2f, drawW, drawH);
+        // A closed gateway still has a dark, readable iris: no transparent hole.
+        float activation = unlocked ? 1f : .68f;
+        float shimmer = .80f + .16f * MathUtils.sin(time * (titan ? 5.3f : 4.4f));
+        float energySize = Math.min(drawW * .57f, drawH * .53f);
+        float energyX = px + (drawW - energySize) * .5f;
+        float energyY = py + (drawH - energySize) * .5f;
+        float direction = reversed ? -1f : 1f;
+        float rotation = direction * time * (titan ? 18f : 14f);
+        if (traveling) rotation += (emerging ? -1f : 1f) * travelTime / TRAVEL_DURATION * 140f;
+        TextureRegion vortex = assets.portalEnergyReworkRegion;
+        batch.setColor(unlocked ? (titan ? .72f : 1f) : .27f,
+            unlocked ? (titan ? .84f : 1f) : .42f, unlocked ? 1f : .53f,
+            activation * shimmer);
+        batch.draw(vortex, energyX, energyY, energySize * .5f, energySize * .5f,
+            energySize, energySize, 1f, 1f, rotation);
+        batch.setColor(.45f, .82f, 1f, unlocked ? activation * .2f : 0f);
+        batch.draw(vortex, energyX + energySize * .065f, energyY + energySize * .065f,
+            energySize * .435f, energySize * .435f,
+            energySize * .87f, energySize * .87f, 1f, 1f, -rotation * .7f);
+        batch.setColor(1f, 1f, 1f, 1f);
+        float aspect = (float)assets.portalFrameReworkTexture.getWidth()
+            / assets.portalFrameReworkTexture.getHeight();
+        float ringW = Math.min(drawW, drawH * aspect);
+        float ringH = ringW / aspect;
+        batch.draw(assets.portalFrameReworkTexture,
+            px + (drawW - ringW) * .5f,
+            py + (drawH - ringH) * .5f, ringW, ringH);
         batch.setPackedColor(previousColor);
     }
 
     public void setUnlocked(boolean value) {
         unlocked = value;
-        if (!value) traveling = false;
+        if (!value) { traveling = false; travelTime = 0f; }
     }
+
+    public boolean isUnlocked() { return unlocked; }
 
     /** Espelha o portal de chegada, deixando clara a direção de retorno. */
     public void setReversed(boolean value) { reversed = value; }

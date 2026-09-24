@@ -29,7 +29,7 @@ public final class GameConfig {
     public static final float PLAYER_WIDTH = 54f;
     public static final float PLAYER_HEIGHT = 76f;
 
-    public static final float PLAYER_SPEED = 180f;
+    public static final float PLAYER_SPEED = 198f;
     public static final float PLAYER_RUN_MULTIPLIER = 1.28f;
     /** Evita alternar WALK/RUN a cada quadro quando a energia encosta em zero. */
     public static final float PLAYER_RUN_RESUME_ENERGY = 12f;
@@ -45,8 +45,8 @@ public final class GameConfig {
     public static final float PLAYER_ATTACK_FRAME_TIME = 0.04f;
     public static final float PLAYER_HURT_FRAME_TIME = 0.055f;
     public static final float PLAYER_DEATH_FRAME_TIME = 0.15f;
-    public static final float PLAYER_DASH_SPEED = 430f;
-    public static final float PLAYER_DASH_DURATION = 0.18f;
+    public static final float PLAYER_DASH_SPEED = 540f;
+    public static final float PLAYER_DASH_DURATION = 0.20f;
     public static final float PLAYER_DASH_COOLDOWN = 0.68f;
     public static final float PLAYER_DASH_ENERGY_COST = 18f;
     public static final float PLAYER_LUNAR_ACCEL_TIME = 0.17f;
@@ -169,8 +169,8 @@ public final class GameConfig {
     // ==========================================
 
     public static final float BOSS_SPRITE_SIZE = 340f;
-    public static final float BOSS_MAX_HP = 180f;
-    public static final float BOSS_SPEED = 66f;
+    public static final float BOSS_MAX_HP = 230f;
+    public static final float BOSS_SPEED = 80f;
     public static final float BOSS_CHASE_RADIUS = 700f;
     /** Distancia em que ele para e comeca a preparar o golpe. */
     public static final float BOSS_ATTACK_RANGE = 250f;

@@ -24,6 +24,7 @@ import com.orion.echoes.lua.save.GameSaveData;
 import com.orion.echoes.lua.save.LunarCheckpoint;
 import com.orion.echoes.lua.save.SaveManager;
 import com.orion.echoes.lua.systems.CampaignState;
+import com.orion.echoes.lua.systems.Inventario;
 import com.orion.echoes.lua.ui.UiFactory;
 import com.orion.echoes.lua.ui.UiTheme;
 
@@ -35,6 +36,8 @@ public final class MenuScreen implements Screen {
     private Table page;
     private boolean leaving;
     private boolean fadeCompleted;
+    private String resumeScene = "MUNDO";
+    private GameSaveData resumeData;
 
     /*
      * As medidas da tela de opcoes vivem em GameConfig porque sao uma conta
@@ -78,8 +81,8 @@ public final class MenuScreen implements Screen {
         content.setBackground((com.badlogic.gdx.scenes.scene2d.utils.Drawable)null);
         content.add(title("ECHOES", 2.2f)).left().row();
         content.add(label("LUA  ·  MARTE  ·  TITÃ", UiTheme.CYAN)).left().padBottom(38f).row();
-        content.add(button("NOVO JOGO", this::startGame)).width(410f).height(58f).padBottom(10f).row();
-        if (new SaveManager().hasSave()) {
+        content.add(button("NOVO JOGO", () -> showDifficulty(true))).width(410f).height(58f).padBottom(10f).row();
+        if (new SaveManager().hasContinuableSave()) {
             content.add(button("CONTINUAR CAMPANHA", this::continueGame))
                 .width(410f).height(58f).padBottom(10f).row();
         }
@@ -93,11 +96,32 @@ public final class MenuScreen implements Screen {
         Table content = basePage();
         content.add(title("COMO JOGAR", 1.2f)).left().colspan(2).padBottom(25f).row();
         helpCard(content, "MOVIMENTO", "WASD ou setas  ·  SHIFT para correr", UiTheme.CYAN);
-        helpCard(content, "AÇÃO", "E interage  ·  Q executa o dash", UiTheme.AMBER);
-        helpCard(content, "COMBATE", "Mouse aponta  ·  clique ou ESPAÇO dispara", UiTheme.GREEN);
+        helpCard(content, "AÇÃO", "E interage  ·  ESPAÇO executa o dash", UiTheme.AMBER);
+        helpCard(content, "COMBATE", "Mouse aponta  ·  clique esquerdo dispara", UiTheme.GREEN);
         helpCard(content, "EXPEDIÇÃO", "I abre a mochila  ·  M abre o mapa  ·  C usa comida na mochila", UiTheme.RED);
         content.add(button("VOLTAR", () -> showMain(true))).width(210f).height(54f).left().colspan(2).padTop(24f).row();
         swap(content, animate);
+    }
+
+    private void showDifficulty(boolean animate) {
+        Table content = basePage(570f, 540f);
+        content.add(title("NOVA EXPEDIÇÃO", 1.12f)).left().padBottom(14f).row();
+        content.add(label("Escolha a intensidade dos confrontos.", UiTheme.TEXT_MUTED))
+            .left().padBottom(26f).row();
+        difficultyChoice(content, Inventario.Difficulty.FACIL,
+            "FÁCIL  ·  dano recebido reduzido");
+        difficultyChoice(content, Inventario.Difficulty.NORMAL,
+            "NORMAL  ·  equilíbrio padrão");
+        difficultyChoice(content, Inventario.Difficulty.DIFICIL,
+            "DIFÍCIL  ·  inimigos causam mais dano");
+        content.add(button("VOLTAR", () -> showMain(true))).width(210f).height(50f)
+            .left().padTop(15f).row();
+        swap(content, animate);
+    }
+
+    private void difficultyChoice(Table content, Inventario.Difficulty difficulty, String caption) {
+        content.add(button(caption, () -> startGame(difficulty))).width(450f)
+            .height(61f).padBottom(12f).row();
     }
 
     /**
@@ -328,9 +352,12 @@ public final class MenuScreen implements Screen {
     }
 
     /** Comeca do zero: campanha nova, semente nova, Lua intacta. */
-    private void startGame() {
+    private void startGame(Inventario.Difficulty difficulty) {
         if (leaving) return;
+        resumeScene = "MUNDO";
+        resumeData = null;
         game.startNewCampaign();
+        game.getCampaign().getInventario().setDifficulty(difficulty);
         leaving = true;
         game.getSounds().pararMusicaMenu();
         game.getSounds().tocarInicio();
@@ -353,7 +380,9 @@ public final class MenuScreen implements Screen {
     private void continueGame() {
         if (leaving) return;
         GameSaveData data = new SaveManager().load();
-        if (data == null) return;
+        if (data == null || data.campanhaConcluida) return;
+        resumeScene = data.cena == null ? "MUNDO" : data.cena;
+        resumeData = data;
         game.setCampaign(LunarCheckpoint.toCampaign(data));
         leaving = true;
         game.getSounds().pararMusicaMenu();
@@ -371,16 +400,26 @@ public final class MenuScreen implements Screen {
         if (fadeCompleted) {
             fadeCompleted = false;
             CampaignState campaign = game.getCampaign();
-            if (campaign.getPhase() == CampaignState.Phase.CALLISTO) {
+            if ("CHEFE_LUA".equals(resumeScene)) {
+                game.setScreen(new PhaseBossScreen(game, campaign, false));
+            } else if ("CHEFE_MARTE".equals(resumeScene)) {
+                game.setScreen(new PhaseBossScreen(game, campaign, true));
+            } else if (campaign.getPhase() == CampaignState.Phase.CALLISTO) {
                 game.setScreen(new CallistoScreen(game, campaign));
             } else if (campaign.getPhase() == CampaignState.Phase.AHARIN) {
                 game.setScreen(new AharinScreen(game, campaign));
             } else if (campaign.getPhase() == CampaignState.Phase.TITAN) {
-                game.setScreen(WorldIntroScreen.routeToTitan(game, campaign));
+                game.setScreen(resumeData != null
+                    ? new TitanScreen(game, campaign)
+                    : WorldIntroScreen.routeToTitan(game, campaign));
             } else if (campaign.getPhase() == CampaignState.Phase.MARS) {
-                game.setScreen(WorldIntroScreen.routeToMars(game, campaign));
+                game.setScreen(resumeData != null
+                    ? new MarsScreen(game, campaign, resumeData)
+                    : WorldIntroScreen.routeToMars(game, campaign));
             } else {
-                game.setScreen(WorldIntroScreen.routeToLunar(game, campaign));
+                game.setScreen(resumeData != null
+                    ? new LunarScreen(game, game.getBatch(), game.getAssets(), campaign, resumeData)
+                    : WorldIntroScreen.routeToLunar(game, campaign));
             }
             dispose();
             return;

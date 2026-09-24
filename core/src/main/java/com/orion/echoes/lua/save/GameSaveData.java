@@ -82,10 +82,18 @@ public class GameSaveData {
     public int comidaGuardada, nivelArma, nivelArmadura;
     public int formaBossCalisto = 1;
     public float hpBossCalisto = 100f;
+    public boolean bossLuaDefeated, bossMarteDefeated, bossTitanDefeated, bossCalistoDefeated;
 
     public String fase = "LUA";
+    /** Um resultado final não é um ponto de continuação. */
+    public boolean campanhaConcluida;
+    /** Diferencia a arena do chefe do exterior do mesmo mundo. */
+    public String cena = "MUNDO";
     public long semente;
     public int municao;
+    public int municaoReserva;
+    public String dificuldade = "NORMAL";
+    public int[] organizacaoMochila;
     public int totalHostisLunares;
     public boolean marteVisitado;
     public boolean marteConcluido;

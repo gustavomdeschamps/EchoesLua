@@ -71,6 +71,7 @@ abstract class MissionResultScreen implements Screen {
         buttonPatch = game.getAssets().uiButtonPatch();
         buttonHoverPatch = game.getAssets().uiButtonHoverPatch();
         buttonPressedPatch = game.getAssets().uiButtonPressedPatch();
+        if (success) new com.orion.echoes.lua.save.SaveManager().markCampaignCompleted();
         if (success) game.getSounds().tocarVitoria();
         else game.getSounds().tocarGameOver();
     }
@@ -86,7 +87,6 @@ abstract class MissionResultScreen implements Screen {
         Color accent = success ? UiTheme.GREEN : UiTheme.RED;
         drawBackground();
         drawComposition(accent);
-        drawHero(appear(DELAY_SUBTITLE));
         drawReport(accent);
         drawButtons(accent);
         handleInput();
@@ -140,9 +140,9 @@ abstract class MissionResultScreen implements Screen {
      * A ilustracao traz um homem fotorrealista em primeiro plano que nao e o
      * astronauta do jogo - apresenta-lo como o personagem seria trocar a
      * identidade do protagonista no ultimo quadro da campanha. O recorte abaixo
-     * fica com o cenario do retorno (Terra nascendo sobre a crista lunar, ceu
-     * profundo e o terco direito calmo para o relatorio) e o personagem entra
-     * como ele e: o sprite do proprio jogo, sobre a crista.
+     * fica com o cenário do retorno (Terra nascendo sobre a crista lunar,
+     * céu profundo e o terço direito calmo para o relatório). Não há personagem
+     * ampliado por cima: o antigo recorte ficava borrado nessa escala.
      */
     private static final float ART_U = .46f, ART_V = .22f, ART_W = .54f, ART_H = .5389f;
     private TextureRegion victoryFraming;
@@ -172,28 +172,6 @@ abstract class MissionResultScreen implements Screen {
         }
     }
 
-    /**
-     * O astronauta da campanha, de pe na crista.
-     *
-     * Usa o mesmo quadro de repouso das fases: nao ha animacao inventada nem
-     * gesto fabricado por corte de imagem - o que aparece e o personagem que o
-     * jogador conduziu ate aqui.
-     */
-    private void drawHero(float progress) {
-        if (!success || progress <= 0f) return;
-        // Fica entre a coluna de titulo e o painel do relatorio: sobre a crista
-        // e sem cobrir o texto do desfecho.
-        float size = 196f;
-        float x = 522f, y = 178f + rise(progress);
-        // Sombra e sprite no mesmo batch: region() abre o proprio batch e, se
-        // chamado dentro de beginText(), quebraria o par begin/end.
-        ui.beginShapes();
-        ui.rect(x + size * .26f, y + 6f, size * .46f, size * .07f, new Color(0f, 0f, 0f, .34f * progress));
-        ui.sprite(game.getAssets().astronautFrame(0, 0), x, y, size, size,
-            faded.set(1f, 1f, 1f, progress));
-        ui.endShapes();
-    }
-
     private void drawComposition(Color accent) {
         float titleIn = appear(DELAY_TITLE);
         float subtitleIn = appear(DELAY_SUBTITLE);
@@ -214,7 +192,7 @@ abstract class MissionResultScreen implements Screen {
             1.65f, fade(UiTheme.TEXT, titleIn), 70f, 548f + rise(titleIn));
         ui.text(success
                 ? "As colônias voltaram a se ouvir.\nSua expedição chegou ao fim."
-                : "O suporte de vida do traje chegou ao limite.",
+                : "O oxigênio do traje acabou.\nReabasteça com cilindros ou dentro da base.",
             .72f, fade(success ? UiTheme.TEXT : UiTheme.TEXT_MUTED, subtitleIn), 74f, 386f + rise(subtitleIn));
         ui.endText();
     }

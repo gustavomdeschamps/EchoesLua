@@ -49,6 +49,7 @@ public final class CampaignDrive extends EchoesLua {
 
     private final Set<Integer> held = new HashSet<>();
     private final Set<Integer> tapped = new HashSet<>();
+    private boolean click;
     private int mouseX = 640, mouseY = 360;
     private Input real;
     private Input proxy;
@@ -131,8 +132,10 @@ public final class CampaignDrive extends EchoesLua {
                     return tapped.contains((Integer) args[0]);
                 case "getX": case "getDeltaX": return method.getName().equals("getX") ? mouseX : 0;
                 case "getY": case "getDeltaY": return method.getName().equals("getY") ? mouseY : 0;
-                case "isTouched": case "justTouched": case "isButtonPressed": case "isButtonJustPressed":
-                    return false;
+                case "isButtonJustPressed": case "isButtonPressed":
+                    return click && (Integer) args[0] == Input.Buttons.LEFT;
+                case "isTouched": case "justTouched":
+                    return click;
                 default:
                     return method.invoke(real, args);
             }
@@ -174,6 +177,22 @@ public final class CampaignDrive extends EchoesLua {
             check("entrar na arena lunar nao concede CHAVE_LUA",
                 !campaign.getInventario().tem(Inventario.CHAVE_LUA)));
         once("captura arena lunar", () -> shot("01-arena-lua"));
+        step("dash lunar avanca", 20, tick -> {
+            if (tick == 0) {
+                Astronauta player = peek(screen(), "player");
+                arenaDashStartX = player.getPosition().x;
+                arenaDashStartEnergy = player.getEnergia();
+                tap(Input.Keys.SPACE);
+            }
+            hold(Input.Keys.D);
+            return tick >= 11;
+        });
+        once("verifica dash da arena", () -> {
+            Astronauta player = peek(screen(), "player");
+            check("ESPAÇO executa dash na arena e consome energia",
+                player.getPosition().x > arenaDashStartX + 38f
+                    && player.getEnergia() < arenaDashStartEnergy - 12f);
+        });
 
         // ---------- CHECKLIST: CORPO, MIRA E CORRIDA ----------
         step("anda para a direita mirando a esquerda", 60, tick -> {
@@ -319,18 +338,39 @@ public final class CampaignDrive extends EchoesLua {
             check("CHAVE_MARTE concedida ao derrotar o chefe", campaign.getInventario().tem(Inventario.CHAVE_MARTE)));
 
         // ---------- TITA ----------
-        once("prepara Tita", () -> {
-            campaign.setPhase(CampaignState.Phase.TITAN);
-            campaign.setEntrouTita(true);
+        once("atravessa o portal real de Marte", () -> {
+            Astronauta player = peek(screen(), "player");
+            GameSaveData atPortal = player.toSaveData();
+            atPortal.posX = 1130f;
+            atPortal.posY = 220f;
+            player.fromSaveData(atPortal);
+            tap(Input.Keys.E);
+        });
+        step("abertura e carregamento de Tita", 500, tick -> screen() instanceof TitanScreen);
+        once("travessia Marte para Tita preserva campanha", () -> {
+            check("portal marciano abriu Tita sem encerrar o jogo", screen() instanceof TitanScreen);
+            check("fase atual passa a ser Tita", campaign.getPhase() == CampaignState.Phase.TITAN);
+            check("CHAVE_MARTE segue no inventario", campaign.getInventario().tem(Inventario.CHAVE_MARTE));
             campaign.setDialogoExplorador(true);
             campaign.setAmmo(120);
             campaign.setVitals(100f, 100f);
-            swap(new TitanScreen(this, campaign));
         });
         step("Tita assenta", 120, tick -> tick >= 80);
+        once("abre o mapa em Tita", () -> tap(Input.Keys.M));
+        step("mapa de Tita desenha sem fechar", 30, tick -> tick >= 12);
+        once("fecha o mapa de Tita", () -> {
+            check("mapa de Tita manteve a fase ativa", screen() instanceof TitanScreen);
+            shot("07a-mapa-tita");
+            tap(Input.Keys.M);
+        });
+        step("Tita volta ao jogo", 10, tick -> tick >= 5);
         once("captura Tita", () -> {
             shot("07-tita");
             check("entrar em Tita nao concede CHAVE_TITA", !campaign.getInventario().tem(Inventario.CHAVE_TITA));
+            com.orion.echoes.lua.entities.TitanPortal exit = peek(screen(), "calistoPortal");
+            check("arte do portal de Tita cabe inteira no mapa", exit != null
+                && exit.getPosition().x >= 0f && exit.getPosition().x + 190f < 2600f
+                && exit.getPosition().y >= 0f && exit.getPosition().y + 220f < 1700f);
         });
         step("elimina cacadores e Soberano de Tita", 20000, tick -> {
             Object bossObj = peek(screen(), "boss");
@@ -344,6 +384,20 @@ public final class CampaignDrive extends EchoesLua {
             check("CHAVE_LUZ ainda nao existe em Tita", !campaign.getInventario().tem(Inventario.CHAVE_LUZ));
             shot("08-chave-tita");
         });
+        once("aproxima a camera do portal de Tita", () -> {
+            Astronauta player = peek(screen(), "player");
+            GameSaveData nearExit = player.toSaveData();
+            nearExit.posX = 2050f; nearExit.posY = 1470f;
+            player.fromSaveData(nearExit);
+            com.badlogic.gdx.graphics.OrthographicCamera camera = peek(screen(), "camera");
+            camera.position.set(1960f, 1340f, 0f);
+            camera.update();
+            Object director = peek(screen(), "cameraDirector");
+            com.badlogic.gdx.math.Vector2 smoothPosition = peek(director, "basePosition");
+            smoothPosition.set(1960f, 1340f);
+        });
+        step("camera enquadra o portal de Tita", 80, tick -> tick >= 60);
+        once("captura portal de Tita", () -> shot("08a-portal-tita"));
 
         // ---------- CALISTO ----------
         once("abre Calisto", () -> {
@@ -413,6 +467,20 @@ public final class CampaignDrive extends EchoesLua {
         once("abre Aharin", () -> swap(new AharinScreen(this, campaign)));
         step("Aharin assenta", 104, tick -> tick >= 64);
         once("captura Aharin", () -> shot("13-aharin"));
+        step("dash de Aharin avanca", 20, tick -> {
+            if (tick == 0) {
+                Astronauta player = peek(screen(), "player");
+                sanctuaryDashStartX = player.getPosition().x;
+                tap(Input.Keys.SPACE);
+            }
+            hold(Input.Keys.D);
+            return tick >= 11;
+        });
+        once("verifica dash de Aharin", () -> {
+            Astronauta player = peek(screen(), "player");
+            check("ESPAÇO executa dash seguro na passarela de Aharin",
+                player.getPosition().x > sanctuaryDashStartX + 38f);
+        });
         once("E longe das entidades", () -> tap(Input.Keys.E));
         step("confirma que nada abre", 20, tick -> tick >= 8);
         once("conversa nao dispara a meio mapa", () -> {
@@ -483,11 +551,22 @@ public final class CampaignDrive extends EchoesLua {
             if ((Boolean) alive.invoke(boss))
                 boss.getClass().getMethod("receiveDamage", float.class).invoke(boss, 6f);
         } catch (ReflectiveOperationException ignored) { }
+        if (!alive(boss)) {
+            com.badlogic.gdx.math.Rectangle key = peek(s, "titanKeyPickup");
+            Astronauta player = peek(s, "player");
+            if (key != null && player != null && key.width > 0f) {
+                GameSaveData atKey = player.toSaveData();
+                atKey.posX = key.x + 12f; atKey.posY = key.y + 12f;
+                player.fromSaveData(atKey);
+            }
+        }
     }
 
 
 
     private int sprintFlips, frozenAmmo;
+    private float arenaDashStartX, arenaDashStartEnergy, sanctuaryDashStartX;
+    private boolean workshopShot;
     private boolean sprintWas;
     private float frozenX, frozenY, frozenHp;
 
@@ -516,7 +595,25 @@ public final class CampaignDrive extends EchoesLua {
         Astronauta player = peek(screen(), "player");
         Object boss = peek(screen(), "boss");
         if (player == null || boss == null) return;
+        Object workshop = peek(screen(), "workshop");
+        if (workshop != null && open(workshop)) {
+            held.clear();
+            if (!workshopShot) { shot("03a-interior-estacao"); workshopShot = true; }
+            if (tick % 10 == 0) tap(Input.Keys.R);
+            else if (tick % 10 == 2) tap(Input.Keys.E);
+            return;
+        }
         float px = player.getPosition().x, py = player.getPosition().y;
+        float bx = bossCenter(boss, true), by = bossCenter(boss, false);
+        // A chave agora e um coletavel fisico. Depois da queda do chefe, o
+        // piloto precisa caminhar ate o corpo em vez de esperar uma recompensa
+        // invisivel cair direto no inventario.
+        if (!alive(boss)) {
+            held.clear();
+            if (Math.abs(px + 27f - bx) > 18f) hold(px + 27f < bx ? Input.Keys.D : Input.Keys.A);
+            if (Math.abs(py + 30f - by) > 18f) hold(py + 30f < by ? Input.Keys.W : Input.Keys.S);
+            return;
+        }
         boolean resupply = player.getMunicao() <= 2 || player.getOxigenio() < 45f;
         held.clear();
         if (resupply) {
@@ -525,7 +622,6 @@ public final class CampaignDrive extends EchoesLua {
             if (px <= 230f && py <= 210f && tick % 12 == 0) tap(Input.Keys.E);
             return;
         }
-        float bx = bossCenter(boss, true), by = bossCenter(boss, false);
         // Mantem distancia: o golpe do chefe alcanca 145 unidades.
         float dx = px + 27f - bx, dy = py + 30f - by;
         if (dx * dx + dy * dy < 260f * 260f) {
@@ -534,7 +630,12 @@ public final class CampaignDrive extends EchoesLua {
         }
         mouseX = (int) MathUtils.clamp(bx, 0f, 1279f);
         mouseY = (int) MathUtils.clamp(720f - by, 0f, 719f);
-        if (tick % 16 == 0) tap(Input.Keys.SPACE);
+        if (tick % 16 == 0) click = true;
+    }
+
+    private boolean alive(Object boss) {
+        try { return (Boolean) boss.getClass().getMethod("isAlive").invoke(boss); }
+        catch (ReflectiveOperationException e) { return false; }
     }
 
     private float bossCenter(Object boss, boolean horizontal) {
@@ -560,6 +661,7 @@ public final class CampaignDrive extends EchoesLua {
             return;
         }
         tapped.clear();
+        click = false;
         if (done) return;
         if (!getAssets().isReady() || getScreen() instanceof LoadingScreen) return;
         if (!started) { started = true; buildScript(); }
@@ -593,6 +695,7 @@ public final class CampaignDrive extends EchoesLua {
         System.out.println("---- FALHAS: " + failures.size() + " ----");
         for (String line : failures) System.out.println("  * " + line);
         System.out.println("==== FIM (" + frame + " frames) ====");
+        if (!failures.isEmpty()) throw new AssertionError("Campanha: " + failures.size() + " falhas");
         Gdx.app.exit();
     }
 

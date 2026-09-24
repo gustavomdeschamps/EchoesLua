@@ -131,6 +131,23 @@ class SaveManagerTest {
     }
 
     @Test
+    @DisplayName("Continuar desaparece após vitória sem apagar o histórico")
+    void completedCampaignCannotContinue() {
+        GameSaveData data = new GameSaveData(735f, 410f, 64f, 45f, 190f);
+        data.fase = "MARS";
+        data.cena = "CHEFE_MARTE";
+        saveManager.save(data);
+        assertTrue(saveManager.hasContinuableSave());
+        saveManager.markCampaignCompleted();
+        assertTrue(saveManager.hasSave());
+        assertFalse(saveManager.hasContinuableSave());
+        GameSaveData completed = saveManager.load();
+        assertEquals("CHEFE_MARTE", completed.cena);
+        assertEquals(735f, completed.posX);
+        assertTrue(completed.campanhaConcluida);
+    }
+
+    @Test
     @DisplayName("Round-trip preserva os campos de campanha da versao 3")
     void campaignFieldsSurviveRoundTrip() {
         GameSaveData original = new GameSaveData(500f, 400f, 70f, 55f, 42f);

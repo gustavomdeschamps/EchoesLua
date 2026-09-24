@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.NinePatch;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Interpolation;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Align;
@@ -28,12 +29,12 @@ public final class DialogBox {
     /** Reaproveitada por quadro enquanto a caixa esta aberta. */
     private final Color panelColor = new Color();
 
-    private static final float X = 126f;
-    private static final float WIDTH = 1028f;
-    private static final float Y = 150f;
-    private static final float HEIGHT = 300f;
+    private static final float X = 100f;
+    private static final float WIDTH = 1080f;
+    private static final float Y = 78f;
+    private static final float HEIGHT = 270f;
     private static final float PADDING = 36f;
-    private static final float TEXT_SCALE = .84f;
+    private static final float TEXT_SCALE = .68f;
     private static final float SHADOW_SPREAD = 8f;
     private static final float SHADOW_OFFSET = 5f;
 
@@ -83,33 +84,39 @@ public final class DialogBox {
         panel.setColor(Color.WHITE);
         batch.setColor(Color.WHITE);
 
-        float portraitX = X + 30f;
-        float portraitY = y + 42f;
-        batch.setColor(.03f, .08f, .12f, .8f * eased);
-        batch.draw(assets.uiWhiteTexture, portraitX - 5f, portraitY - 5f, 194f, 214f);
-        batch.setColor(1f, 1f, 1f, eased);
-        SpriteFit.draw(batch, portrait, portraitX, portraitY, 184f, 204f);
+        boolean playerTurn = dialog.isPlayerTurn();
+        float left = X + 20f, right = X + WIDTH - 208f;
+        float portraitY = y + 45f;
+        batch.setColor(.025f, .055f, .08f, .9f * eased);
+        batch.draw(assets.uiWhiteTexture, left, portraitY, 188f, 180f);
+        batch.draw(assets.uiWhiteTexture, right, portraitY, 188f, 180f);
+        batch.setColor(1f, 1f, 1f, (playerTurn ? .65f : 1f) * eased);
+        SpriteFit.draw(batch, portrait, left + 3f, portraitY + 3f, 182f, 174f);
+        batch.setColor(1f, 1f, 1f, (playerTurn ? 1f : .65f) * eased);
+        SpriteFit.draw(batch, new TextureRegion(assets.playerPortraitTexture),
+            right + 3f, portraitY + 3f, 182f, 174f);
+        batch.setColor(Color.WHITE);
 
-        float textX = X + 252f;
-        float textWidth = WIDTH - 290f;
-        font.getData().setScale(.66f);
+        float textX = X + 232f;
+        float textWidth = WIDTH - 464f;
+        font.getData().setScale(.68f);
         font.setColor(UiTheme.AMBER.r, UiTheme.AMBER.g, UiTheme.AMBER.b, eased);
-        font.draw(batch, falante, textX, y + HEIGHT - 34f);
-
-        font.getData().setScale(.56f);
-        font.setColor(UiTheme.CYAN.r, UiTheme.CYAN.g, UiTheme.CYAN.b, eased);
-        font.draw(batch, "TRANSMISSÃO LOCAL", textX, y + HEIGHT - 68f);
+        font.draw(batch, playerTurn ? "EXPLORADOR" : falante, textX, y + HEIGHT - 42f);
 
         // Quebra dentro da largura útil: é isto que impede o texto de vazar.
         font.getData().setScale(TEXT_SCALE);
         font.setColor(UiTheme.TEXT.r, UiTheme.TEXT.g, UiTheme.TEXT.b, eased);
         layout.setText(font, dialog.line(), font.getColor(), textWidth, Align.left, true);
-        font.draw(batch, layout, textX, y + HEIGHT - 112f);
+        font.draw(batch, layout, textX, y + HEIGHT - 91f);
 
-        font.getData().setScale(.62f);
+        batch.setColor(UiTheme.CYAN.r, UiTheme.CYAN.g, UiTheme.CYAN.b, .55f * eased);
+        for (int i = 0; i < dialog.lineCount(); i++)
+            batch.draw(assets.uiWhiteTexture, textX + i * 36f, y + 23f,
+                24f, i < dialog.lineNumber() ? 4f : 2f);
+        batch.setColor(Color.WHITE);
+        font.getData().setScale(.54f);
         font.setColor(UiTheme.TEXT_MUTED.r, UiTheme.TEXT_MUTED.g, UiTheme.TEXT_MUTED.b, eased);
-        String dica = dialog.lineNumber() + "/" + dialog.lineCount()
-            + "    ESPAÇO para continuar";
+        String dica = dialog.lineNumber() + "/" + dialog.lineCount();
         layout.setText(font, dica);
         font.draw(batch, dica, X + WIDTH - PADDING - layout.width, y + 32f);
 

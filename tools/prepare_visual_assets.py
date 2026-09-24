@@ -960,7 +960,7 @@ def validate_palette_sync() -> None:
 
 def validate_terrain_seams(maximum_mean_difference: float = 4.0) -> None:
     errors: list[str] = []
-    for name in ("lunar_ground.png", "mars_ground.png", "titan_ground_v2.png"):
+    for name in ("lunar_ground.png", "mars_ground.png", "titan_ground_v3.png"):
         image = Image.open(TEXTURES / name).convert("RGB")
         left_right = ImageChops.difference(
             image.crop((0, 0, 1, image.height)),

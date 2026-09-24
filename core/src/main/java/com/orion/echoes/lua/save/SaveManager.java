@@ -178,6 +178,19 @@ public class SaveManager {
         );
     }
 
+    /** Saves antigos continuam válidos; só o encerramento bloqueia Continuar. */
+    public boolean hasContinuableSave() {
+        GameSaveData data = load();
+        return data != null && !data.campanhaConcluida;
+    }
+
+    public void markCampaignCompleted() {
+        GameSaveData data = load();
+        if (data == null || data.campanhaConcluida) return;
+        data.campanhaConcluida = true;
+        save(data);
+    }
+
     // =====================================================
     // ÚLTIMO SAVE
     // =====================================================

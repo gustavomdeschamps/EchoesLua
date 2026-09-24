@@ -8,12 +8,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class PartThreeCampaignTest {
     @Test void lightKeyRequiresAllThreeLives() {
         BossCalisto boss=new BossCalisto();
-        assertFalse(boss.receiveDamage(100f)); assertEquals(2,boss.getForma());
-        assertEquals(150f,boss.getHp()); assertTrue(boss.isMutating());
+        assertFalse(boss.receiveDamage(125f)); assertEquals(2,boss.getForma());
+        assertEquals(180f,boss.getHp()); assertTrue(boss.isMutating());
         boss.receiveDamage(10000f); assertEquals(2,boss.getForma(),"mutation grace rejects damage");
-        boss.update(1.3f); assertFalse(boss.receiveDamage(150f)); assertEquals(3,boss.getForma());
-        assertEquals(220f,boss.getHp()); boss.update(1.3f);
-        assertTrue(boss.receiveDamage(220f)); assertFalse(boss.isAlive());
+        boss.update(1.3f); assertFalse(boss.receiveDamage(180f)); assertEquals(3,boss.getForma());
+        assertEquals(260f,boss.getHp()); boss.update(1.3f);
+        assertTrue(boss.receiveDamage(260f)); assertFalse(boss.isAlive());
         assertFalse(boss.receiveDamage(1f));
     }
     @Test void damageDoesNotSkipLivesAndSpeedIncreases() {
@@ -56,7 +56,21 @@ class PartThreeCampaignTest {
         }
     }
     @Test void planetaryBossesHaveSeparateHealthBudgets() {
-        assertEquals(120f,new BossLua().getHpMax());assertEquals(160f,new BossMarte().getHpMax());
+        assertEquals(150f,new BossLua().getHpMax());assertEquals(205f,new BossMarte().getHpMax());
+    }
+    @Test void defeatedBossPersistsBeforeItsPhysicalKeyIsCollected() {
+        CampaignState state=new CampaignState(11);
+        state.setBossDefeated(CampaignState.Phase.LUNAR,true);
+        state.setBossDefeated(CampaignState.Phase.MARS,true);
+        state.setBossDefeated(CampaignState.Phase.TITAN,true);
+        assertFalse(state.getInventario().tem(Inventario.CHAVE_LUA));
+        GameSaveData data=new GameSaveData();LunarCheckpoint.applyCampaign(data,state);
+        CampaignState restored=LunarCheckpoint.toCampaign(data);
+        assertTrue(restored.isBossDefeated(CampaignState.Phase.LUNAR));
+        assertTrue(restored.isBossDefeated(CampaignState.Phase.MARS));
+        assertTrue(restored.isBossDefeated(CampaignState.Phase.TITAN));
+        assertFalse(restored.isBossDefeated(CampaignState.Phase.CALLISTO));
+        assertFalse(restored.getInventario().tem(Inventario.CHAVE_LUA));
     }
     @Test void arenasRequireWorldMissionsNotJustAWeapon() {
         CampaignState state=new CampaignState(2);assertFalse(state.luaMissoesOk());assertFalse(state.marteMissoesOk());

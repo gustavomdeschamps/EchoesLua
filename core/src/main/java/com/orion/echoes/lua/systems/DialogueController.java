@@ -42,4 +42,6 @@ public final class DialogueController {
     public String line() { return open && index < lines.length ? lines[index] : ""; }
     public int lineNumber() { return open ? index + 1 : 0; }
     public int lineCount() { return lines.length; }
+    /** Conversations alternate between local NPC and astronaut. */
+    public boolean isPlayerTurn() { return open && (index & 1) == 1; }
 }

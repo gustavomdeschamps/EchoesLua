@@ -40,7 +40,6 @@ public final class WorldRenderer {
         for (Item item : world.getItems()) item.render(batch);
         for (MissionCollectible collectible : world.getCollectibles()) collectible.render(batch);
         for (RepairStation station : world.getRepairStations()) station.render(batch);
-        world.getCraftingStation().render(batch);
         world.getPortal().render(batch);
         for (Enemy enemy : world.getEnemies()) enemy.render(batch);
         for (EnemyPulse pulse : world.getEnemyPulses()) pulse.render(batch);

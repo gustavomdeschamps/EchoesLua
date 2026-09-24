@@ -23,13 +23,15 @@ public final class InteractionSystem {
     private final ParticleManager particles;
     private final JuiceSystem juice;
     private final FeedbackSystem feedback;
+    private final Inventario inventory;
 
     public InteractionSystem(SoundManager sounds, ParticleManager particles,
-                             JuiceSystem juice, FeedbackSystem feedback) {
+                             JuiceSystem juice, FeedbackSystem feedback, Inventario inventory) {
         this.sounds = sounds;
         this.particles = particles;
         this.juice = juice;
         this.feedback = feedback;
+        this.inventory = inventory;
     }
 
     public Result interact(LunarWorld world) {
@@ -48,11 +50,6 @@ public final class InteractionSystem {
             return Result.HANDLED;
         }
 
-        if (world.getCraftingStation().isPlayerNear(player)) {
-            craft(mission, player);
-            return Result.HANDLED;
-        }
-
         if (!world.getBase().isAstronautaDentro()) {
             feedback.show("Nada para usar aqui.");
             return Result.NOTHING;
@@ -65,6 +62,15 @@ public final class InteractionSystem {
 
         processIce(world, mission);
         return Result.HANDLED;
+    }
+
+    /** Acoes expostas ao interior da base, preservando uma unica regra de gameplay. */
+    public void craftAtBase(LunarWorld world) {
+        craft(world.getMission(), world.getPlayer());
+    }
+
+    public void processIceAtBase(LunarWorld world) {
+        processIce(world, world.getMission());
     }
 
     private void repair(RepairStation station, MissionState mission) {
@@ -103,12 +109,12 @@ public final class InteractionSystem {
             sounds.tocarSemGelo();
             return;
         }
-        int cells = world.getPlayer().adicionarMunicao(
+        int cells = inventory.addReserveAmmo(
             Math.round(GameConfig.AMMO_PER_ICE * mission.getIceYieldMultiplier()));
         sounds.tocarProcessarGelo();
         feedback.show(cells > 0
-            ? "Gelo processado: O2, água e +" + cells + " células de pulso."
-            : "Gelo processado: O2 e água. Munição já está no limite.");
+            ? "Gelo processado: O2, água e +" + cells + " células. R recarrega o rifle."
+            : "Gelo processado: O2 e água. Reserva de munição cheia.");
         particles.criarProcessamento(
             world.getBase().getPosition().x + GameConfig.BASE_WIDTH / 2f,
             world.getBase().getPosition().y + GameConfig.BASE_HEIGHT / 2f);

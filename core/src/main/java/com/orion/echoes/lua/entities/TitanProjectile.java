@@ -13,16 +13,18 @@ public final class TitanProjectile {
     private final Vector2 velocity = new Vector2();
     private final Rectangle bounds = new Rectangle();
     private final TextureRegion glow;
+    private final TextureRegion core;
     private final float damage;
     private float life = 3.6f;
     private boolean active = true;
 
     public TitanProjectile(float x, float y, float dirX, float dirY, float speed,
-                           float damage, TextureRegion glow) {
+                           float damage, TextureRegion glow, TextureRegion core) {
         position.set(x, y);
         velocity.set(dirX, dirY).nor().scl(speed);
         this.damage = damage;
         this.glow = glow;
+        this.core = core;
         sync();
     }
 
@@ -58,6 +60,8 @@ public final class TitanProjectile {
         batch.setColor(1f, .72f, .22f, 1f);
         com.orion.echoes.lua.render.AtlasRegionRenderer.draw(batch, glow,
             position.x - 12f, position.y - 12f, 24f, 24f, 1f, angle);
+        batch.setColor(1f, .97f, .78f, 1f);
+        batch.draw(core, position.x - 4f, position.y - 4f, 8f, 8f);
         batch.setColor(Color.WHITE);
     }
     public boolean isActive() { return active; }

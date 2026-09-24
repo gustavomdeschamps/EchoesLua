@@ -128,13 +128,10 @@ public class GameInputProcessor implements InputProcessor {
                 break;
 
             case Input.Keys.SPACE:
-                attackPressed = true;
-                break;
             case Input.Keys.Q:
                 dashPressed = true;
                 break;
 
-            case Input.Keys.F:
             case Input.Keys.J:
             case Input.Keys.CONTROL_LEFT:
             case Input.Keys.CONTROL_RIGHT:

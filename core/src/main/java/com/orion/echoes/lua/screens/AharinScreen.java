@@ -9,6 +9,7 @@ import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.orion.echoes.lua.EchoesLua;
+import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.entities.Wall;
 import com.orion.echoes.lua.physics.PhysicsWorld;
@@ -29,7 +30,7 @@ public final class AharinScreen implements Screen {
 
     private static final String[] LINES = {
         "Você atravessou quatro mundos para ouvir um sinal. Agora sabe que ele nunca foi um pedido de conquista.",
-        "O que descobriu aqui não pertence a uma arma, nem a uma colônia. Conhecimento só ilumina quando é compartilhado.",
+        "Passei esse tempo todo tentando encontrar uma arma. O que devo levar de volta?",
         "Volte à Terra. Leve o que aprendeu. A nova era não se impõe: ela se escolhe."};
 
     private final EchoesLua game;
@@ -59,6 +60,8 @@ public final class AharinScreen implements Screen {
          * Um pre-requisito nao atendido e trabalho da interface, nao motivo
          * para derrubar o jogo no meio de uma transicao.
          */
+        boolean resumeSavedPosition = campaign.getPhase() == CampaignState.Phase.AHARIN;
+        GameSaveData saved = resumeSavedPosition ? new SaveManager().load() : null;
         missingKey = !campaign.getInventario().tem(Inventario.CHAVE_LUZ);
         campaign.setPhase(CampaignState.Phase.AHARIN); Gdx.input.setInputProcessor(null);
         game.useDefaultCursor();
@@ -66,6 +69,13 @@ public final class AharinScreen implements Screen {
         new Wall(-24f,0f,24f,720f,physics); new Wall(1280f,0f,24f,720f,physics);
         new Wall(0f,-24f,1280f,24f,physics); new Wall(0f,720f,1280f,24f,physics);
         player=new Astronauta(430f,275f,game.getAssets(),physics);
+        if (saved != null && !saved.campanhaConcluida
+                && saved.semente == campaign.getSeed()
+                && CampaignState.phaseFromToken(saved.fase) == CampaignState.Phase.AHARIN
+                && saved.posX >= 24f && saved.posX <= 1200f
+                && saved.posY >= 24f && saved.posY <= 650f) {
+            player.fromSaveData(saved);
+        }
         player.setVitals(campaign.getOxygen(),campaign.getEnergy()); player.setMunicao(campaign.getAmmo());
         player.setWeaponEquipped(campaign.hasWeapon());
         camera.position.set(640f,360f,0f); camera.update();
@@ -129,14 +139,34 @@ public final class AharinScreen implements Screen {
                     (Gdx.input.isKeyPressed(Input.Keys.W)||Gdx.input.isKeyPressed(Input.Keys.UP)?1f:0f)
                         -(Gdx.input.isKeyPressed(Input.Keys.S)||Gdx.input.isKeyPressed(Input.Keys.DOWN)?1f:0f));
                 if(direction.len2()>1f)direction.nor();
+                if ((Gdx.input.isKeyJustPressed(Input.Keys.SPACE) || Gdx.input.isKeyJustPressed(Input.Keys.Q))
+                    && direction.len2() > 0f) {
+                    // A passarela não tem parede física; só inicia o dash se o
+                    // percurso inteiro continua sobre a plataforma visível.
+                    float distance = GameConfig.PLAYER_DASH_SPEED * GameConfig.PLAYER_DASH_DURATION;
+                    footPoint(0f, 0f, probe);
+                    if (SanctuaryZone.canTraverse(probe.x, probe.y,
+                            probe.x + direction.x * distance, probe.y + direction.y * distance))
+                        player.tryDash(direction.x, direction.y);
+                }
                 // Cada eixo e testado por si: raspar a borda do terraco desliza
                 // em vez de travar o jogador contra o vazio.
-                float reach = 190f * delta;
+                float reach = (player.isDashing() ? GameConfig.PLAYER_DASH_SPEED : 190f) * delta;
                 footPoint(direction.x*reach, 0f, probe);
                 if (direction.x != 0f && !walkable(probe.x, probe.y)) direction.x = 0f;
                 footPoint(0f, direction.y*reach, probe);
                 if (direction.y != 0f && !walkable(probe.x, probe.y)) direction.y = 0f;
-                player.move(direction.x,direction.y,false,delta); physics.update(delta); player.update(delta);
+                player.move(direction.x,direction.y,false,delta);
+                Vector2 velocity = player.getBody().getLinearVelocity();
+                footPoint(0f, 0f, probe);
+                float footX = probe.x, footY = probe.y;
+                if (!SanctuaryZone.canTraverse(footX, footY,
+                        footX + velocity.x * GameConfig.PPM * delta,
+                        footY + velocity.y * GameConfig.PPM * delta)) {
+                    player.cancelDash();
+                    player.getBody().setLinearVelocity(0f, 0f);
+                }
+                physics.update(delta); player.update(delta);
                 // Aharin is a sanctuary: exploration never consumes the last oxygen.
                 player.recuperarOxigenio(delta*3f);
                 if(Gdx.input.isKeyJustPressed(Input.Keys.E) && inTalkRange()) {
@@ -159,16 +189,16 @@ public final class AharinScreen implements Screen {
 
         boolean near = inTalkRange();
         ui.beginShapes();
-        ui.panel(24f,628f,806f,74f,UiTheme.CYAN);
-        ui.panel(860f,628f,396f,74f,near ? UiTheme.GREEN : UiTheme.CYAN_DIM);
+        ui.panel(24f,622f,730f,80f,UiTheme.CYAN);
+        ui.panel(930f,622f,326f,80f,near ? UiTheme.GREEN : UiTheme.CYAN_DIM);
         ui.endShapes();
         ui.beginText();
-        ui.text("AHARIN  ·  SISTEMA DE RIGEL",.62f,UiTheme.TEXT,40f,678f);
+        ui.text("AHARIN  ·  SISTEMA DE RIGEL",.68f,UiTheme.TEXT,40f,677f);
         ui.text(dialogue.isOpen() ? "ESPAÇO avança a transmissão."
             : "Siga a passarela até o santuário e fale com as entidades de Luz.",
-            .52f,UiTheme.TEXT_MUTED,40f,648f);
+            .59f,UiTheme.TEXT_MUTED,40f,646f);
         ui.centered(near ? "E  ·  FALAR" : "APROXIME-SE DO SANTUÁRIO", .58f,
-            near ? UiTheme.GREEN : UiTheme.TEXT_MUTED, 1058f, 658f);
+            near ? UiTheme.GREEN : UiTheme.TEXT_MUTED, 1093f, 657f);
         ui.endText();
 
         overlay.render();

@@ -1,7 +1,6 @@
 package com.orion.echoes.lua.systems;
 
 import com.orion.echoes.lua.entities.Astronauta;
-import com.orion.echoes.lua.entities.CraftingStation;
 import com.orion.echoes.lua.entities.Portal;
 import com.orion.echoes.lua.entities.RepairStation;
 import com.orion.echoes.lua.world.LunarWorld;
@@ -52,13 +51,6 @@ public final class FeedbackSystem {
             return mission.isRepaired(station.getType())
                 ? station.getType().getLabel() + ": sistema ativo"
                 : station.getType().getLabel() + " pronta para reparo";
-        }
-        CraftingStation bench = world.getCraftingStation();
-        if (bench.isPlayerNear(player)) {
-            if (mission.hasWeapon()) return "Bancada: arma pronta";
-            return mission.hasAllWeaponParts()
-                ? "Arma pronta para montagem"
-                : "Bancada: faltam partes A, B e C";
         }
         Portal portal = world.getPortal();
         if (portal.isPlayerNear(player)) {

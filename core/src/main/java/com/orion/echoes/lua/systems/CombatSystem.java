@@ -194,6 +194,10 @@ public final class CombatSystem {
          */
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        batch.setColor(.12f, .65f, 1f, alpha * .36f);
+        drawTrail(shotStart.x, shotStart.y, shotEnd.x, shotEnd.y, 8f);
+        batch.setColor(.88f, .98f, 1f, alpha);
+        drawTrail(shotStart.x, shotStart.y, shotEnd.x, shotEnd.y, 2.5f);
         batch.setColor(.45f, .95f, 1f, alpha * .35f);
         drawTrail(px - dx * 34f, py - dy * 34f, px, py, 7f * alpha);
         batch.setColor(.9f, 1f, 1f, alpha);

@@ -24,7 +24,18 @@ public final class AssetManager implements Disposable {
     private static final String FX_ATLAS = "atlases/fx.atlas";
     private static final String LUNAR_GROUND = "textures/lunar_ground.png";
     private static final String MARS_GROUND = "textures/mars_ground.png";
+    // v3 contains a baked cross; repeating it exposed a grid across Titan.
     private static final String TITAN_GROUND = "textures/titan_ground_v2.png";
+    private static final String AHARIN_SANCTUARY = "textures/aharin_sanctuary_v2.png";
+    private static final String PORTAL_REWORK = "textures/portal_frame_rework_v1.png";
+    private static final String PORTAL_ENERGY = "textures/portal_energy_rework_v1.png";
+    private static final String STAR_CHART = "textures/expedition_worlds_v2.png";
+    private static final String PLAYER_PORTRAIT = "textures/astronaut_portrait_v2.png";
+    private static final String NPC_PORTRAITS = "textures/npc_portraits_v2.png";
+    private static final String AYYUB_PORTRAIT = "textures/npc_ayyub_portrait_v4.png";
+    private static final String AYYUB_SHEET = "textures/npc_ayyub_sheet_v3.png";
+    private static final String LIRA_SHEET = "textures/npc_researcher_lira_sheet_v3.png";
+    private static final String TITAN_MAIN_STATION = "textures/titan_main_station_v2.png";
     /*
      * Key art das aberturas por mundo (docs/NEW_VISUAL_ASSETS.md).
      *
@@ -65,8 +76,9 @@ public final class AssetManager implements Disposable {
     public Texture marsBackgroundTexture;
     public TextureRegion introKeyArtTexture;
     public Texture victoryReturnTexture;
-    public Texture callistoBackgroundTexture, aharinBackgroundTexture;
+    public Texture callistoBackgroundTexture, aharinBackgroundTexture, workshopInteriorTexture;
     private TextureRegion[][] callistoBossFrames;
+    private TextureRegion[] lunarBossFrames, marsBossFrames, bossKeyFrames;
     public TextureRegion marsAtlasTexture;
     public TextureRegion lunarEnemySheetTexture;
     public TextureRegion marsDroneSheetTexture;
@@ -74,6 +86,14 @@ public final class AssetManager implements Disposable {
     public TextureRegion titanEnemySheetTexture;
     public TextureRegion titanBossSheetTexture;
     public TextureRegion titanPortalSheetTexture;
+    public Texture portalFrameReworkTexture;
+    public TextureRegion portalEnergyReworkRegion;
+    public Texture expeditionStarChartTexture;
+    public Texture playerPortraitTexture;
+    private Texture npcPortraitsTexture;
+    private final TextureRegion[] npcPortraitRegions = new TextureRegion[3];
+    private Texture ayyubSheetTexture, liraSheetTexture;
+    public TextureRegion titanMainStationRegion;
     public TextureRegion repairStationsSheetTexture;
     public TextureRegion titanFormationsTexture;
     public TextureRegion npcCommanderSheetTexture;
@@ -117,8 +137,21 @@ public final class AssetManager implements Disposable {
         loader.load(TITAN_GROUND, Texture.class, terrain);
         loader.load("textures/victory_return_v1.png", Texture.class);
         loader.load("textures/callisto_ground_v1.png", Texture.class);
-        loader.load("textures/aharin_sanctuary_v1.png", Texture.class);
+        loader.load(AHARIN_SANCTUARY, Texture.class);
+        loader.load(PORTAL_REWORK, Texture.class);
+        loader.load(PORTAL_ENERGY, Texture.class);
+        loader.load(STAR_CHART, Texture.class);
+        loader.load(PLAYER_PORTRAIT, Texture.class);
+        loader.load(NPC_PORTRAITS, Texture.class);
+        loader.load(AYYUB_PORTRAIT, Texture.class);
+        loader.load(AYYUB_SHEET, Texture.class);
+        loader.load(LIRA_SHEET, Texture.class);
+        loader.load(TITAN_MAIN_STATION, Texture.class);
+        loader.load("textures/workshop_interior_v1.png", Texture.class);
         loader.load("textures/callisto_boss_sheet_v1.png", Texture.class);
+        loader.load("textures/lunar_boss_sheet_v2.png", Texture.class);
+        loader.load("textures/mars_boss_sheet_v2.png", Texture.class);
+        loader.load("textures/boss_keys_sheet_v1.png", Texture.class);
 
         TextureLoader.TextureParameter keyArt = new TextureLoader.TextureParameter();
         keyArt.minFilter = Texture.TextureFilter.Linear;
@@ -165,6 +198,32 @@ public final class AssetManager implements Disposable {
         titanEnemySheetTexture = required(gameAtlas, "titan_hunter_sheet_v3");
         titanBossSheetTexture = required(gameAtlas, "titan_boss_sheet_v3");
         titanPortalSheetTexture = required(gameAtlas, "campaign_portal_sheet_v2");
+        portalFrameReworkTexture = loader.get(PORTAL_REWORK, Texture.class);
+        portalFrameReworkTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        Texture portalEnergy = loader.get(PORTAL_ENERGY, Texture.class);
+        portalEnergy.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        portalEnergyReworkRegion = new TextureRegion(portalEnergy);
+        expeditionStarChartTexture = loader.get(STAR_CHART, Texture.class);
+        expeditionStarChartTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        playerPortraitTexture = loader.get(PLAYER_PORTRAIT, Texture.class);
+        playerPortraitTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        npcPortraitsTexture = loader.get(NPC_PORTRAITS, Texture.class);
+        npcPortraitsTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        Texture ayyubPortrait = loader.get(AYYUB_PORTRAIT, Texture.class);
+        ayyubPortrait.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        ayyubSheetTexture = loader.get(AYYUB_SHEET, Texture.class);
+        liraSheetTexture = loader.get(LIRA_SHEET, Texture.class);
+        ayyubSheetTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        liraSheetTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        Texture titanStation = loader.get(TITAN_MAIN_STATION, Texture.class);
+        titanStation.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        titanMainStationRegion = new TextureRegion(titanStation);
+        int portraitCell = npcPortraitsTexture.getWidth() / 3;
+        npcPortraitRegions[0] = new TextureRegion(npcPortraitsTexture, 0, 0,
+            portraitCell, npcPortraitsTexture.getHeight());
+        npcPortraitRegions[1] = new TextureRegion(ayyubPortrait);
+        npcPortraitRegions[2] = new TextureRegion(npcPortraitsTexture, portraitCell * 2, 0,
+            npcPortraitsTexture.getWidth() - portraitCell * 2, npcPortraitsTexture.getHeight());
         repairStationsSheetTexture = required(gameAtlas, "lunar_repair_stations_v2");
         titanFormationsTexture = required(gameAtlas, "titan_formations_v2");
         npcCommanderSheetTexture = required(gameAtlas, "npc_commander_ayla_sheet");
@@ -195,12 +254,23 @@ public final class AssetManager implements Disposable {
         victoryReturnTexture = loader.get("textures/victory_return_v1.png", Texture.class);
         victoryReturnTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         callistoBackgroundTexture = loader.get("textures/callisto_ground_v1.png", Texture.class);
-        aharinBackgroundTexture = loader.get("textures/aharin_sanctuary_v1.png", Texture.class);
+        aharinBackgroundTexture = loader.get(AHARIN_SANCTUARY, Texture.class);
+        workshopInteriorTexture = loader.get("textures/workshop_interior_v1.png", Texture.class);
         callistoBackgroundTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         aharinBackgroundTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        workshopInteriorTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         Texture callistoBoss = loader.get("textures/callisto_boss_sheet_v1.png", Texture.class);
         callistoBoss.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         callistoBossFrames = TextureRegion.split(callistoBoss, 384, 384);
+        Texture lunarBoss = loader.get("textures/lunar_boss_sheet_v2.png", Texture.class);
+        Texture marsBoss = loader.get("textures/mars_boss_sheet_v2.png", Texture.class);
+        lunarBoss.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        marsBoss.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        lunarBossFrames = squareBossFrames(lunarBoss);
+        marsBossFrames = squareBossFrames(marsBoss);
+        Texture bossKeys = loader.get("textures/boss_keys_sheet_v1.png", Texture.class);
+        bossKeys.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        bossKeyFrames = TextureRegion.split(bossKeys, 192, 192)[0];
         worldIntroLunarTexture = loader.isLoaded(WORLD_INTRO_LUNAR) ? loader.get(WORLD_INTRO_LUNAR, Texture.class) : null;
         worldIntroMarsTexture = loader.isLoaded(WORLD_INTRO_MARS) ? loader.get(WORLD_INTRO_MARS, Texture.class) : null;
         worldIntroTitanTexture = loader.isLoaded(WORLD_INTRO_TITAN) ? loader.get(WORLD_INTRO_TITAN, Texture.class) : null;
@@ -302,6 +372,30 @@ public final class AssetManager implements Disposable {
         return callistoBossFrames[Math.max(0,Math.min(2,form-1))][Math.max(0,Math.min(3,pose))];
     }
 
+    public TextureRegion lunarBossFrame(int pose) {
+        return lunarBossFrames[Math.max(0, Math.min(3, pose))];
+    }
+
+    public TextureRegion marsBossFrame(int pose) {
+        return marsBossFrames[Math.max(0, Math.min(3, pose))];
+    }
+
+    /** Generated sheets have four 543 px columns in a 724 px canvas.
+     * Crop a square around the common foot baseline instead of squeezing 543x724.
+     */
+    private static TextureRegion[] squareBossFrames(Texture sheet) {
+        int cell = sheet.getWidth() / 4;
+        int top = Math.max(0, Math.min(sheet.getHeight() - cell, 50));
+        TextureRegion[] result = new TextureRegion[4];
+        for (int i = 0; i < result.length; i++)
+            result[i] = new TextureRegion(sheet, i * cell, top, cell, cell);
+        return result;
+    }
+
+    public TextureRegion bossKeyFrame(int index) {
+        return bossKeyFrames[Math.max(0, Math.min(3, index))];
+    }
+
     public TextureRegion npcCommanderFrame(int column, int row) {
         return gridRegion(npcCommanderSheetTexture, 4, 4, column, row, 2);
     }
@@ -309,9 +403,28 @@ public final class AssetManager implements Disposable {
 
     /** Resolve o quadro de um NPC pela identidade tipada, com fallback já embutido. */
     public TextureRegion npcVisualFrame(Npc.Visual visual, int column, int row) {
+        Texture dedicated = visual == Npc.Visual.MARS_OFFICER ? ayyubSheetTexture
+            : visual == Npc.Visual.LIRA ? liraSheetTexture : null;
+        if (dedicated != null) {
+            int cellW = dedicated.getWidth() / 4;
+            int cellH = dedicated.getHeight() / 4;
+            int inset = visual.inset();
+            return new TextureRegion(dedicated, column * cellW + inset,
+                row * cellH + inset, cellW - inset * 2, cellH - inset * 2);
+        }
         TextureRegion sheet = npcVisualSheets.get(visual);
         if (sheet == null) throw new IllegalStateException("Folha não carregada para " + visual);
         return gridRegion(sheet, 4, 4, column, row, visual.inset());
+    }
+
+    /** Conversation-only painted busts; gameplay sprites remain at their native scale. */
+    public TextureRegion npcPortrait(Npc.Visual visual) {
+        int column = switch (visual) {
+            case AYLA -> 0;
+            case MARS_OFFICER -> 1;
+            case LIRA -> 2;
+        };
+        return npcPortraitRegions[column];
     }
 
     /** True quando a folha dedicada de {@code visual} já foi fornecida (não é fallback). */

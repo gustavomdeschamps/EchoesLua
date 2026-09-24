@@ -18,6 +18,7 @@ public final class EnemyPulse extends Entidade {
 
     private final Vector2 velocity = new Vector2();
     private final TextureRegion frame;
+    private final TextureRegion core;
     private float life;
 
     public EnemyPulse(float x, float y, float directionX, float directionY, AssetManager assets) {
@@ -26,6 +27,7 @@ public final class EnemyPulse extends Entidade {
         bounds.set(position.x, position.y, GameConfig.ENEMY_PULSE_SIZE, GameConfig.ENEMY_PULSE_SIZE);
         velocity.set(directionX, directionY).nor().scl(GameConfig.ENEMY_PULSE_SPEED);
         frame = assets.energyFxFrame(2, 1);
+        core = assets.uiWhiteTexture;
     }
 
     @Override
@@ -79,6 +81,8 @@ public final class EnemyPulse extends Entidade {
         batch.setColor(1f, .72f, .95f, .95f);
         com.orion.echoes.lua.render.AtlasRegionRenderer.draw(batch, frame,
             centerX() - size / 2f, centerY() - size / 2f, size, size);
+        batch.setColor(1f, .95f, 1f, 1f);
+        batch.draw(core, centerX() - 4f, centerY() - 4f, 8f, 8f);
         batch.setColor(1f, 1f, 1f, 1f);
     }
 

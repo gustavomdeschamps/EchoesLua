@@ -56,6 +56,7 @@ public class Enemy extends Entidade {
     private final Rectangle footprint = new Rectangle();
     private final Rectangle attackHitbox = new Rectangle();
     private final float spawnX, spawnY;
+    private final float animationPhase;
     private final Behavior behavior;
     private State state = State.IDLE;
     private float hp = GameConfig.ENEMY_BASE_HP;
@@ -71,6 +72,9 @@ public class Enemy extends Entidade {
         sincronizarHitbox();
         spawnX = x;
         spawnY = y;
+        // Cada criatura inicia em um ponto diferente do ciclo de respiração.
+        animationPhase = Math.abs(MathUtils.sin(x * .037f + y * .019f)) * .9f;
+        elapsed = animationPhase;
         this.behavior = behavior;
         for (int row = 0; row < 4; row++)
             for (int column = 0; column < 4; column++)
@@ -230,7 +234,7 @@ public class Enemy extends Entidade {
         int row, column;
         switch (state) {
             case IDLE -> { row = 0; column = (int)(elapsed / .22f) % 4; }
-            case CHASE -> { row = 1; column = (int)(stateTime / .095f) % 4; }
+            case CHASE -> { row = 1; column = (int)((stateTime + animationPhase) / .095f) % 4; }
             case TELEGRAPH -> { row = 2; column = Math.min(1, (int)(stateTime / .18f)); }
             case ATTACK -> { row = 2; column = Math.min(3, 2 + (int)(stateTime / .17f)); }
             case HIT -> { row = 3; column = Math.min(1, (int)(stateTime / .09f)); }

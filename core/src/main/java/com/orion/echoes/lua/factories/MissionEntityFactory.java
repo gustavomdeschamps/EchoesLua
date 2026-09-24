@@ -1,7 +1,6 @@
 package com.orion.echoes.lua.factories;
 
 import com.orion.echoes.lua.entities.Enemy;
-import com.orion.echoes.lua.entities.CraftingStation;
 import com.orion.echoes.lua.entities.MissionCollectible;
 import com.orion.echoes.lua.entities.Portal;
 import com.orion.echoes.lua.entities.RepairStation;
@@ -39,7 +38,4 @@ public class MissionEntityFactory {
         return new Portal(x, y, assets);
     }
 
-    public CraftingStation craftingStation(float x, float y) {
-        return new CraftingStation(x, y, assets, physics);
-    }
 }

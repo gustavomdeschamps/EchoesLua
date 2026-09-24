@@ -43,6 +43,7 @@ import com.orion.echoes.lua.systems.JuiceSystem;
 import com.orion.echoes.lua.systems.MissionState;
 import com.orion.echoes.lua.ui.PauseSettingsModel;
 import com.orion.echoes.lua.ui.UiTheme;
+import com.orion.echoes.lua.ui.WorkshopInterior;
 import com.orion.echoes.lua.world.LunarWorld;
 import com.orion.echoes.lua.world.NpcSpawnSelector;
 
@@ -96,6 +97,7 @@ public class LunarScreen implements Screen {
     private WorldRenderer worldRenderer;
     private MissionOverlay overlay;
     private PauseOverlay pauseOverlay;
+    private WorkshopInterior workshop;
     private HitboxDebugRenderer hitboxDebug;
 
     private LunarWorld world;
@@ -112,6 +114,7 @@ public class LunarScreen implements Screen {
     private final Vector2 cameraTarget = new Vector2();
     private final Vector2 mouseWorld = new Vector2();
     private Screen nextScreen;
+    private final GameSaveData resumeData;
 
     public LunarScreen(EchoesLua game, SpriteBatch batch, AssetManager assets) {
         this(game, batch, assets, game.getCampaign());
@@ -125,10 +128,16 @@ public class LunarScreen implements Screen {
      */
     public LunarScreen(EchoesLua game, SpriteBatch batch, AssetManager assets,
                        CampaignState campaign) {
+        this(game, batch, assets, campaign, null);
+    }
+
+    public LunarScreen(EchoesLua game, SpriteBatch batch, AssetManager assets,
+                       CampaignState campaign, GameSaveData resumeData) {
         this.game = game;
         this.batch = batch;
         this.assets = assets;
         this.campaign = campaign == null ? game.getCampaign() : campaign;
+        this.resumeData = resumeData;
     }
 
     // =====================================================
@@ -170,16 +179,20 @@ public class LunarScreen implements Screen {
                 assets, com.orion.echoes.lua.entities.Npc.Visual.AYLA),
             new String[] {
                 "Esta colônia mantém o enlace entre a Terra e nossas expedições. Sem as antenas, ninguém ouve um pedido de resgate.",
-                "Recolha as peças espalhadas e reative três sistemas. Os cilindros renovam o oxigênio; o gelo abastece a fabricação de munição.",
-                "Monte o rifle na base, neutralize os hostis e procure o portal. A equipe de Marte espera por você."
+                "Então precisamos devolver a voz à colônia. Onde encontro as peças e munição?",
+                "Busque os módulos junto às rochas. Reative os sistemas, processe gelo na base e monte o rifle antes de procurar o portal para Marte."
             }, batch, assets);
         mission = world.getMission();
         restaurarCampanha();
+        if (resumeData != null && "MUNDO".equals(resumeData.cena)
+            && CampaignState.phaseFromToken(resumeData.fase) == CampaignState.Phase.LUNAR) {
+            LunarCheckpoint.apply(resumeData, world, campaign);
+        }
 
         feedback = new FeedbackSystem();
         feedback.showFor("Colete peças para restaurar a colônia.", ENEMY_CONTACT_MESSAGE_TIME);
         combat = new CombatSystem(batch, assets, camera, particleManager, sounds, juice, feedback);
-        interactions = new InteractionSystem(sounds, particleManager, juice, feedback);
+        interactions = new InteractionSystem(sounds, particleManager, juice, feedback, campaign.getInventario());
         collection = new CollectionSystem(sounds, particleManager, juice, feedback);
         worldRenderer = new WorldRenderer(batch, assets, camera);
         overlay = new MissionOverlay(batch, assets, camera, uiCamera);
@@ -187,6 +200,7 @@ public class LunarScreen implements Screen {
         pauseOverlay.setReduceMotion(game.getSettings().isReduceMotion());
         pauseOverlay.setSettings(construirOpcoesDaPausa());
         hitboxDebug = new HitboxDebugRenderer(batch, assets);
+        workshop = new WorkshopInterior(batch, assets);
     }
 
     /**
@@ -281,6 +295,7 @@ public class LunarScreen implements Screen {
             lunarConversation.renderUi();
             batch.end();
         }
+        workshop.render();
     }
 
     /**
@@ -301,7 +316,6 @@ public class LunarScreen implements Screen {
         for (RepairStation station : world.getRepairStations()) {
             hitboxDebug.box(station.getBounds(), UiTheme.GREEN);
         }
-        hitboxDebug.box(world.getCraftingStation().getBounds(), UiTheme.GREEN);
         hitboxDebug.box(world.getPortal().getBounds(), UiTheme.GREEN);
 
         for (Item item : world.getItems()) {
@@ -334,6 +348,11 @@ public class LunarScreen implements Screen {
 
     private void update(float delta) {
         if (pausado || gameOver || vitoria) return;
+        if (workshop != null && workshop.isOpen()) {
+            astronauta.getBody().setLinearVelocity(0f, 0f);
+            input.discardActions();
+            return;
+        }
         if (expeditionOpen) { input.discardActions(); return; }
 
         delta = Math.min(delta, MAX_STEP);
@@ -395,7 +414,8 @@ public class LunarScreen implements Screen {
 
     private void atualizarJogador(float delta) {
         Vector2 direction = input.getDirection();
-        if (input.consumeDashPressed() && astronauta.tryDash(direction.x, direction.y)) {
+        boolean dashRequested = input.consumeDashPressed() || Gdx.input.isKeyJustPressed(Input.Keys.Q);
+        if (dashRequested && astronauta.tryDash(direction.x, direction.y)) {
             particleManager.criarPoeiraLunar(astronauta.getPosition().x + 27f,
                 astronauta.getPosition().y + 4f, true, direction.x, direction.y);
             juice.trigger(JuiceSystem.Preset.DASH);
@@ -456,6 +476,11 @@ public class LunarScreen implements Screen {
         for (RepairStation station : world.getRepairStations()) station.update(delta);
 
         combat.update(delta, world);
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
+            int before = astronauta.getMunicao();
+            astronauta.setMunicao(campaign.getInventario().reload(before, GameConfig.AMMO_MAX));
+            feedback.show(astronauta.getMunicao() > before ? "Rifle recarregado." : "Sem células fabricadas na reserva.");
+        }
         if (input.consumeAttackPressed()) combat.fire(world);
 
         boolean unlocked = mission.isPortalUnlocked(astronauta.getOxigenio());
@@ -485,6 +510,26 @@ public class LunarScreen implements Screen {
 
     private void atualizarInteracao() {
         if (!input.consumeInteractPressed()) return;
+        if (world.getBase().isAstronautaDentro()) {
+            astronauta.getBody().setLinearVelocity(0f, 0f);
+            workshop.open("HABITAT LUNAR · OFICINA", new WorkshopInterior.Actions() {
+                @Override public String status() {
+                    return "GELO  " + astronauta.getGelo() + "   ·   MUNIÇÃO  "
+                        + astronauta.getMunicao() + "   ·   SISTEMAS  "
+                        + mission.getRepairCount() + "/3";
+                }
+                @Override public void recharge() {
+                    astronauta.recuperarOxigenio(100f);
+                    astronauta.recuperarEnergia(100f);
+                    sounds.tocarBaseRecarregando();
+                    feedback.show("Suporte de vida restaurado.");
+                }
+                @Override public void craft() { interactions.craftAtBase(world); }
+                @Override public void processIce() { interactions.processIceAtBase(world); }
+            });
+            input.discardActions();
+            return;
+        }
         if (interactions.interact(world) != InteractionSystem.Result.PORTAL_CROSSED) return;
         if (!campaign.getInventario().tem(com.orion.echoes.lua.systems.Inventario.CHAVE_LUA)) {
             guardarCampanha();
@@ -582,6 +627,12 @@ public class LunarScreen implements Screen {
     }
 
     private void verificarPause() {
+        if (workshop != null && workshop.isOpen()) {
+            workshop.handleInput(Gdx.graphics.getDeltaTime());
+            astronauta.getBody().setLinearVelocity(0f, 0f);
+            input.discardActions();
+            return;
+        }
         expeditionOpen = !pausado && expedition.handleInput();
         if (expeditionOpen) return;
         if (Gdx.input.isKeyJustPressed(Input.Keys.F3)) hitboxDebug.toggle();
@@ -648,6 +699,7 @@ public class LunarScreen implements Screen {
         uiViewport.update(width, height, true);
         hud.resize(width, height);
         if (pauseOverlay != null) pauseOverlay.resize(width, height);
+        if (workshop != null) workshop.resize(width, height);
     }
 
     @Override public void pause() { }
@@ -716,5 +768,6 @@ public class LunarScreen implements Screen {
         if (physicsWorld != null) physicsWorld.dispose();
         if (overlay != null) overlay.dispose();
         if (pauseOverlay != null) pauseOverlay.dispose();
+        if (workshop != null) workshop.dispose();
     }
 }

@@ -105,13 +105,13 @@ public final class TitanBoss extends Entidade implements CombatTarget {
                 if (stateTime >= .72f) { volleyPending = true; change(State.VOLLEY); }
             }
             case VOLLEY -> {
-                if (stateTime >= .38f) { attackCooldown = 1.65f; change(State.AVANCA); }
+                if (stateTime >= .38f) { attackCooldown = 1.5f; change(State.AVANCA); }
             }
             case PREPARA_BURST -> {
                 if (stateTime >= 1.0f) { burstPending = true; change(State.BURST); }
             }
             case BURST -> {
-                if (stateTime >= .5f) { attackCooldown = 1.35f; change(State.AVANCA); }
+                if (stateTime >= .5f) { attackCooldown = 1.25f; change(State.AVANCA); }
             }
             case AVANCA -> {
                 if (distance > GameConfig.BOSS_CHASE_RADIUS) {

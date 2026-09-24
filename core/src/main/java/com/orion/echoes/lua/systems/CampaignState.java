@@ -19,11 +19,30 @@ public final class CampaignState {
     public Inventario getInventario() { return inventario; }
     private int formaBossCalisto = 1;
     private float hpBossCalisto = 100f;
+    private boolean bossLuaDefeated, bossMarteDefeated, bossTitanDefeated, bossCalistoDefeated;
     public int getFormaBossCalisto() { return formaBossCalisto; }
     public float getHpBossCalisto() { return hpBossCalisto; }
     public void setBossCalisto(int forma, float hp) {
         formaBossCalisto = Math.max(1, Math.min(3, forma));
         hpBossCalisto = Math.max(0f, hp);
+    }
+    public boolean isBossDefeated(Phase bossPhase) {
+        return switch (bossPhase) {
+            case LUNAR -> bossLuaDefeated;
+            case MARS -> bossMarteDefeated;
+            case TITAN -> bossTitanDefeated;
+            case CALLISTO -> bossCalistoDefeated;
+            default -> false;
+        };
+    }
+    public void setBossDefeated(Phase bossPhase, boolean value) {
+        switch (bossPhase) {
+            case LUNAR -> bossLuaDefeated = value;
+            case MARS -> bossMarteDefeated = value;
+            case TITAN -> bossTitanDefeated = value;
+            case CALLISTO -> bossCalistoDefeated = value;
+            default -> { }
+        }
     }
 
     private final long seed;
@@ -156,13 +175,16 @@ public final class CampaignState {
 
     public String missaoAtual() {
         if (phase == Phase.CALLISTO) return inventario.tem(Inventario.CHAVE_LUZ)
-            ? "Leve a Chave de Luz ao portal de Aharin." : "Derrote as três formas do Sentinela de Calisto.";
+            ? "Leve a Chave de Luz ao portal de Aharin."
+            : bossCalistoDefeated ? "Recolha a Chave de Luz caída na arena." : "Derrote as três formas do Sentinela de Calisto.";
         if (phase == Phase.AHARIN) return "Converse com as entidades de Luz.";
         if (phase == Phase.TITAN && inventario.tem(Inventario.CHAVE_TITA))
             return "Atravesse o portal de Calisto junto à cratera do Soberano.";
+        if (phase == Phase.TITAN && bossTitanDefeated)
+            return "Recolha a Chave de Titã caída junto ao Soberano.";
         if (phase == Phase.TITAN) return dialogoExplorador
-            ? "Use a refinaria e enfrente o Soberano a nordeste."
-            : "Fale com a pesquisadora junto à refinaria.";
+            ? "Use a estação e enfrente o Soberano a nordeste."
+            : "Fale com a pesquisadora junto à estação.";
         /*
          * A Lua tem objetivo proprio.
          *
@@ -173,6 +195,7 @@ public final class CampaignState {
         if (phase == Phase.LUNAR) {
             if (inventario.tem(Inventario.CHAVE_LUA))
                 return "Chave da Lua conquistada. Atravesse o portal para Marte.";
+            if (bossLuaDefeated) return "Recolha a Chave da Lua caída na arena.";
             return luaMissoesOk()
                 ? "Cratera liberada. Enfrente o Guardião da Cratera no portal."
                 : "Repare os sistemas, monte o rifle e limpe a cratera.";
@@ -180,6 +203,7 @@ public final class CampaignState {
         if (!dialogoTita) return "Investigue o portal instável no setor de extração.";
         if (!combateOk && !amostraOk) return "Prove capacidade de combate ou colete uma amostra de metano.";
         return inventario.tem(Inventario.CHAVE_MARTE) ? "Portal autorizado. Atravesse para Titã."
+            : bossMarteDefeated ? "Recolha a Chave de Marte caída na arena."
             : "Reative as estações, neutralize os hostis e enfrente o Titã-Ferrugem no portal.";
     }
 

@@ -1,10 +1,23 @@
 package com.orion.echoes.lua.save;
 
 import com.orion.echoes.lua.systems.CampaignState;
+import com.orion.echoes.lua.systems.Inventario;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CampaignTransferTest {
+    @Test void difficultyAndInventoryArrangementSurviveCampaignSave() {
+        CampaignState before = new CampaignState(42L);
+        before.getInventario().setDifficulty(Inventario.Difficulty.DIFICIL);
+        before.getInventario().swapSlots(0, 19);
+        GameSaveData data = new GameSaveData();
+        LunarCheckpoint.applyCampaign(data, before);
+        CampaignState after = LunarCheckpoint.toCampaign(data);
+        assertEquals(Inventario.Difficulty.DIFICIL, after.getInventario().getDifficulty());
+        assertEquals(1, after.getInventario().itemAt(19));
+        assertEquals(0, after.getInventario().itemAt(0));
+    }
+
     @Test void everyPlanetPreservesPartialResourcesAndDialogueFlags() {
         for (CampaignState.Phase phase : CampaignState.Phase.values()) {
             CampaignState before = new CampaignState(1234L);

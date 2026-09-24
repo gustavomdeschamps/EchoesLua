@@ -20,6 +20,11 @@ import com.orion.echoes.lua.save.GameSaveData;
 public class Astronauta extends Entidade implements Interagivel {
     private com.orion.echoes.lua.systems.Inventario inventario;
     public void setInventario(com.orion.echoes.lua.systems.Inventario value) { inventario = value; }
+    public String getDifficultyLabel() {
+        return inventario == null ? "NORMAL" : inventario.getDifficulty().label();
+    }
+    public void applyFreeze(float seconds) { frozenTimer = Math.max(frozenTimer, Math.max(0f, seconds)); }
+    public float getFreezeRemaining() { return frozenTimer; }
     public void guardarComida() {
         if (inventario != null) inventario.add("COMIDA");
         else recuperarEnergia(30f);
@@ -70,6 +75,7 @@ public class Astronauta extends Entidade implements Interagivel {
     private float invulnerabilityTimer;
     private float dashTimer;
     private float dashCooldown;
+    private float frozenTimer;
     private final Vector2 dashDirection = new Vector2(1f, 0f);
 
     // ==========================================
@@ -229,7 +235,8 @@ public class Astronauta extends Entidade implements Interagivel {
 
         // Pixels/s -> metros/s
         sprinting = sprintGate.resolve(wantsToRun, movementInputActive, energia);
-        float currentSpeed = velocidade * (sprinting ? GameConfig.PLAYER_RUN_MULTIPLIER : 1f);
+        float currentSpeed = velocidade * (sprinting ? GameConfig.PLAYER_RUN_MULTIPLIER : 1f)
+            * (frozenTimer > 0f ? .55f : 1f);
 
         float velocidadeX =
             dirX
@@ -288,6 +295,7 @@ public class Astronauta extends Entidade implements Interagivel {
         invulnerabilityTimer = Math.max(0f, invulnerabilityTimer - delta);
         dashTimer = Math.max(0f, dashTimer - delta);
         dashCooldown = Math.max(0f, dashCooldown - delta);
+        frozenTimer = Math.max(0f, frozenTimer - delta);
         AnimationState nextState = resolveAnimationState();
         if (nextState != animationState) {
             animationState = nextState;
@@ -434,6 +442,8 @@ public class Astronauta extends Entidade implements Interagivel {
     }
 
     public boolean isDashing() { return dashTimer > 0f; }
+    /** Cancela o impulso quando uma fase tem borda visual sem parede física. */
+    public void cancelDash() { dashTimer = 0f; }
     public boolean isInvulnerable() { return invulnerabilityTimer > 0f; }
 
     // ==========================================

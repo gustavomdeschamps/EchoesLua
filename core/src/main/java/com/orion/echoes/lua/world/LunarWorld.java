@@ -7,7 +7,6 @@ import com.badlogic.gdx.math.RandomXS128;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.entities.Astronauta;
 import com.orion.echoes.lua.entities.BaseLunar;
-import com.orion.echoes.lua.entities.CraftingStation;
 import com.orion.echoes.lua.entities.Enemy;
 import com.orion.echoes.lua.entities.EnemyPulse;
 import com.orion.echoes.lua.entities.Item;
@@ -54,7 +53,6 @@ public final class LunarWorld {
     private final MissionState mission = new MissionState();
     private final Astronauta player;
     private final BaseLunar base;
-    private CraftingStation craftingStation;
     private Portal portal;
 
     public LunarWorld(long seed, AssetManager assets, PhysicsWorld physics) {
@@ -131,7 +129,6 @@ public final class LunarWorld {
         repairStations.add(factory.station(1480, 1560, MissionState.SystemType.ENERGIA));
         repairStations.add(factory.station(2500, 980, MissionState.SystemType.EXTRACAO));
         repairStations.add(factory.station(420, 560, MissionState.SystemType.ESTUFA));
-        craftingStation = factory.craftingStation(1390, 740);
         portal = factory.portal(2710, 1600);
 
         MissionState.PartType[] parts = {
@@ -194,7 +191,6 @@ public final class LunarWorld {
         for (MissionCollectible collectible : collectibles) {
             if (candidate.overlaps(collectible.getBounds())) return true;
         }
-        if (craftingStation != null && candidate.overlaps(craftingStation.getBounds())) return true;
         return portal != null && candidate.overlaps(portal.getBounds());
     }
 
@@ -225,7 +221,6 @@ public final class LunarWorld {
     public BaseLunar getBase() { return base; }
     public MissionState getMission() { return mission; }
     public Portal getPortal() { return portal; }
-    public CraftingStation getCraftingStation() { return craftingStation; }
     public Array<Item> getItems() { return items; }
     public Array<Obstacle> getObstacles() { return obstacles; }
     public Array<MissionCollectible> getCollectibles() { return collectibles; }

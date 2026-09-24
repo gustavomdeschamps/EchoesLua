@@ -97,6 +97,17 @@ public class TerminalUi implements Disposable {
         batch.setColor(Color.WHITE);
     }
 
+    /** Traço entre dois pontos em coordenadas de tela. */
+    public void line(float x1, float y1, float x2, float y2, float thickness, Color color) {
+        float dx = x2 - x1, dy = y2 - y1;
+        batch.setColor(color);
+        batch.draw(white, x1, y1 - thickness * .5f, 0f, thickness * .5f,
+            (float)Math.sqrt(dx * dx + dy * dy), thickness, 1f, 1f,
+            com.badlogic.gdx.math.MathUtils.atan2(dy, dx)
+                * com.badlogic.gdx.math.MathUtils.radiansToDegrees);
+        batch.setColor(Color.WHITE);
+    }
+
     /**
      * Desenha uma regiao dentro do batch ja aberto.
      *

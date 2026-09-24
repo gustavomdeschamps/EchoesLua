@@ -32,6 +32,17 @@ public final class SanctuaryZone {
         return nx * nx + ny * ny <= 1f;
     }
 
+    /** Valida o caminho inteiro do dash, não só a chegada sobre o terraço. */
+    public static boolean canTraverse(float startX, float startY, float endX, float endY) {
+        float dx = endX - startX, dy = endY - startY;
+        int steps = Math.max(1, (int) Math.ceil(Math.sqrt(dx * dx + dy * dy) / 12f));
+        for (int i = 0; i <= steps; i++) {
+            float t = i / (float) steps;
+            if (!walkable(startX + dx * t, startY + dy * t)) return false;
+        }
+        return true;
+    }
+
     /** Distância até a entidade de Luz mais próxima. */
     public static float distanceToEntities(float footX, float footY) {
         float best = Float.MAX_VALUE;

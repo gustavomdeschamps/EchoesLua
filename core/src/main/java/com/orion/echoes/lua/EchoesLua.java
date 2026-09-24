@@ -12,6 +12,7 @@ import com.orion.echoes.lua.config.AppSettings;
 import com.orion.echoes.lua.config.GameConfig;
 import com.orion.echoes.lua.systems.CampaignState;
 import com.orion.echoes.lua.screens.LoadingScreen;
+import com.orion.echoes.lua.screens.IntroScreen;
 
 public class EchoesLua extends Game {
 
@@ -43,9 +44,10 @@ public class EchoesLua extends Game {
         sounds =
             SoundManager.getInstance();
 
-        setScreen(
-            new LoadingScreen(this)
-        );
+        // O vídeo começa no primeiro quadro; o carregamento dos atlas segue
+        // em paralelo, sem uma segunda imagem de abertura antes dele.
+        setScreen(Boolean.getBoolean("echoes.spriteQa")
+            ? new LoadingScreen(this) : new IntroScreen(this));
     }
 
     @Override

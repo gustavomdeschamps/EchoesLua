@@ -12,6 +12,10 @@ public class ExpeditionBoss implements CombatTarget {
     public ExpeditionBoss(float health) { hp = hpMax = health; }
     @Override public float centerX() { return bounds.x + bounds.width / 2f; }
     @Override public float centerY() { return bounds.y + bounds.height / 2f; }
+    /** Broad torso/head target; the smaller feet collider is for navigation. */
+    public Rectangle shotBounds() {
+        return new Rectangle(centerX() - 85f, bounds.y + 13f, 170f, 186f);
+    }
     @Override public boolean isAlive() { return !mortoFinal; }
     @Override public boolean receiveDamage(float damage) {
         if (mortoFinal || damage <= 0f) return false;
@@ -22,5 +26,5 @@ public class ExpeditionBoss implements CombatTarget {
     public float getHp() { return hp; }
     public float getHpMax() { return hpMax; }
     public int getForma() { return forma; }
-    public float getSpeed() { return 70f; }
+    public float getSpeed() { return 88f; }
 }
