@@ -58,6 +58,7 @@ public final class PauseOverlay {
     private boolean quitRequested;
     private boolean resumeRequested;
     private boolean menuRequested;
+    private boolean sliderDragging;
     private final com.badlogic.gdx.math.Vector2 pointer = new com.badlogic.gdx.math.Vector2();
     public boolean consumeResumeRequested() { boolean value=resumeRequested;resumeRequested=false;return value; }
     public boolean consumeMenuRequested() { boolean value=menuRequested;menuRequested=false;return value; }
@@ -72,6 +73,7 @@ public final class PauseOverlay {
         elapsed = 0f;
         settingsOpen = false;
         resumeRequested=false; menuRequested=false; quitRequested=false;
+        sliderDragging=false;
     }
 
     public void setSettings(PauseSettingsModel model) { settings = model; }
@@ -94,17 +96,49 @@ public final class PauseOverlay {
      * em vez de despausar, e nenhuma tecla vaza para o gameplay.
      */
     public boolean handlePauseKeys() {
+        ui.unproject(pointer.set(Gdx.input.getX(), Gdx.input.getY()));
+        if (sliderDragging && settingsOpen && settings != null) {
+            if (Gdx.input.isButtonPressed(Input.Buttons.LEFT)) {
+                settings.setRatio(settings.getSelected(),
+                    (pointer.x - PANEL_X - 250f) / BAR_WIDTH);
+                return true;
+            }
+            sliderDragging = false;
+        }
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            ui.unproject(pointer.set(Gdx.input.getX(),Gdx.input.getY()));
-            if (pointer.y>=54 && pointer.y<=124) {
-                int index=(int)((pointer.x-PANEL_X)/280);
-                if(pointer.x>=PANEL_X && index<(settingsOpen?2:4)
-                    && pointer.x-PANEL_X-index*280<=264) {
-                    if(settingsOpen) { if(index==0)settingsOpen=false; else if(settings!=null)settings.activate(); return true; }
+            float actionY = 54f + rise(appear(DELAY_ACTIONS));
+            if (elapsed >= DELAY_ACTIONS && pointer.y >= actionY && pointer.y <= actionY + 70f
+                && pointer.x >= PANEL_X) {
+                int index=(int)((pointer.x-PANEL_X)/280f);
+                if(index >= 0 && index < (settingsOpen ? 2 : 4)
+                    && pointer.x-PANEL_X-index*280f <= 264f) {
+                    if(settingsOpen) {
+                        settingsOpen=false;
+                        if(index==1) resumeRequested=true;
+                        return true;
+                    }
                     if(index==0)resumeRequested=true;
                     if(index==1) {settingsOpen=true;return true;}
                     if(index==2)menuRequested=true;
                     if(index==3) {quitRequested=true;return true;}
+                    return true;
+                }
+            }
+            if (settingsOpen && settings != null) {
+                float firstLine = PANEL_Y + PANEL_HEIGHT - 78f + rise(appear(DELAY_PANEL));
+                for (int index = 0; index < settings.size(); index++) {
+                    float line = firstLine - index * 38f;
+                    if (pointer.x >= PANEL_X + 18f && pointer.x <= PANEL_X + PANEL_WIDTH - 18f
+                        && pointer.y >= line - 9f && pointer.y <= line + 21f) {
+                        settings.select(index);
+                        if (settings.kind(index) == PauseSettingsModel.Kind.SLIDER
+                            && pointer.x >= PANEL_X + 250f && pointer.x <= PANEL_X + 250f + BAR_WIDTH) {
+                            settings.setRatio(index, (pointer.x - PANEL_X - 250f) / BAR_WIDTH);
+                            sliderDragging = true;
+                        } else if (settings.kind(index) == PauseSettingsModel.Kind.TOGGLE)
+                            settings.activate();
+                        return true;
+                    }
                 }
             }
         }
@@ -228,7 +262,7 @@ public final class PauseOverlay {
         ui.beginText();
         ui.text("CONFIGURAÇÕES", .68f, fade(accent, progress),
             PANEL_X + 28f, PANEL_Y + PANEL_HEIGHT - 40f + lift);
-        ui.text("Setas navegam e ajustam  ·  ESC volta ao painel da missão",
+        ui.text("Clique ou arraste para ajustar  ·  ESC volta à pausa",
             .62f, fade(UiTheme.TEXT_MUTED, progress), PANEL_X + 28f, PANEL_Y + 30f + lift);
         ui.endText();
     }
@@ -266,13 +300,19 @@ public final class PauseOverlay {
         float y = 96f + rise(progress);
         ui.beginShapes();
         int count = settingsOpen ? 2 : 4;
-        for (int i=0;i<count;i++)
-            ui.patch(buttonPatch,PANEL_X+i*280f,y-42f,264f,70f,fade(Color.WHITE,progress));
+        ui.unproject(pointer.set(Gdx.input.getX(), Gdx.input.getY()));
+        for (int i=0;i<count;i++) {
+            float x = PANEL_X + i * 280f;
+            boolean hover = pointer.x >= x && pointer.x <= x + 264f
+                && pointer.y >= y - 42f && pointer.y <= y + 28f;
+            ui.patch(buttonPatch,x,y-42f,264f,70f,
+                fade(hover ? UiTheme.CYAN : Color.WHITE,progress));
+        }
         ui.endShapes();
         ui.beginText();
         if (settingsOpen) {
-            action("VOLTAR", "ESC", accent, progress, PANEL_X, y);
-            action("AJUSTAR", "SETAS", accent, progress, PANEL_X + 280f, y);
+            action("VOLTAR", "AO PAUSE", accent, progress, PANEL_X, y);
+            action("RETOMAR", "JOGO", accent, progress, PANEL_X + 280f, y);
         } else {
             action("RETOMAR", "ESC ou ENTER", accent, progress, PANEL_X, y);
             action("CONFIGURAÇÕES", "O", accent, progress, PANEL_X + 280f, y);

@@ -5,6 +5,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.MathUtils;
+import com.badlogic.gdx.math.Vector2;
 import com.orion.echoes.lua.managers.AssetManager;
 
 /**
@@ -32,6 +33,7 @@ public final class WorkshopInterior {
     private String title = "MÓDULO DE APOIO";
     private Actions actions;
     private float time;
+    private final Vector2 pointer = new Vector2();
 
     public WorkshopInterior(SpriteBatch batch, AssetManager assets) {
         this.ui = new TerminalUi(batch, assets);
@@ -52,6 +54,16 @@ public final class WorkshopInterior {
     public boolean handleInput(float delta) {
         if (!open) return false;
         time += Math.min(delta, 1f / 30f);
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            ui.unproject(pointer.set(Gdx.input.getX(), Gdx.input.getY()));
+            if (pointer.x >= 1080f && pointer.y >= 624f) { open = false; return true; }
+            if (actions != null && pointer.y >= 58f && pointer.y <= 145f) {
+                if (pointer.x >= 40f && pointer.x <= 384f) actions.recharge();
+                else if (pointer.x >= 466f && pointer.x <= 810f) actions.craft();
+                else if (pointer.x >= 892f && pointer.x <= 1236f) actions.processIce();
+                return true;
+            }
+        }
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)
                 || Gdx.input.isKeyJustPressed(Input.Keys.E)) {
             open = false;
@@ -73,6 +85,15 @@ public final class WorkshopInterior {
         ui.rect(0f, 624f, 1280f, 96f, HEADER_SHADE);
         ui.rect(0f, 0f, 1280f, 171f, FLOOR_SHADE);
         ui.rect(0f, 622f, 1280f, 2f, UiTheme.CYAN_DIM);
+        ui.unproject(pointer.set(Gdx.input.getX(), Gdx.input.getY()));
+        float[] actionX = {40f, 466f, 892f};
+        for (float x : actionX) {
+            boolean hover = pointer.x >= x && pointer.x <= x + 344f
+                && pointer.y >= 58f && pointer.y <= 145f;
+            ui.rect(x, 58f, 344f, 87f, hover ? UiTheme.SURFACE_STRONG : UiTheme.VOID);
+        }
+        ui.rect(1080f, 632f, 158f, 52f,
+            pointer.x >= 1080f && pointer.y >= 624f ? UiTheme.SURFACE_STRONG : UiTheme.VOID);
         ui.rect(426f, 28f, 1f, 124f, DIVIDER);
         ui.rect(852f, 28f, 1f, 124f, DIVIDER);
         ui.rect(40f, 139f, 344f, 3f, UiTheme.CYAN);
@@ -84,13 +105,13 @@ public final class WorkshopInterior {
         ui.beginText();
         ui.title(title, .78f, UiTheme.TEXT, 40f, 682f);
         ui.text("OFICINA PRESSURIZADA", .49f, UiTheme.CYAN, 42f, 645f);
-        ui.text("E / ESC  SAIR", .50f, UiTheme.TEXT_MUTED, 1110f, 651f);
+        ui.text("SAIR  ·  E / ESC", .50f, UiTheme.TEXT, 1092f, 651f);
         ui.text("SUPORTE DE VIDA", .61f, UiTheme.TEXT, 42f, 119f);
-        ui.text("R  REABASTECER", .54f, UiTheme.CYAN, 42f, 82f);
+        ui.text("REABASTECER  ·  R", .54f, UiTheme.CYAN, 42f, 82f);
         ui.text("BANCADA DE CAMPO", .61f, UiTheme.TEXT, 468f, 119f);
-        ui.text("F  FABRICAR", .54f, UiTheme.AMBER, 468f, 82f);
+        ui.text("FABRICAR  ·  F", .54f, UiTheme.AMBER, 468f, 82f);
         ui.text("PROCESSADOR CRIO", .61f, UiTheme.TEXT, 894f, 119f);
-        ui.text("G  PROCESSAR GELO", .54f, UiTheme.GREEN, 894f, 82f);
+        ui.text("PROCESSAR GELO  ·  G", .54f, UiTheme.GREEN, 894f, 82f);
         String status = actions == null ? "Sistemas aguardando operador." : actions.status();
         ui.textWrapped(status, .50f, UiTheme.TEXT_MUTED, 42f, 46f, 1180f);
         ui.endText();

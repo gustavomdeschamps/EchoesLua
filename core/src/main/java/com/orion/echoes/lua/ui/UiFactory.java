@@ -16,11 +16,14 @@ public final class UiFactory {
         Skin skin = new Skin();
         com.badlogic.gdx.graphics.g2d.BitmapFont copy = assets.createInterfaceFont(24, false);
         com.badlogic.gdx.graphics.g2d.BitmapFont heading = assets.createInterfaceFont(28, true);
+        com.badlogic.gdx.graphics.g2d.BitmapFont logo = assets.createInterfaceFont(62, true);
         skin.add("copy-owned", copy);
         skin.add("heading-owned", heading);
+        skin.add("logo-owned", logo);
         skin.add("default", new Label.LabelStyle(copy, UiTheme.TEXT));
         skin.add("muted", new Label.LabelStyle(copy, UiTheme.TEXT_MUTED));
         skin.add("title", new Label.LabelStyle(heading, UiTheme.TEXT));
+        skin.add("logo", new Label.LabelStyle(logo, UiTheme.TEXT));
         TextButton.TextButtonStyle button = new TextButton.TextButtonStyle();
         button.up = patch(assets.uiButtonNormalTexture, 18);
         button.over = patch(assets.uiButtonHoverTexture, 18);

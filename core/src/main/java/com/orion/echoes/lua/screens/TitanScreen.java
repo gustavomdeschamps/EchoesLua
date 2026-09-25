@@ -146,7 +146,7 @@ public final class TitanScreen implements Screen {
         new Wall(0f, WORLD_H, WORLD_W, 24f, physics);
         for (float[] formation : FORMACOES) {
             Rectangle draw = com.orion.echoes.lua.render.SpriteFit.fit(
-                assets.titanFormationRegion((int)formation[4]), formation[0], formation[1],
+                titanGroundRock((int)formation[4]), formation[0], formation[1],
                 formation[2], formation[3], new Rectangle());
             Rectangle footprint = new Rectangle(
                 draw.x + draw.width * .16f,
@@ -285,13 +285,21 @@ public final class TitanScreen implements Screen {
         }
         float cx = player.getPosition().x + GameConfig.PLAYER_WIDTH * .5f;
         float cy = player.getPosition().y + GameConfig.PLAYER_HEIGHT * .5f;
-        float radius = 325f;
+        // Três penumbras concêntricas dão queda de luz suave; uma máscara
+        // binária única deixava um disco recortado e degraus enormes no solo.
+        shadeOutside(cx, cy, 420f, .30f);
+        shadeOutside(cx, cy, 350f, .22f);
+        shadeOutside(cx, cy, 290f, .17f);
+        batch.setColor(Color.WHITE);
+    }
+
+    private void shadeOutside(float cx, float cy, float radius, float alpha) {
         float bottom = Math.max(0f, cy - radius);
         float top = Math.min(WORLD_H, cy + radius);
-        batch.setColor(0f, 0f, 0f, .57f);
+        batch.setColor(0f, 0f, 0f, alpha);
         if (bottom > 0f) batch.draw(assets.uiWhiteTexture, 0f, 0f, WORLD_W, bottom);
         if (top < WORLD_H) batch.draw(assets.uiWhiteTexture, 0f, top, WORLD_W, WORLD_H - top);
-        int bands = 40;
+        int bands = 192;
         float height = (top - bottom) / bands;
         for (int i = 0; i < bands; i++) {
             float y = bottom + i * height;
@@ -302,7 +310,6 @@ public final class TitanScreen implements Screen {
             if (left > 0f) batch.draw(assets.uiWhiteTexture, 0f, y, left, height);
             if (right < WORLD_W) batch.draw(assets.uiWhiteTexture, right, y, WORLD_W - right, height);
         }
-        batch.setColor(Color.WHITE);
     }
 
     private void update(float delta) {
@@ -487,7 +494,7 @@ public final class TitanScreen implements Screen {
         for (float[] pedra : FORMACOES) {
             // Frosted hydrocarbon rock, not the blue-white ice of Calisto.
             batch.setColor(.78f, .70f, .61f, 1f);
-            com.orion.echoes.lua.render.SpriteFit.draw(batch, assets.titanFormationRegion((int) pedra[4]),
+            com.orion.echoes.lua.render.SpriteFit.draw(batch, titanGroundRock((int) pedra[4]),
                 pedra[0], pedra[1], pedra[2], pedra[3]);
         }
         // As silhuetas ficam no alto: sao horizonte, nao obstaculo.
@@ -705,6 +712,16 @@ public final class TitanScreen implements Screen {
     private void prepareTitanKey() {
         titanKeyDropped = true;
         titanKeyPickup.set(boss.centerX() - 42f, boss.centerY() - 30f, 84f, 84f);
+    }
+
+    /** Usa as variantes de basalto/metano; as formações geladas ficam em Calisto. */
+    private com.badlogic.gdx.graphics.g2d.TextureRegion titanGroundRock(int index) {
+        int variant = switch (Math.floorMod(index, 3)) {
+            case 0 -> 0;
+            case 1 -> 3;
+            default -> 5;
+        };
+        return assets.titanFormationRegion(variant);
     }
 
     private void renderTitanKey(SpriteBatch batch) {
@@ -999,6 +1016,13 @@ public final class TitanScreen implements Screen {
     private PauseSettingsModel construirOpcoesDaPausa() {
         AppSettings settings = game.getSettings();
         return new PauseSettingsModel()
+            .addSlider("Geral", new PauseSettingsModel.FloatAccessor() {
+                @Override public float get() { return settings.getMasterVolume(); }
+                @Override public void set(float value) {
+                    settings.setMasterVolume(value);
+                    game.aplicarPreferenciasDeAudio();
+                }
+            })
             .addSlider("Música", new PauseSettingsModel.FloatAccessor() {
                 @Override public float get() { return settings.getMusicVolume(); }
                 @Override public void set(float value) {

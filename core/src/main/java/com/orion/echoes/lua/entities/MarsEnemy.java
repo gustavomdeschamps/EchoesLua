@@ -24,6 +24,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
     private final float worldWidth, worldHeight;
     private State state = State.CHASE;
     private float hp = 3f, elapsed, stateTime, damageCooldown;
+    private float movementMultiplier = 1f;
     private boolean facingLeft, telegraphStarted;
 
     public MarsEnemy(float x, float y, boolean drone, AssetManager assets,
@@ -41,6 +42,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
     }
 
     public void update(float delta, Astronauta target, Array<MarsObject> rocks) {
+        movementMultiplier = target.getDifficulty().enemySpeedMultiplier();
         elapsed += delta;
         stateTime += delta;
         damageCooldown = Math.max(0f, damageCooldown - delta);
@@ -78,7 +80,7 @@ public final class MarsEnemy extends Entidade implements CombatTarget {
     }
 
     private void move(float dx, float dy, float delta, Array<MarsObject> rocks) {
-        float speed = drone ? 86f : 68f;
+        float speed = (drone ? 86f : 68f) * movementMultiplier;
         float nextX = MathUtils.clamp(position.x + dx * speed * delta, 0f, worldWidth - width);
         if (free(nextX, position.y, rocks)) position.x = nextX;
         float nextY = MathUtils.clamp(position.y + dy * speed * delta, 0f, worldHeight - height);

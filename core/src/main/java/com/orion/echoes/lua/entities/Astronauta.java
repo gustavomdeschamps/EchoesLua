@@ -23,6 +23,10 @@ public class Astronauta extends Entidade implements Interagivel {
     public String getDifficultyLabel() {
         return inventario == null ? "NORMAL" : inventario.getDifficulty().label();
     }
+    public com.orion.echoes.lua.systems.Inventario.Difficulty getDifficulty() {
+        return inventario == null ? com.orion.echoes.lua.systems.Inventario.Difficulty.NORMAL
+            : inventario.getDifficulty();
+    }
     public void applyFreeze(float seconds) { frozenTimer = Math.max(frozenTimer, Math.max(0f, seconds)); }
     public float getFreezeRemaining() { return frozenTimer; }
     public void guardarComida() {
@@ -161,10 +165,11 @@ public class Astronauta extends Entidade implements Interagivel {
             }
         }
         weaponSprite = AtlasSpriteFactory.create(assets.pulseRifleTexture);
-        float weaponHeight = 62f * AtlasRegionRenderer.originalHeight(assets.pulseRifleTexture)
+        float weaponHeight = 48f * AtlasRegionRenderer.originalHeight(assets.pulseRifleTexture)
             / AtlasRegionRenderer.originalWidth(assets.pulseRifleTexture);
-        weaponSprite.setSize(62f, weaponHeight);
-        weaponSprite.setOrigin(13f, weaponHeight * .5f);
+        weaponSprite.setSize(48f, weaponHeight);
+        // A empunhadura está a ~29% do comprimento da arte, não no início da coronha.
+        weaponSprite.setOrigin(14f, weaponHeight * .5f);
 
         // ======================================
         // POSIÇÃO
@@ -334,6 +339,7 @@ public class Astronauta extends Entidade implements Interagivel {
 
             oxigenio -=
                 GameConfig.OXYGEN_CONSUMPTION
+                    * getDifficulty().oxygenMultiplier()
                     * delta;
         }
 
@@ -415,7 +421,7 @@ public class Astronauta extends Entidade implements Interagivel {
     private void drawWeapon(SpriteBatch batch) {
         float centerX = WeaponGeometry.gripX(position.x);
         float centerY = WeaponGeometry.gripY(position.y);
-        float recoil = recoilTimer > 0f ? recoilTimer / .12f * 5f : 0f;
+        float recoil = recoilTimer > 0f ? recoilTimer / .12f * 3f : 0f;
         float radians = aimAngle * MathUtils.degreesToRadians;
         weaponSprite.setPosition(centerX - weaponSprite.getOriginX() - MathUtils.cos(radians) * recoil,
             centerY - weaponSprite.getOriginY() - MathUtils.sin(radians) * recoil);

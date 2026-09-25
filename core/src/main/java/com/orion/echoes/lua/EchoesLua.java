@@ -5,6 +5,7 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.Cursor;
 import com.badlogic.gdx.graphics.Pixmap;
+import com.badlogic.gdx.graphics.Color;
 
 import com.orion.echoes.lua.managers.AssetManager;
 import com.orion.echoes.lua.managers.SoundManager;
@@ -117,22 +118,44 @@ public class EchoesLua extends Game {
         }
     }
 
-    /** Instala os dois cursores autorais fornecidos pelo pacote final. */
+    /** Retículo de 24 px, com ponto de impacto exatamente no hotspot central. */
     public void installCustomCursors() {
         disposeCursors();
+        Pixmap normal = null;
+        Pixmap target = null;
         try {
-            Pixmap normal = new Pixmap(Gdx.files.internal("textures/ui/cursor_default.png"));
-            Pixmap target = new Pixmap(Gdx.files.internal("textures/ui/cursor_target.png"));
+            normal = new Pixmap(Gdx.files.internal("textures/ui/cursor_default.png"));
+            target = createTargetReticle();
             defaultCursor = Gdx.graphics.newCursor(normal, 3, 3);
-            targetCursor = Gdx.graphics.newCursor(target, 16, 16);
-            normal.dispose();
-            target.dispose();
+            targetCursor = Gdx.graphics.newCursor(target, 12, 12);
             useDefaultCursor();
         } catch (RuntimeException unsupported) {
             // Algumas plataformas não aceitam cursor customizado; o jogo deve
             // continuar funcional com o cursor nativo.
             disposeCursors();
+        } finally {
+            if (normal != null) normal.dispose();
+            if (target != null) target.dispose();
         }
+    }
+
+    private static Pixmap createTargetReticle() {
+        Pixmap pixmap = new Pixmap(24, 24, Pixmap.Format.RGBA8888);
+        pixmap.setColor(0f, 0f, 0f, 0f);
+        pixmap.fill();
+        // A borda escura mantém a leitura sobre gelo e sobre céu estrelado.
+        pixmap.setColor(.015f, .04f, .06f, .9f);
+        pixmap.fillRectangle(10, 2, 4, 7);
+        pixmap.fillRectangle(10, 15, 4, 7);
+        pixmap.fillRectangle(2, 10, 7, 4);
+        pixmap.fillRectangle(15, 10, 7, 4);
+        pixmap.setColor(Color.valueOf("A9DCF0"));
+        pixmap.drawLine(11, 3, 11, 8);
+        pixmap.drawLine(11, 15, 11, 20);
+        pixmap.drawLine(3, 11, 8, 11);
+        pixmap.drawLine(15, 11, 20, 11);
+        pixmap.fillRectangle(11, 11, 2, 2);
+        return pixmap;
     }
 
     public void useDefaultCursor() {

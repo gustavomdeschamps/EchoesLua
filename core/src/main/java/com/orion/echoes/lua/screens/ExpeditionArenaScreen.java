@@ -44,8 +44,9 @@ abstract class ExpeditionArenaScreen implements Screen {
     /** Area de uso da estacao: generosa, mas ancorada na propria estrutura. */
     private static final Rectangle SUPPLY_REACH = new Rectangle(40f,50f,260f,215f);
     // Measured from each frame's opaque foot baseline, not its square cell.
-    private static final int[] LUNAR_FOOT_OFFSETS = {0, 0, 0, 0};
-    private static final int[] MARS_FOOT_OFFSETS = {0, -20, 20, 0};
+    // Coordenada do último pixel opaco em cada pose da folha 543×724.
+    private static final int[] LUNAR_FOOT_BOTTOM = {612, 724, 700, 611};
+    private static final int[] MARS_FOOT_BOTTOM = {724, 724, 706, 706};
 
     protected final EchoesLua game;
     protected final CampaignState campaign;
@@ -66,8 +67,8 @@ abstract class ExpeditionArenaScreen implements Screen {
     private WorkshopInterior workshop;
     private com.orion.echoes.lua.managers.ParticleManager particles;
     private float time, cooldown, windup, recovery, shotTimer, mutationFlash, dashClock = 3f;
-    private float poseTransition;
-    private int displayedPose, previousPose;
+    private float bossTravel, bossMovingTimer, bossHitFlash;
+    private int displayedPose;
     private float startMissionTime, messageTimer;
     private boolean paused, rewarded, keyDropped, leaving;
     private String message = "";
@@ -190,8 +191,8 @@ abstract class ExpeditionArenaScreen implements Screen {
     private TextureRegion rockRegion(float[] rock) {
         int index = (int)(rock[0] * 7f + rock[1]) % 3;
         return switch (dressing) {
-            case MARS -> game.getAssets().marsObstacleRegion(index + 3);
-            case CALLISTO -> game.getAssets().titanFormationRegion(index);
+            case MARS -> game.getAssets().marsObstacleRegion(index);
+            case CALLISTO -> game.getAssets().titanFormationRegion(index == 0 ? 1 : index == 1 ? 2 : 4);
             case LUNAR -> game.getAssets().lunarObstacleRegion(index);
         };
     }
@@ -224,17 +225,22 @@ abstract class ExpeditionArenaScreen implements Screen {
     private void drawHud() {
         Inventario inventory = campaign.getInventario();
         boolean bossVisible = boss.isAlive() && !rewarded;
+        // O estado vital ocupa apenas um canto; muda de altura quando o
+        // astronauta se aproxima, sem tapar o personagem na arena.
+        float vitalsX = 24f;
+        float vitalsY = player.getPosition().x < 440f && player.getPosition().y > 430f
+            ? 18f : 468f;
         ui.beginShapes();
-        ui.panel(24f,616f,862f,86f,UiTheme.CYAN);
-        ui.panel(24f,430f,398f,150f,UiTheme.CYAN);
-        ui.rect(162f,536f,170f,8f,UiTheme.TRACK);
-        ui.rect(162f,536f,170f * MathUtils.clamp(player.getOxigenio()/100f,0f,1f),8f,UiTheme.CYAN);
-        ui.rect(162f,503f,170f,8f,UiTheme.TRACK);
-        ui.rect(162f,503f,170f * MathUtils.clamp(player.getEnergia()/100f,0f,1f),8f,UiTheme.AMBER);
+        ui.panel(24f,620f,426f,82f,UiTheme.CYAN);
+        ui.panel(vitalsX,vitalsY,398f,108f,UiTheme.CYAN);
+        ui.rect(vitalsX+136f,vitalsY+74f,188f,7f,UiTheme.TRACK);
+        ui.rect(vitalsX+136f,vitalsY+74f,188f * MathUtils.clamp(player.getOxigenio()/100f,0f,1f),7f,UiTheme.CYAN);
+        ui.rect(vitalsX+136f,vitalsY+48f,188f,7f,UiTheme.TRACK);
+        ui.rect(vitalsX+136f,vitalsY+48f,188f * MathUtils.clamp(player.getEnergia()/100f,0f,1f),7f,UiTheme.AMBER);
         if (bossVisible) {
-            ui.panel(906f,600f,350f,102f,UiTheme.RED);
-            ui.rect(926f,618f,310f,12f,UiTheme.TRACK);
-            ui.rect(926f,618f,310f * MathUtils.clamp(boss.getHp()/boss.getHpMax(),0f,1f),12f,UiTheme.RED);
+            ui.panel(468f,620f,430f,82f,UiTheme.RED);
+            ui.rect(484f,635f,398f,9f,UiTheme.TRACK);
+            ui.rect(484f,635f,398f * MathUtils.clamp(boss.getHp()/boss.getHpMax(),0f,1f),9f,UiTheme.RED);
         }
         ui.panel(1064f,372f,196f,50f,rewarded ? UiTheme.GREEN : UiTheme.RED);
         if (messageTimer > 0f) ui.panel(440f,18f,816f,72f,UiTheme.CYAN_DIM);
@@ -242,27 +248,27 @@ abstract class ExpeditionArenaScreen implements Screen {
 
         ui.beginText();
         if (bossVisible) {
-            ui.text(name(), .62f, UiTheme.TEXT, 926f, 686f);
+            ui.text(name(), .57f, UiTheme.TEXT, 484f, 682f);
             ui.text(phase == CampaignState.Phase.CALLISTO ? "FORMA " + boss.getForma() + " / 3" : "CHEFE DA FASE",
-                .52f, UiTheme.TEXT_MUTED, 926f, 654f);
+                .46f, UiTheme.TEXT_MUTED, 484f, 660f);
             ui.text("HP " + (int)Math.ceil(boss.getHp()) + " / " + (int)boss.getHpMax(),
-                .52f, UiTheme.TEXT, 1090f, 654f);
+                .46f, UiTheme.TEXT, 772f, 660f);
         }
         ui.textWrapped(rewarded ? "Chave conquistada. Leve-a ao portal leste."
             : keyDropped ? "A chave caiu na arena. Aproxime-se para recolhê-la."
             : bossObjective(),
-            .64f, UiTheme.TEXT, 40f, 674f, 820f);
-        ui.textWrapped(campaign.missaoAtual(), .56f, UiTheme.TEXT_MUTED, 40f, 642f, 820f);
+            .53f, UiTheme.TEXT, 40f, 680f, 394f);
+        ui.textWrapped(campaign.missaoAtual(), .43f, UiTheme.TEXT_MUTED, 40f, 645f, 394f);
 
-        ui.text("OXIGÊNIO", .52f, UiTheme.TEXT, 42f, 555f);
-        ui.text((int)player.getOxigenio() + "%", .50f, UiTheme.CYAN, 344f, 555f);
-        ui.text("ENERGIA", .52f, UiTheme.TEXT, 42f, 522f);
-        ui.text((int)player.getEnergia() + "%", .50f, UiTheme.AMBER, 344f, 522f);
+        ui.text("OXIGÊNIO", .49f, UiTheme.TEXT, vitalsX+16f, vitalsY+83f);
+        ui.text((int)player.getOxigenio() + "%", .46f, UiTheme.CYAN, vitalsX+336f, vitalsY+83f);
+        ui.text("ENERGIA", .49f, UiTheme.TEXT, vitalsX+16f, vitalsY+57f);
+        ui.text((int)player.getEnergia() + "%", .46f, UiTheme.AMBER, vitalsX+336f, vitalsY+57f);
         ui.text("MUNIÇÃO  " + player.getMunicao() + " / " + com.orion.echoes.lua.config.GameConfig.AMMO_MAX
                 + "  ·  RESERVA " + inventory.getReserveAmmo(),
-            .52f, player.getMunicao() <= 3 ? UiTheme.RED : UiTheme.TEXT, 42f, 489f);
+            .46f, player.getMunicao() <= 3 ? UiTheme.RED : UiTheme.TEXT, vitalsX+16f, vitalsY+32f);
         ui.text("GELO " + player.getGelo() + "  ·  DIF: " + inventory.getDifficulty().label(),
-            .48f, UiTheme.TEXT_MUTED, 42f, 456f);
+            .42f, UiTheme.TEXT_MUTED, vitalsX+16f, vitalsY+21f);
 
         ui.centered(rewarded ? "PORTAL ONLINE" : "PORTAL BLOQUEADO", .56f,
             rewarded ? UiTheme.GREEN : UiTheme.RED, 1162f, 390f);
@@ -277,7 +283,8 @@ abstract class ExpeditionArenaScreen implements Screen {
     private void update(float delta) {
         time += delta; cooldown = Math.max(0f,cooldown-delta); recovery = Math.max(0f,recovery-delta);
         shotTimer = Math.max(0f,shotTimer-delta); mutationFlash = Math.max(0f,mutationFlash-delta);
-        poseTransition = Math.max(0f, poseTransition-delta);
+        bossMovingTimer = Math.max(0f,bossMovingTimer-delta);
+        bossHitFlash = Math.max(0f,bossHitFlash-delta);
         messageTimer = Math.max(0f,messageTimer-delta);
         float dx = (Gdx.input.isKeyPressed(Input.Keys.D)||Gdx.input.isKeyPressed(Input.Keys.RIGHT)?1f:0f)
             -(Gdx.input.isKeyPressed(Input.Keys.A)||Gdx.input.isKeyPressed(Input.Keys.LEFT)?1f:0f);
@@ -416,7 +423,8 @@ abstract class ExpeditionArenaScreen implements Screen {
         }
         aim.sub(boss.centerX(),boss.centerY()).nor();
         // Fecha distância fora do alcance do golpe, sem encurtar o aviso de ataque.
-        float speed = boss.getSpeed() * (distance > 230f ? 1.15f : 1f);
+        float speed = boss.getSpeed() * campaign.getInventario().getDifficulty().enemySpeedMultiplier()
+            * (distance > 230f ? 1.15f : 1f);
         dashClock -= delta;
         if (boss.getForma()==3 && dashClock<.22f && dashClock>0f) speed *= 2.3f;
         if (dashClock<=0f) dashClock=phase == CampaignState.Phase.CALLISTO ? 2.65f : 3f;
@@ -432,6 +440,7 @@ abstract class ExpeditionArenaScreen implements Screen {
      * sistema de fisica.
      */
     private void moveBoss(float dx,float dy) {
+        float oldX = boss.bounds.x, oldY = boss.bounds.y;
         int steps = 1 + (int)(Math.max(Math.abs(dx),Math.abs(dy)) / 8f);
         float stepX = dx/steps, stepY = dy/steps;
         for (int i=0;i<steps;i++) {
@@ -439,6 +448,11 @@ abstract class ExpeditionArenaScreen implements Screen {
             if (free()) boss.bounds.x=MathUtils.clamp(boss.bounds.x+stepX,25f,1150f);
             movement.set(boss.bounds.x,boss.bounds.y+stepY,boss.bounds.width,boss.bounds.height);
             if (free()) boss.bounds.y=MathUtils.clamp(boss.bounds.y+stepY,25f,565f);
+        }
+        float travelled = Vector2.dst(oldX,oldY,boss.bounds.x,boss.bounds.y);
+        if (travelled > .01f) {
+            bossTravel += travelled;
+            bossMovingTimer = .14f;
         }
     }
 
@@ -463,6 +477,7 @@ abstract class ExpeditionArenaScreen implements Screen {
         shotEnd.set(shot.x+rayX*distance,shot.y+rayY*distance);
         if (bossHit < wallHit && bossHit <= range) {
             int previous = boss.getForma(); boss.receiveDamage(campaign.getInventario().getDano());
+            bossHitFlash = .10f;
             particles.criarImpactoTiro(shotEnd.x,shotEnd.y);
             if (boss.getForma()!=previous) {
                 mutationFlash=1.25f; windup=0f; recovery=1.25f;
@@ -512,14 +527,24 @@ abstract class ExpeditionArenaScreen implements Screen {
             batch.setColor(Color.WHITE);
         }
         int pose = windup>0f ? 1 : recovery>.52f ? 2 : recovery>0f ? 3 : 0;
-        if (pose != displayedPose) {
-            previousPose = displayedPose; displayedPose = pose; poseTransition = .14f;
-        }
-        float breath = displayedPose == 0 ? MathUtils.sin(time*2.4f)*.012f : 0f;
-        float size = (dressing == Dressing.CALLISTO ? 210f + (boss.getForma()-1)*34f : 252f) * (1f+breath);
-        float drawX = boss.centerX()-size/2f;
-        float stride = displayedPose == 0 ? Math.abs(MathUtils.sin(time * 7f)) * 2.5f : 0f;
-        float drawY = boss.bounds.y-size*.07f + stride + bossPoseOffset(displayedPose, size);
+        displayedPose = pose;
+        float size = dressing == Dressing.CALLISTO ? 210f + (boss.getForma()-1)*34f : 252f;
+        TextureRegion frame = bossFrame(displayedPose);
+        float scale = size / frame.getRegionWidth();
+        float drawHeight = frame.getRegionHeight() * scale;
+        boolean reducedMotion = game.getSettings().isReduceMotion();
+        float step = bossMovingTimer > 0f && !reducedMotion ? MathUtils.sin(bossTravel * .085f) : 0f;
+        // A massa comprime antes do ataque e recupera depois. O pé opaco
+        // continua preso ao chão; nenhuma dessas transformações altera colisão.
+        float widthScale = windup > 0f ? 1.055f : recovery > .52f ? .96f : 1f;
+        float heightScale = windup > 0f ? .92f : recovery > .52f ? 1.045f : 1f;
+        if (!reducedMotion && windup <= 0f && recovery <= 0f)
+            heightScale += MathUtils.sin(time * 2.4f) * .007f;
+        float drawWidth = size * widthScale;
+        float spriteHeight = drawHeight * heightScale;
+        float drawX = boss.centerX() - drawWidth / 2f + step * 2.2f;
+        float drawY = boss.bounds.y - bossFootPadding(displayedPose) * scale * heightScale
+            + Math.abs(step) * (reducedMotion ? 0f : 2.5f);
 
         // Sombra de apoio em faixas, para assentar a figura no chao sem virar
         // um retangulo solido embaixo do chefe.
@@ -532,20 +557,20 @@ abstract class ExpeditionArenaScreen implements Screen {
 
         // No cross-fade between different silhouettes: overlapping limbs looked like a glitch.
         if (mutationFlash>0f) batch.setColor(1f,1f,1f,.55f+MathUtils.sin(time*6f)*.15f);
+        else if (bossHitFlash > 0f) batch.setColor(1f,.79f,.68f,1f);
         else { Color base=bossTint(); batch.setColor(base.r,base.g,base.b,1f); }
-        AtlasRegionRenderer.draw(batch,bossFrame(displayedPose),drawX,drawY,size,size);
+        AtlasRegionRenderer.draw(batch,frame,drawX,drawY,drawWidth,spriteHeight);
         batch.setColor(Color.WHITE);
     }
 
-    /** Corrige a diferença de linha de chão entre os quatro quadros entregues. */
-    private float bossPoseOffset(int pose, float size) {
+    /** Distância da borda da textura ao pé opaco, sempre na escala da fonte. */
+    private int bossFootPadding(int pose) {
         int index = MathUtils.clamp(pose, 0, 3);
-        int baseline = switch (dressing) {
-            case LUNAR -> LUNAR_FOOT_OFFSETS[index];
-            case MARS -> MARS_FOOT_OFFSETS[index];
-            case CALLISTO -> 0;
+        return switch (dressing) {
+            case LUNAR -> 724 - LUNAR_FOOT_BOTTOM[index];
+            case MARS -> 724 - MARS_FOOT_BOTTOM[index];
+            case CALLISTO -> 40;
         };
-        return baseline * size / 384f;
     }
 
     private TextureRegion bossFrame(int pose) {

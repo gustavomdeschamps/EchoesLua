@@ -27,6 +27,7 @@ public final class ExpeditionOverlay {
     }
 
     private static final Color SCRIM = new Color(0f, 0f, 0f, .74f);
+    private static final Color MAP_LABEL_BACK = new Color(.015f, .025f, .04f, .72f);
 
     private final EchoesLua game;
     private final Astronauta player;
@@ -34,6 +35,7 @@ public final class ExpeditionOverlay {
     private final TextureRegion starChart;
     private final TextureRegion playerPortrait;
     private final TextureRegion mapAstronaut;
+    private final TextureRegion energyCellRegion;
     private static final float[] ROUTE_X = {213f, 410f, 640f, 842f, 1070f};
     private static final float[] ROUTE_Y = {353f, 353f, 353f, 353f, 353f};
     private final Vector2 pointer = new Vector2();
@@ -42,6 +44,7 @@ public final class ExpeditionOverlay {
     private float dragStartX, dragStartY, mapTime;
     private final Color mapSignal = new Color(.37f, .76f, .98f, 1f);
     private int panel; // 0 closed, 1 inventory, 2 map, 3 bestiary
+    private Stop selectedStop;
     private String message = "";
     private float messageTimer;
 
@@ -51,7 +54,9 @@ public final class ExpeditionOverlay {
         ui = new TerminalUi(game.getBatch(), game.getAssets());
         starChart = new TextureRegion(game.getAssets().expeditionStarChartTexture);
         playerPortrait = new TextureRegion(game.getAssets().playerPortraitTexture);
-        mapAstronaut = game.getAssets().astronautFrame(0, 0);
+        mapAstronaut = new TextureRegion(game.getAssets().mapMarkerTexture);
+        energyCellRegion = new TextureRegion(game.getAssets().energyCellIconTexture);
+        selectedStop = currentStop(game.getCampaign());
         ui.resize(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
     }
 
@@ -64,7 +69,7 @@ public final class ExpeditionOverlay {
      */
     public boolean handleInput() {
         boolean wasOpen = panel != 0;
-        if (Gdx.input.isKeyJustPressed(Input.Keys.I)) panel = panel == 1 ? 0 : 1;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.I)) panel = panel == 0 ? 1 : 0;
         if (Gdx.input.isKeyJustPressed(Input.Keys.M)) panel = panel == 2 ? 0 : 2;
         if (Gdx.input.isKeyJustPressed(Input.Keys.B)) panel = panel == 3 ? 0 : 3;
         if (panel != 0 && Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) panel = 0;
@@ -74,9 +79,34 @@ public final class ExpeditionOverlay {
         }
         player.getBody().setLinearVelocity(0f, 0f);
         Inventario inventory = game.getCampaign().getInventario();
+        pointer.set(Gdx.input.getX(), Gdx.input.getY());
+        ui.unproject(pointer);
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            if (pointer.y >= 598f && pointer.y <= 642f && pointer.x >= 794f && pointer.x <= 1154f) {
+                panel = 1 + Math.min(2, (int)((pointer.x - 794f) / 120f));
+                dragSource = -1; dragging = false; leftDownLastFrame = false;
+                return true;
+            }
+            if (pointer.y >= 64f && pointer.y <= 110f) {
+                if (pointer.x >= 128f && pointer.x <= 260f) {
+                    panel = 0; dragSource = -1; dragging = false; leftDownLastFrame = false;
+                    return true;
+                }
+                if (panel == 1 && pointer.x >= 278f && pointer.x <= 510f) {
+                    consumeFood(inventory);
+                    return true;
+                }
+            }
+            if (panel == 2 && pointer.y >= 220f && pointer.y <= 530f) {
+                for (int i = 0; i < Stop.values().length; i++) {
+                    if (Math.abs(pointer.x - ROUTE_X[i]) < 86f) {
+                        selectedStop = Stop.values()[i];
+                        return true;
+                    }
+                }
+            }
+        }
         if (panel == 1) {
-            pointer.set(Gdx.input.getX(), Gdx.input.getY());
-            ui.unproject(pointer);
             boolean down = Gdx.input.isButtonPressed(Input.Buttons.LEFT);
             if (down && !leftDownLastFrame) {
                 int slot = slotAt(pointer.x, pointer.y);
@@ -98,16 +128,18 @@ public final class ExpeditionOverlay {
         } else {
             dragSource = -1; dragging = false; leftDownLastFrame = false;
         }
-        if (panel == 1 && Gdx.input.isKeyJustPressed(Input.Keys.C)) {
-            boolean full = player.getOxigenio() >= 99.5f && player.getEnergia() >= 99.5f;
-            if (full) note("Traje e fôlego já estão no máximo. A ração foi preservada.");
-            else if (inventory.consumirComida()) {
-                player.recuperarEnergia(30f); player.recuperarOxigenio(20f);
-                note("Ração consumida. Energia e oxigênio recuperados.");
-                game.getSounds().tocarComida();
-            } else note("Nenhuma ração na mochila.");
-        }
+        if (panel == 1 && Gdx.input.isKeyJustPressed(Input.Keys.C)) consumeFood(inventory);
         return true;
+    }
+
+    private void consumeFood(Inventario inventory) {
+        boolean full = player.getOxigenio() >= 99.5f && player.getEnergia() >= 99.5f;
+        if (full) note("Traje e fôlego já estão no máximo. A ração foi preservada.");
+        else if (inventory.consumirComida()) {
+            player.recuperarEnergia(30f); player.recuperarOxigenio(20f);
+            note("Ração consumida. Energia e oxigênio recuperados.");
+            game.getSounds().tocarComida();
+        } else note("Nenhuma ração na mochila.");
     }
 
     private void note(String text) { message = text; messageTimer = 4f; }
@@ -120,21 +152,32 @@ public final class ExpeditionOverlay {
         ui.beginShapes();
         ui.rect(0f, 0f, 1280f, 720f, SCRIM);
         ui.panel(92f, 52f, 1096f, 616f, UiTheme.CYAN);
+        for (int index = 0; index < 3; index++)
+            ui.rect(794f + index * 120f, 598f, 112f, 44f,
+                panel == index + 1 ? UiTheme.SURFACE_STRONG : UiTheme.VOID);
+        ui.rect(128f, 64f, 132f, 46f, UiTheme.SURFACE_STRONG);
+        if (panel == 1) ui.rect(278f, 64f, 232f, 46f, UiTheme.SURFACE_STRONG);
         if (panel == 2) {
-            ui.sprite(starChart, 108f, 150f, 1064f, 440f, Color.WHITE);
+            // A proporção da carta (1891:831) é preservada nesta área útil.
+            ui.sprite(starChart, 108f, 125f, 1064f, 467f, Color.WHITE);
             drawRouteShapes(campaign);
+            ui.rect(122f, 133f, 1036f, 57f, MAP_LABEL_BACK);
         } else if (panel == 1) drawBackpackShapes();
         else drawBestiaryShapes(campaign);
         ui.endShapes();
         ui.beginText();
-        ui.title(panel == 1 ? "MOCHILA DA EXPEDIÇÃO" : panel == 2 ? "ATLAS DA EXPEDIÇÃO"
-            : "BESTIÁRIO DA EXPEDIÇÃO", .92f, UiTheme.TEXT, 130f, 620f);
+        ui.title("CENTRAL DA EXPEDIÇÃO", .92f, UiTheme.TEXT, 130f, 620f);
+        ui.text("MOCHILA", .45f, panel == 1 ? UiTheme.CYAN : UiTheme.TEXT_MUTED, 804f, 625f);
+        ui.text("ATLAS", .45f, panel == 2 ? UiTheme.CYAN : UiTheme.TEXT_MUTED, 942f, 625f);
+        ui.text("BESTIÁRIO", .45f, panel == 3 ? UiTheme.CYAN : UiTheme.TEXT_MUTED, 1039f, 625f);
         if (panel == 1) drawBackpack(campaign);
         else if (panel == 2) drawRouteText(campaign);
         else drawBestiary(campaign);
-        ui.text(panel == 1 ? "I  FECHAR    ·    C  CONSUMIR RAÇÃO    ·    ARRASTE PARA ORGANIZAR"
-                : panel == 2 ? "M  FECHAR" : "B  FECHAR",
-            .52f, UiTheme.TEXT_MUTED, 132f, 85f);
+        ui.text("FECHAR", .52f, UiTheme.TEXT, 156f, 92f);
+        if (panel == 1) {
+            ui.text("CONSUMIR RAÇÃO", .49f, UiTheme.GREEN, 291f, 92f);
+            ui.text("ARRASTE PARA ORGANIZAR", .50f, UiTheme.TEXT_MUTED, 858f, 91f);
+        }
         ui.endText();
     }
 
@@ -165,7 +208,7 @@ public final class ExpeditionOverlay {
     private TextureRegion itemArt(int item) {
         return switch (item) {
             case 1 -> game.getAssets().resourceIcon(1);
-            case 2 -> game.getAssets().resourceIcon(3);
+            case 2 -> energyCellRegion;
             case 3 -> game.getAssets().resourceIcon(2);
             case 4 -> game.getAssets().pulseRifleTexture;
             case 5, 6, 7, 8 -> game.getAssets().bossKeyFrame(item - 5);
@@ -249,6 +292,10 @@ public final class ExpeditionOverlay {
         for (int i = 0; i < stops.length; i++) {
             float x = ROUTE_X[i], y = ROUTE_Y[i];
             boolean here = stops[i].phase == campaign.getPhase();
+            ui.rect(x - 78f, y - 143f, 156f, 60f, MAP_LABEL_BACK);
+            if (stops[i] == selectedStop) {
+                ui.line(x - 46f, y - 151f, x + 46f, y - 151f, 2f, UiTheme.CYAN);
+            }
             if (here) {
                 boolean reduced = game.getSettings().isReduceMotion();
                 float bob = reduced ? 0f : com.badlogic.gdx.math.MathUtils.sin(mapTime * 2.6f) * 3f;
@@ -265,14 +312,19 @@ public final class ExpeditionOverlay {
             float x = ROUTE_X[i], y = ROUTE_Y[i];
             boolean here = stops[i].phase == campaign.getPhase();
             boolean open = unlocked(campaign, stops[i]);
-            ui.centered(stops[i].name, here ? .62f : .54f,
+            ui.centered(stops[i].name, here ? .68f : .62f,
                 here ? UiTheme.CYAN : open ? UiTheme.TEXT : UiTheme.TEXT_MUTED, x, y-110f);
-            ui.centered(here ? "VOCÊ ESTÁ AQUI" : open ? "COLÔNIA ABERTA" : "SINAL BLOQUEADO", .37f,
+            ui.centered(here ? "VOCÊ ESTÁ AQUI" : open ? "COLÔNIA ABERTA" : "SINAL BLOQUEADO", .42f,
                 here ? UiTheme.CYAN : open ? UiTheme.CYAN : UiTheme.RED, x, y-131f);
         }
-        Stop current = currentStop(campaign);
-        ui.text("DESTINO ATUAL   /   " + current.name, .58f, UiTheme.TEXT, 136f, 133f);
-        ui.textWrapped(campaign.missaoAtual(), .48f, UiTheme.TEXT_MUTED, 136f, 111f, 1010f);
+        Stop focus = selectedStop == null ? currentStop(campaign) : selectedStop;
+        boolean here = focus.phase == campaign.getPhase();
+        ui.text((here ? "VOCÊ ESTÁ EM   /   " : "DESTINO   /   ") + focus.name,
+            .62f, UiTheme.TEXT, 136f, 169f);
+        String detail = here ? campaign.missaoAtual()
+            : unlocked(campaign, focus) ? focus.hint + "  ·  Travessia liberada"
+            : focus.hint + "  ·  Conquiste a chave anterior para acessar";
+        ui.textWrapped(detail, .53f, UiTheme.TEXT_MUTED, 136f, 145f, 1010f);
     }
 
     private Stop currentStop(CampaignState campaign) {
@@ -289,9 +341,23 @@ public final class ExpeditionOverlay {
             CampaignState.Phase.TITAN, CampaignState.Phase.CALLISTO};
         for (int i = 0; i < phases.length; i++) {
             float y = 488f - i * 97f;
+            boolean defeated = campaign.isBossDefeated(phases[i]);
             ui.rect(130f, y - 43f, 1016f, 82f, UiTheme.SURFACE_STRONG);
             ui.rect(130f, y - 43f, 5f, 82f,
-                campaign.isBossDefeated(phases[i]) ? UiTheme.CYAN : UiTheme.TRACK);
+                defeated ? UiTheme.CYAN : UiTheme.TRACK);
+            TextureRegion art = switch (phases[i]) {
+                case LUNAR -> game.getAssets().lunarBossFrame(0);
+                case MARS -> game.getAssets().marsBossFrame(0);
+                case TITAN -> game.getAssets().titanBossFrame(0, 0);
+                case CALLISTO -> game.getAssets().callistoBossFrame(3, 0);
+                default -> null;
+            };
+            if (art != null) {
+                float width = phases[i] == CampaignState.Phase.LUNAR
+                    || phases[i] == CampaignState.Phase.MARS ? 53f : 69f;
+                ui.sprite(art, 154f + (69f - width) * .5f, y - 37f, width, 70f,
+                    defeated ? Color.WHITE : Color.DARK_GRAY);
+            }
         }
     }
 
@@ -300,14 +366,18 @@ public final class ExpeditionOverlay {
             CampaignState.Phase.TITAN, CampaignState.Phase.CALLISTO};
         String[] names = {"GUARDIÃO DA CRATERA", "TITÃ-FERRUGEM", "SOBERANO DO METANO",
             "SENTINELA DE CALISTO"};
+        String[] behavior = {"Golpe de impacto na cratera", "Ataque em área entre as rochas",
+            "Investida, rajadas e onda de choque", "Três formas antes da queda final"};
         for (int i = 0; i < phases.length; i++) {
             float y = 488f - i * 97f;
             boolean defeated = campaign.isBossDefeated(phases[i]);
             ui.text(phases[i] == CampaignState.Phase.TITAN ? "TITÃ" : phases[i].name(),
-                .50f, UiTheme.TEXT_MUTED, 155f, y + 14f);
-            ui.text(defeated ? names[i] : "???", .73f,
-                defeated ? UiTheme.TEXT : UiTheme.TEXT_MUTED, 155f, y - 16f);
-            ui.text(defeated ? "REGISTRADO" : "SEM DADOS", .53f,
+                .50f, UiTheme.TEXT_MUTED, 242f, y + 21f);
+            ui.text(defeated ? names[i] : "ARQUIVO LACRADO", .67f,
+                defeated ? UiTheme.TEXT : UiTheme.TEXT_MUTED, 242f, y - 5f);
+            ui.text(defeated ? behavior[i] : "Enfrente o guardião para registrar seus dados.",
+                .50f, UiTheme.TEXT_MUTED, 242f, y - 29f);
+            ui.text(defeated ? "REGISTRADO" : "NÃO IDENTIFICADO", .53f,
                 defeated ? UiTheme.CYAN : UiTheme.TEXT_MUTED, 964f, y - 4f);
         }
     }

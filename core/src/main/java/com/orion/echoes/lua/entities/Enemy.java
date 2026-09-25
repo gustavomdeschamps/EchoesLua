@@ -61,6 +61,7 @@ public class Enemy extends Entidade {
     private State state = State.IDLE;
     private float hp = GameConfig.ENEMY_BASE_HP;
     private float stateTime, contactCooldown, elapsed, targetDistance, shotCooldown;
+    private float movementMultiplier = 1f;
     private boolean facingLeft, defeated, telegraphStarted, rangedShotReady;
 
     public Enemy(float x, float y, AssetManager assets) {
@@ -86,6 +87,7 @@ public class Enemy extends Entidade {
     private Array<Rectangle> solidBounds;
     public void setSolidBounds(Array<Rectangle> solids) { solidBounds=solids; }
     public void update(float delta, Astronauta target, Array<Obstacle> obstacles) {
+        movementMultiplier = target.getDifficulty().enemySpeedMultiplier();
         elapsed += delta;
         stateTime += delta;
         contactCooldown = Math.max(0f, contactCooldown - delta);
@@ -167,7 +169,7 @@ public class Enemy extends Entidade {
 
     private void move(float dx, float dy, float delta, Array<Obstacle> obstacles) {
         float speed = GameConfig.ENEMY_BASE_SPEED * behavior.speedScale
-            * (state == State.ATTACK ? 1.42f : 1f);
+            * (state == State.ATTACK ? 1.42f : 1f) * movementMultiplier;
         float nextX = MathUtils.clamp(position.x + dx * speed * delta, 0f, GameConfig.WORLD_WIDTH - width);
         if (isFree(nextX, position.y, obstacles)) position.x = nextX;
         float nextY = MathUtils.clamp(position.y + dy * speed * delta, 0f, GameConfig.WORLD_HEIGHT - height);

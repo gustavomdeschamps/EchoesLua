@@ -34,6 +34,7 @@ public class SoundManager implements Disposable {
     private float sfxVolume = 0.8f;
     private float uiVolume = 0.75f;
     private float ambientVolume = 0.8f;
+    private float masterVolume = 1f;
     private boolean carregado;
 
     /** Ouvinte usado pelas chamadas espaciais; segue a camera da fase. */
@@ -80,16 +81,17 @@ public class SoundManager implements Disposable {
 
     /** Liga o mixer as preferencias salvas; chamado na criacao e ao mudar opcoes. */
     public void applySettings(AppSettings settings) {
+        masterVolume = settings.getMasterVolume();
         sfxVolume = settings.getSfxVolume();
         uiVolume = settings.getUiVolume();
         // Ambiente tem barramento proprio: passos, vento e maquinario nao podem
         // subir junto com o disparo so porque o jogador quer ouvir o rifle.
         ambientVolume = settings.getAmbientVolume();
-        music.setBusVolume(settings.getMusicVolume());
+        music.setBusVolume(settings.getMusicVolume() * masterVolume);
     }
 
     private float busVolume(Bus bus) {
-        return switch (bus) {
+        return masterVolume * switch (bus) {
             case UI -> uiVolume;
             case AMBIENT -> ambientVolume;
             case MUSIC -> 1f;

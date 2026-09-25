@@ -177,6 +177,22 @@ public final class CampaignDrive extends EchoesLua {
             check("entrar na arena lunar nao concede CHAVE_LUA",
                 !campaign.getInventario().tem(Inventario.CHAVE_LUA)));
         once("captura arena lunar", () -> shot("01-arena-lua"));
+        once("B abre bestiario de save novo", () -> tap(Input.Keys.B));
+        step("bestiario inicial desenha", 24, tick -> tick >= 14);
+        once("confirma bestiario bloqueado", () -> {
+            Object overlay = peek(screen(), "overlay");
+            Integer tab = overlay == null ? null : peek(overlay, "panel");
+            check("B abre a Central diretamente no Bestiario", tab != null && tab == 3);
+            check("save novo nao revela chefe lunar", !campaign.isBossDefeated(CampaignState.Phase.LUNAR));
+            shot("01f-bestiario-inicial");
+        });
+        once("I fecha Central mesmo na aba Bestiario", () -> tap(Input.Keys.I));
+        step("Central fecha", 12, tick -> tick >= 6);
+        once("confirma fechamento pela tecla I", () -> {
+            Object overlay = peek(screen(), "overlay");
+            Integer tab = overlay == null ? null : peek(overlay, "panel");
+            check("I fecha a Central de qualquer aba", tab != null && tab == 0);
+        });
         step("dash lunar avanca", 20, tick -> {
             if (tick == 0) {
                 Astronauta player = peek(screen(), "player");
@@ -226,6 +242,20 @@ public final class CampaignDrive extends EchoesLua {
             Astronauta player = peek(screen(), "player");
             check("parado mantem a ultima orientacao valida",
                 player != null && player.isViradoEsquerda());
+        });
+        once("abre pausa para inspecao visual", () -> tap(Input.Keys.ESCAPE));
+        step("pausa assenta", 80, tick -> tick >= 45);
+        once("captura pausa", () -> shot("01d-pausa"));
+        once("abre ajustes da pausa", () -> tap(Input.Keys.O));
+        step("ajustes da pausa assentam", 45, tick -> tick >= 25);
+        once("captura ajustes da pausa", () -> shot("01e-ajustes-pausa"));
+        once("clica em retomar no menu de ajustes", () -> {
+            mouseX = 485; mouseY = 720 - 96; click = true;
+        });
+        step("retomada por clique assenta", 16, tick -> tick >= 9);
+        once("confirma retomada por clique", () -> {
+            Object pause = peek(screen(), "pauseUi");
+            check("botao RETOMAR da pausa funciona com mouse", pause != null && !paused(pause));
         });
         once("drena a energia", () -> {
             Astronauta player = peek(screen(), "player");
@@ -297,6 +327,7 @@ public final class CampaignDrive extends EchoesLua {
         step("derrota o Guardiao da Cratera", 6000, tick -> {
             if (!(screen() instanceof PhaseBossScreen)) { failures.add("saiu da arena lunar: " + screenName()); return true; }
             fightArena(tick);
+            if (tick == 80) shot("02a-guardiao-em-combate");
             return campaign.getInventario().tem(Inventario.CHAVE_LUA);
         });
         once("chave da Lua conquistada", () -> {
@@ -518,6 +549,23 @@ public final class CampaignDrive extends EchoesLua {
         });
         step("vitoria assenta", 200, tick -> tick >= 130);
         once("captura vitoria", () -> shot("15-vitoria"));
+        once("abre menu para inspecao visual", () -> swap(new MenuScreen(this)));
+        step("menu assenta", 100, tick -> tick >= 65);
+        once("captura menu", () -> shot("16-menu"));
+        once("posiciona mouse sobre botao", () -> { mouseX = 300; mouseY = 275; });
+        step("hover do menu assenta", 35, tick -> tick >= 18);
+        once("captura hover do menu", () -> shot("16b-menu-hover"));
+        once("abre configuracoes para inspecao visual", () -> {
+            try {
+                Method method = MenuScreen.class.getDeclaredMethod("showSettings", boolean.class);
+                method.setAccessible(true);
+                method.invoke(screen(), false);
+            } catch (ReflectiveOperationException error) {
+                failures.add("nao abriu configuracoes do menu: " + error);
+            }
+        });
+        step("configuracoes assentam", 60, tick -> tick >= 35);
+        once("captura configuracoes", () -> shot("17-configuracoes"));
         once("fim", () -> done = true);
     }
 

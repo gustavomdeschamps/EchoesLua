@@ -6,14 +6,24 @@ import java.util.Set;
 /** Persistent expedition equipment. Keys can only be awarded by boss completion. */
 public final class Inventario {
     public enum Difficulty {
-        FACIL("FÁCIL", .72f), NORMAL("NORMAL", 1f), DIFICIL("DIFÍCIL", 1.35f);
+        FACIL("FÁCIL", .72f, .80f, .90f),
+        NORMAL("NORMAL", 1f, 1f, 1f),
+        DIFICIL("DIFÍCIL", 1.35f, 1.25f, 1.15f);
         private final String label;
         private final float damageMultiplier;
-        Difficulty(String label, float damageMultiplier) {
-            this.label = label; this.damageMultiplier = damageMultiplier;
+        private final float oxygenMultiplier;
+        private final float enemySpeedMultiplier;
+        Difficulty(String label, float damageMultiplier, float oxygenMultiplier,
+                   float enemySpeedMultiplier) {
+            this.label = label;
+            this.damageMultiplier = damageMultiplier;
+            this.oxygenMultiplier = oxygenMultiplier;
+            this.enemySpeedMultiplier = enemySpeedMultiplier;
         }
         public String label() { return label; }
         public float damageMultiplier() { return damageMultiplier; }
+        public float oxygenMultiplier() { return oxygenMultiplier; }
+        public float enemySpeedMultiplier() { return enemySpeedMultiplier; }
         public static Difficulty fromSave(String value) {
             if (value != null) for (Difficulty option : values())
                 if (option.name().equals(value)) return option;

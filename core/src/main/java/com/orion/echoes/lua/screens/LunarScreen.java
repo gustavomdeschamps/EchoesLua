@@ -716,6 +716,13 @@ public class LunarScreen implements Screen {
     private PauseSettingsModel construirOpcoesDaPausa() {
         AppSettings settings = game.getSettings();
         return new PauseSettingsModel()
+            .addSlider("Geral", new PauseSettingsModel.FloatAccessor() {
+                @Override public float get() { return settings.getMasterVolume(); }
+                @Override public void set(float value) {
+                    settings.setMasterVolume(value);
+                    game.aplicarPreferenciasDeAudio();
+                }
+            })
             .addSlider("Música", new PauseSettingsModel.FloatAccessor() {
                 @Override public float get() { return settings.getMusicVolume(); }
                 @Override public void set(float value) {

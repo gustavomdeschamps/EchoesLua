@@ -79,8 +79,10 @@ public final class MenuScreen implements Screen {
         Table content = basePage(510f, 600f);
         content.setX(48f);
         content.setBackground((com.badlogic.gdx.scenes.scene2d.utils.Drawable)null);
-        content.add(title("ECHOES", 2.2f)).left().row();
-        content.add(label("LUA  ·  MARTE  ·  TITÃ", UiTheme.CYAN)).left().padBottom(38f).row();
+        content.add(new Label("ECHOES", skin, "logo")).left().row();
+        Label stages = label("LUA  ·  MARTE  ·  TITÃ\nCALISTO  ·  AHARIN", UiTheme.CYAN);
+        stages.setFontScale(.68f);
+        content.add(stages).left().padBottom(28f).row();
         content.add(button("NOVO JOGO", () -> showDifficulty(true))).width(410f).height(58f).padBottom(10f).row();
         if (new SaveManager().hasContinuableSave()) {
             content.add(button("CONTINUAR CAMPANHA", this::continueGame))
@@ -139,6 +141,10 @@ public final class MenuScreen implements Screen {
 
         Table audio = column();
         section(audio, "ÁUDIO");
+        slider(audio, "Geral", settings.getMasterVolume(), value -> {
+            settings.setMasterVolume(value);
+            game.aplicarPreferenciasDeAudio();
+        });
         slider(audio, "Música", settings.getMusicVolume(), value -> {
             settings.setMusicVolume(value);
             game.aplicarPreferenciasDeAudio();
@@ -443,12 +449,10 @@ public final class MenuScreen implements Screen {
         @Override public void draw(Batch batch, float parentAlpha) {
             batch.setColor(.18f, .23f, .29f, 1f);
             batch.draw(game.getAssets().backgroundLuaTexture, 0f, 0f, getWidth(), getHeight());
-            batch.setColor(.82f, .8f, .74f, .72f);
+            batch.setColor(.94f, .91f, .86f, .92f);
             batch.draw(game.getAssets().introKeyArtTexture, 0f, 0f, 1280f, 720f);
-            batch.setColor(.015f, .025f, .035f, .63f);
+            batch.setColor(.015f, .025f, .035f, .48f);
             batch.draw(game.getAssets().uiWhiteTexture, 0f, 0f, getWidth(), getHeight());
-            batch.setColor(.012f, .023f, .031f, .75f);
-            batch.draw(game.getAssets().uiWhiteTexture, 0f, 0f, 580f, getHeight());
             batch.setColor(Color.WHITE);
         }
     }

@@ -77,6 +77,18 @@ public final class PauseSettingsModel {
 
     public int getSelected() { return selected; }
 
+    public void select(int index) {
+        if (index >= 0 && index < rows.size) selected = index;
+    }
+
+    /** Posiciona uma barra diretamente com o mouse, sem dezenas de cliques. */
+    public void setRatio(int index, float ratio) {
+        if (index < 0 || index >= rows.size) return;
+        Row row = rows.get(index);
+        if (row.kind == Kind.SLIDER)
+            row.number.set(MathUtils.clamp(ratio, 0f, 1f));
+    }
+
     public String label(int index) { return rows.get(index).label; }
 
     public Kind kind(int index) { return rows.get(index).kind; }

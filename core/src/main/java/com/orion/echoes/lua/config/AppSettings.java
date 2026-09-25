@@ -9,6 +9,7 @@ public final class AppSettings {
     private static final String PREFS_NAME = "echoes-lua-settings-v2";
     private final Preferences preferences;
 
+    private float masterVolume;
     private float musicVolume;
     private float sfxVolume;
     private float uiVolume;
@@ -22,6 +23,7 @@ public final class AppSettings {
 
     public AppSettings() {
         preferences = Gdx.app.getPreferences(PREFS_NAME);
+        masterVolume = preferences.getFloat("masterVolume", 1f);
         musicVolume = preferences.getFloat("musicVolume", 0.7f);
         sfxVolume = preferences.getFloat("sfxVolume", 0.8f);
         uiVolume = preferences.getFloat("uiVolume", 0.75f);
@@ -38,6 +40,7 @@ public final class AppSettings {
     }
 
     public void save() {
+        preferences.putFloat("masterVolume", masterVolume);
         preferences.putFloat("musicVolume", musicVolume);
         preferences.putFloat("sfxVolume", sfxVolume);
         preferences.putFloat("uiVolume", uiVolume);
@@ -51,6 +54,8 @@ public final class AppSettings {
         preferences.flush();
     }
 
+    public float getMasterVolume() { return masterVolume; }
+    public void setMasterVolume(float value) { masterVolume = MathUtils.clamp(value, 0f, 1f); save(); }
     public float getMusicVolume() { return musicVolume; }
     public void setMusicVolume(float value) { musicVolume = MathUtils.clamp(value, 0f, 1f); save(); }
     public float getSfxVolume() { return sfxVolume; }

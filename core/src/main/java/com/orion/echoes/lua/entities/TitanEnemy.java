@@ -28,6 +28,7 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
     private boolean shotPending;
     private boolean moving;
     private float deathTime;
+    private float movementMultiplier = 1f;
     private boolean facingLeft;
     private final float spawnX;
     private final float spawnY;
@@ -47,6 +48,7 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
 
     public void update(float delta, Astronauta player, float worldWidth, float worldHeight,
                        Array<Rectangle> obstacles) {
+        movementMultiplier = player.getDifficulty().enemySpeedMultiplier();
         solidBounds=obstacles;
         if (!ativo) return;
         time += delta;
@@ -110,9 +112,9 @@ public final class TitanEnemy extends Entidade implements CombatTarget {
 
     private void move(float dx, float dy, float delta, float worldWidth, float worldHeight,
                       Array<Rectangle> obstacles) {
-        float nextX = MathUtils.clamp(position.x + dx * SPEED * delta, 0f, worldWidth - width);
+        float nextX = MathUtils.clamp(position.x + dx * SPEED * movementMultiplier * delta, 0f, worldWidth - width);
         if (free(nextX, position.y, obstacles)) position.x = nextX;
-        float nextY = MathUtils.clamp(position.y + dy * SPEED * delta, 0f, worldHeight - height);
+        float nextY = MathUtils.clamp(position.y + dy * SPEED * movementMultiplier * delta, 0f, worldHeight - height);
         if (free(position.x, nextY, obstacles)) position.y = nextY;
     }
 

@@ -18,12 +18,18 @@ public final class ExpeditionPause {
         this.game=game;this.player=player;overlay=new PauseOverlay(game.getBatch(),game.getAssets());
         overlay.setReduceMotion(game.getSettings().isReduceMotion());
         overlay.setSettings(new PauseSettingsModel()
+            .addSlider("Geral",new PauseSettingsModel.FloatAccessor(){
+                public float get(){return game.getSettings().getMasterVolume();}
+                public void set(float value){game.getSettings().setMasterVolume(value);game.aplicarPreferenciasDeAudio();}})
             .addSlider("Música",new PauseSettingsModel.FloatAccessor(){
                 public float get(){return game.getSettings().getMusicVolume();}
                 public void set(float value){game.getSettings().setMusicVolume(value);game.aplicarPreferenciasDeAudio();}})
             .addSlider("Efeitos",new PauseSettingsModel.FloatAccessor(){
                 public float get(){return game.getSettings().getSfxVolume();}
-                public void set(float value){game.getSettings().setSfxVolume(value);game.aplicarPreferenciasDeAudio();}}));
+                public void set(float value){game.getSettings().setSfxVolume(value);game.aplicarPreferenciasDeAudio();}})
+            .addSlider("Ambiente",new PauseSettingsModel.FloatAccessor(){
+                public float get(){return game.getSettings().getAmbientVolume();}
+                public void set(float value){game.getSettings().setAmbientVolume(value);game.aplicarPreferenciasDeAudio();}}));
     }
     public void handle() {
         if(paused) {

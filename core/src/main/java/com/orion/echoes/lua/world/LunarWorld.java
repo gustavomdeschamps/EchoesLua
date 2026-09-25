@@ -112,7 +112,7 @@ public final class LunarWorld {
             float x = clamp(cell[0] + jitterX, 120f, GameConfig.WORLD_WIDTH - cell[2] - 120f);
             float y = clamp(cell[1] + jitterY, 120f, GameConfig.WORLD_HEIGHT - cell[3] - 120f);
             obstacles.add(new Obstacle(x, y, cell[2] * .98f, cell[3] * .98f,
-                assets.lunarObstacleRegion(obstacles.size % 6), physics));
+                assets.lunarObstacleRegion(obstacles.size % 3), physics));
         }
     }
 

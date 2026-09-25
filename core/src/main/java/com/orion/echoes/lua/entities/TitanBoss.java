@@ -43,6 +43,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
     private float stateTime;
     private float attackCooldown;
     private float hitFlash;
+    private float movementMultiplier = 1f;
     private boolean facingLeft;
     private boolean slamPending;
     private boolean volleyPending;
@@ -65,6 +66,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
 
     public void update(float delta, Astronauta player, float worldWidth, float worldHeight,
                        Array<Rectangle> obstacles) {
+        movementMultiplier = player.getDifficulty().enemySpeedMultiplier();
         time += delta;
         stateTime += delta;
         attackCooldown = Math.max(0f, attackCooldown - delta);
@@ -139,10 +141,10 @@ public final class TitanBoss extends Entidade implements CombatTarget {
 
     private void move(float dx, float dy, float delta, float worldWidth, float worldHeight,
                       Array<Rectangle> obstacles) {
-        float nextX = MathUtils.clamp(position.x + dx * GameConfig.BOSS_SPEED * delta,
+        float nextX = MathUtils.clamp(position.x + dx * GameConfig.BOSS_SPEED * movementMultiplier * delta,
             0f, worldWidth - width);
         if (free(nextX, position.y, obstacles)) position.x = nextX;
-        float nextY = MathUtils.clamp(position.y + dy * GameConfig.BOSS_SPEED * delta,
+        float nextY = MathUtils.clamp(position.y + dy * GameConfig.BOSS_SPEED * movementMultiplier * delta,
             0f, worldHeight - height);
         if (free(position.x, nextY, obstacles)) position.y = nextY;
         syncBounds();
@@ -287,7 +289,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
             batch.setColor(1f, .72f + pulse * .18f, .45f, alpha);
         } else if (state == State.IMPACTO || state == State.VOLLEY || state == State.BURST)
             batch.setColor(1f, .95f, .82f, alpha);
-        else batch.setColor(.82f, .70f, .58f, alpha);
+        else batch.setColor(1f, 1f, 1f, alpha);
 
         // Recuo no aviso e avanço no golpe: peso de corpo grande.
         float lunge = state == State.IMPACTO
@@ -300,7 +302,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
             : isTelegraphing() ? Math.min(1,(int)(getTelegraphProgress()*2f))
             : state==State.IMPACTO ? Math.min(3,2+(int)(stateTime/(GameConfig.BOSS_SLAM_TIME*.5f)))
             : state==State.VOLLEY || state==State.BURST ? Math.min(3,2+(int)(stateTime/.2f))
-            : (int)(stateTime/(state==State.AVANCA?.24f:.4f))%4;
+            : (int)(stateTime/(state==State.AVANCA?.18f:.32f))%4;
         TextureRegion frame = frames[row][column];
         if (frame.isFlipX() != facingLeft) frame.flip(true, false);
         AtlasRegionRenderer.draw(batch, frame, centerX() - size / 2f,
@@ -309,7 +311,7 @@ public final class TitanBoss extends Entidade implements CombatTarget {
     }
 
     private static float avanco(float value) {
-        return MathUtils.clamp(value, 0f, 1f);
+        return MathUtils.sin(MathUtils.PI * MathUtils.clamp(value, 0f, 1f));
     }
 
     public float centerX() { return position.x + width / 2f; }

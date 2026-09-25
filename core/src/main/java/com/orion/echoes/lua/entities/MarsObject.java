@@ -56,7 +56,7 @@ public final class MarsObject extends Entidade {
         this.baseY = y;
         this.stationFrames = isStation() ? loadStationFrames(assets, kind) : null;
         TextureRegion initialRegion = kind == Kind.ROCK
-            ? assets.marsObstacleRegion(Math.abs(((int)x * 31 + (int)y * 17)) % 6)
+            ? assets.marsObstacleRegion(Math.abs(((int)x * 31 + (int)y * 17)) % 3)
             : stationFrames != null ? stationFrames[0]
             : assets.marsRegion(kind.column, kind.row);
         sprite = AtlasSpriteFactory.create(initialRegion);

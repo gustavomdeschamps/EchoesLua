@@ -60,10 +60,10 @@ public final class GameConfig {
      * O sprite do rifle era desenhado em .44 e o projétil nascia em .48: o
      * traço saía acima do cano. Desenho, muzzle e disparo leem esta constante.
      */
-    public static final float PLAYER_WEAPON_PIVOT_RATIO = 0.44f;
+    public static final float PLAYER_WEAPON_PIVOT_RATIO = 0.58f;
 
     /** Distância do punho até a boca do cano, em pixels de mundo. */
-    public static final float PLAYER_MUZZLE_DISTANCE = 46f;
+    public static final float PLAYER_MUZZLE_DISTANCE = 34f;
 
     /**
      * Zona morta do cosseno da mira para virar o corpo.
@@ -195,14 +195,14 @@ public final class GameConfig {
     // ficam aqui para o teste de layout poder conferir a conta.
     // ==========================================
 
-    public static final float SETTINGS_PANEL_WIDTH = 1120f;
-    public static final float SETTINGS_PANEL_HEIGHT = 650f;
+    public static final float SETTINGS_PANEL_WIDTH = 1040f;
+    public static final float SETTINGS_PANEL_HEIGHT = 600f;
     /** Recuo interno do painel, aplicado dos dois lados. */
-    public static final float SETTINGS_PANEL_PADDING = 38f;
+    public static final float SETTINGS_PANEL_PADDING = 32f;
     public static final float SETTINGS_COLUMN_WIDTH = 460f;
     public static final float SETTINGS_COLUMN_GAP = 32f;
-    public static final float SETTINGS_LABEL_WIDTH = 180f;
-    public static final float SETTINGS_CONTROL_WIDTH = 210f;
+    public static final float SETTINGS_LABEL_WIDTH = 220f;
+    public static final float SETTINGS_CONTROL_WIDTH = 180f;
     public static final float SETTINGS_VALUE_WIDTH = 50f;
     public static final float SETTINGS_VALUE_PADDING = 8f;
     public static final float SETTINGS_ROW_GAP = 7f;

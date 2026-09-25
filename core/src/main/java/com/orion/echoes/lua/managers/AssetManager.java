@@ -30,6 +30,8 @@ public final class AssetManager implements Disposable {
     private static final String PORTAL_REWORK = "textures/portal_frame_rework_v1.png";
     private static final String PORTAL_ENERGY = "textures/portal_energy_rework_v1.png";
     private static final String STAR_CHART = "textures/expedition_worlds_v2.png";
+    private static final String MAP_MARKER = "textures/map_astronaut_marker_v1.png";
+    private static final String ENERGY_CELL_ICON = "textures/energy_cell_icon_v1.png";
     private static final String PLAYER_PORTRAIT = "textures/astronaut_portrait_v2.png";
     private static final String NPC_PORTRAITS = "textures/npc_portraits_v2.png";
     private static final String AYYUB_PORTRAIT = "textures/npc_ayyub_portrait_v4.png";
@@ -89,6 +91,7 @@ public final class AssetManager implements Disposable {
     public Texture portalFrameReworkTexture;
     public TextureRegion portalEnergyReworkRegion;
     public Texture expeditionStarChartTexture;
+    public Texture mapMarkerTexture, energyCellIconTexture;
     public Texture playerPortraitTexture;
     private Texture npcPortraitsTexture;
     private final TextureRegion[] npcPortraitRegions = new TextureRegion[3];
@@ -141,6 +144,8 @@ public final class AssetManager implements Disposable {
         loader.load(PORTAL_REWORK, Texture.class);
         loader.load(PORTAL_ENERGY, Texture.class);
         loader.load(STAR_CHART, Texture.class);
+        loader.load(MAP_MARKER, Texture.class);
+        loader.load(ENERGY_CELL_ICON, Texture.class);
         loader.load(PLAYER_PORTRAIT, Texture.class);
         loader.load(NPC_PORTRAITS, Texture.class);
         loader.load(AYYUB_PORTRAIT, Texture.class);
@@ -205,6 +210,10 @@ public final class AssetManager implements Disposable {
         portalEnergyReworkRegion = new TextureRegion(portalEnergy);
         expeditionStarChartTexture = loader.get(STAR_CHART, Texture.class);
         expeditionStarChartTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        mapMarkerTexture = loader.get(MAP_MARKER, Texture.class);
+        mapMarkerTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
+        energyCellIconTexture = loader.get(ENERGY_CELL_ICON, Texture.class);
+        energyCellIconTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         playerPortraitTexture = loader.get(PLAYER_PORTRAIT, Texture.class);
         playerPortraitTexture.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         npcPortraitsTexture = loader.get(NPC_PORTRAITS, Texture.class);
@@ -266,8 +275,8 @@ public final class AssetManager implements Disposable {
         Texture marsBoss = loader.get("textures/mars_boss_sheet_v2.png", Texture.class);
         lunarBoss.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         marsBoss.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
-        lunarBossFrames = squareBossFrames(lunarBoss);
-        marsBossFrames = squareBossFrames(marsBoss);
+        lunarBossFrames = fullBossFrames(lunarBoss);
+        marsBossFrames = fullBossFrames(marsBoss);
         Texture bossKeys = loader.get("textures/boss_keys_sheet_v1.png", Texture.class);
         bossKeys.setFilter(Texture.TextureFilter.Linear, Texture.TextureFilter.Linear);
         bossKeyFrames = TextureRegion.split(bossKeys, 192, 192)[0];
@@ -380,15 +389,12 @@ public final class AssetManager implements Disposable {
         return marsBossFrames[Math.max(0, Math.min(3, pose))];
     }
 
-    /** Generated sheets have four 543 px columns in a 724 px canvas.
-     * Crop a square around the common foot baseline instead of squeezing 543x724.
-     */
-    private static TextureRegion[] squareBossFrames(Texture sheet) {
+    /** Cada pose usa a altura integral: o antigo recorte quadrado decepava pés e braços. */
+    private static TextureRegion[] fullBossFrames(Texture sheet) {
         int cell = sheet.getWidth() / 4;
-        int top = Math.max(0, Math.min(sheet.getHeight() - cell, 50));
         TextureRegion[] result = new TextureRegion[4];
         for (int i = 0; i < result.length; i++)
-            result[i] = new TextureRegion(sheet, i * cell, top, cell, cell);
+            result[i] = new TextureRegion(sheet, i * cell, 0, cell, sheet.getHeight());
         return result;
     }
 
